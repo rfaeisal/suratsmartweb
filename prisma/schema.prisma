@@ -1,0 +1,257 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// MASTER DATA — PEGAWAI & UNIT KERJA
+// ============================================================
+
+model Employee {
+  id                 String       @id @default(cuid())
+  legacyId           String       @unique
+  nip                String       @unique
+  fullName           String
+  employeeType       EmployeeType
+  unitId             String
+  unit               WorkUnit     @relation(fields: [unitId], references: [id])
+  positionTitle      String?
+  directSupervisorId String?      // merujuk Employee.id (bukan legacyId) atasan langsung
+  isActive           Boolean      @default(true)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  user              AppUser?
+  leaveRequests     LeaveRequest[] @relation("Requester")
+  delegatedRequests LeaveRequest[] @relation("Delegate")
+  approvalSteps     ApprovalStep[]
+  leaveQuotas       LeaveQuota[]
+}
+
+enum EmployeeType {
+  PNS
+  PPPK
+  BLUD
+}
+
+model WorkUnit {
+  id        String     @id @default(cuid())
+  name      String
+  parentId  String?
+  parent    WorkUnit?  @relation("UnitHierarchy", fields: [parentId], references: [id])
+  children  WorkUnit[] @relation("UnitHierarchy")
+  employees Employee[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+// ============================================================
+// JENIS CUTI & KUOTA
+// ============================================================
+
+model LeaveType {
+  id                 String         @id @default(cuid())
+  code               String         @unique
+  name               String
+  applicableTo       EmployeeType[]
+  requiresAttachment Boolean        @default(false)
+  defaultQuotaDays   Int?
+  isActive           Boolean        @default(true)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  quotas        LeaveQuota[]
+  leaveRequests LeaveRequest[]
+}
+
+model LeaveQuota {
+  id          String    @id @default(cuid())
+  employeeId  String
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  leaveTypeId String
+  leaveType   LeaveType @relation(fields: [leaveTypeId], references: [id])
+  year        Int
+  totalDays   Int
+  usedDays    Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([employeeId, leaveTypeId, year])
+}
+
+// ============================================================
+// PENGAJUAN CUTI
+// ============================================================
+
+model LeaveRequest {
+  id                         String                     @id @default(cuid())
+  requestNumber              String                     @unique
+  requesterId                String
+  requester                  Employee                   @relation("Requester", fields: [requesterId], references: [id])
+  leaveTypeId                String
+  leaveType                  LeaveType                  @relation(fields: [leaveTypeId], references: [id])
+  startDate                  DateTime
+  endDate                    DateTime
+  totalDays                  Int
+  reason                     String
+  delegateId                 String?
+  delegate                   Employee?                  @relation("Delegate", fields: [delegateId], references: [id])
+  status                     LeaveRequestStatus         @default(SUBMITTED)
+  currentStepOrder           Int                        @default(0)
+  delegateConfirmationStatus DelegateConfirmationStatus @default(PENDING)
+  delegateDecidedAt          DateTime?
+  delegateNote               String?
+  createdAt                  DateTime                   @default(now())
+  updatedAt                  DateTime                   @updatedAt
+
+  attachments     LeaveAttachment[]
+  approvalSteps   ApprovalStep[]
+  skDocument      SkDocument?
+  integrationLogs IntegrationLog[]
+}
+
+enum LeaveRequestStatus {
+  SUBMITTED
+  DELEGATE_DECLINED
+  PENDING_ADMIN_REVIEW
+  IN_APPROVAL
+  RETURNED
+  REJECTED
+  APPROVED
+  SENT_TO_LEGACY
+  SEND_FAILED
+}
+
+enum DelegateConfirmationStatus {
+  PENDING
+  CONFIRMED
+  DECLINED
+}
+
+model LeaveAttachment {
+  id             String       @id @default(cuid())
+  leaveRequestId String
+  leaveRequest   LeaveRequest @relation(fields: [leaveRequestId], references: [id])
+  fileName       String
+  filePath       String
+  uploadedAt     DateTime     @default(now())
+}
+
+// ============================================================
+// ALUR APPROVAL (dinamis, ditetapkan admin per pengajuan)
+// ============================================================
+
+model ApprovalStep {
+  id             String             @id @default(cuid())
+  leaveRequestId String
+  leaveRequest   LeaveRequest       @relation(fields: [leaveRequestId], references: [id])
+  stepOrder      Int
+  approverId     String
+  approver       Employee           @relation(fields: [approverId], references: [id])
+  roleLabel      String
+  status         ApprovalStepStatus @default(PENDING)
+  note           String?
+  decidedAt      DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@unique([leaveRequestId, stepOrder])
+}
+
+enum ApprovalStepStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  RETURNED
+}
+
+// ============================================================
+// SK CUTI & INTEGRASI LEGACY
+// ============================================================
+
+model SkDocument {
+  id             String       @id @default(cuid())
+  leaveRequestId String       @unique
+  leaveRequest   LeaveRequest @relation(fields: [leaveRequestId], references: [id])
+  skNumber       String       @unique
+  filePath       String
+  generatedAt    DateTime     @default(now())
+}
+
+model IntegrationLog {
+  id              String       @id @default(cuid())
+  leaveRequestId  String
+  leaveRequest    LeaveRequest @relation(fields: [leaveRequestId], references: [id])
+  direction       String       // "PUSH_LEAVE_TO_LEGACY"
+  status          String       // PENDING | SUCCESS | FAILED
+  requestPayload  Json
+  responsePayload Json?
+  attemptCount    Int          @default(0)
+  lastAttemptAt   DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+// ============================================================
+// USER, SESI LOGIN & NOTIFIKASI
+// ============================================================
+
+model AppUser {
+  id         String    @id @default(cuid())
+  employeeId String    @unique
+  employee   Employee  @relation(fields: [employeeId], references: [id])
+  roles      AppRole[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  fcmTokens FcmToken[]
+  sessions  UserSession[]
+}
+
+enum AppRole {
+  PEGAWAI
+  APPROVER
+  ADMIN_KEPEGAWAIAN
+  SUPERADMIN
+}
+
+model UserSession {
+  id               String        @id @default(cuid())
+  userId           String
+  user             AppUser       @relation(fields: [userId], references: [id])
+  deviceId         String
+  deviceLabel      String?
+  refreshTokenHash String        @unique
+  status           SessionStatus @default(ACTIVE)
+  createdAt        DateTime      @default(now())
+  lastActiveAt     DateTime      @default(now())
+  revokedAt        DateTime?
+  revokedBy        String?       // "SELF" | "ADMIN" | AppUser.id admin yg mencabut
+}
+
+enum SessionStatus {
+  ACTIVE
+  REVOKED
+}
+
+model FcmToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      AppUser  @relation(fields: [userId], references: [id])
+  token     String   @unique
+  platform  String   @default("android")
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+}

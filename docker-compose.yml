@@ -1,0 +1,46 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: cutismart-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cutismart
+      POSTGRES_USER: cutismart
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cutismart_dev}
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cutismart -d cutismart"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cutismart-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://cutismart:${POSTGRES_PASSWORD:-cutismart_dev}@postgres:5432/cutismart
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      LEGACY_API_BASE_URL: ${LEGACY_API_BASE_URL}
+      LEGACY_API_KEY: ${LEGACY_API_KEY}
+      LEGACY_API_HMAC_SECRET: ${LEGACY_API_HMAC_SECRET}
+      LEGACY_SSO_MOCK: ${LEGACY_SSO_MOCK:-false}
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${FIREBASE_SERVICE_ACCOUNT_JSON}
+      FILE_STORAGE_PATH: ${FILE_STORAGE_PATH:-/app/uploads}
+    ports:
+      - "3000:3000"
+    volumes:
+      - uploads:/app/uploads
+
+volumes:
+  postgres_data:
+  uploads:
