@@ -50,12 +50,32 @@ async function main() {
       roles: ["ADMIN_KEPEGAWAIAN"],
     },
     {
+      legacyId: "5001",
+      nip: "196001012000011001",
+      fullName: "Dr. Bambang Wijaya, M.Kes",
+      employeeType: "PNS",
+      unitId: "U00",
+      positionTitle: "Direktur",
+      roles: ["APPROVER"],
+    },
+    {
+      legacyId: "5002",
+      nip: "199201012020011001",
+      fullName: "Rina Marlina",
+      employeeType: "PNS",
+      unitId: "U00",
+      positionTitle: "Staf Sekretariat Direktur",
+      directSupervisorId: "5001",
+      roles: ["PEGAWAI"],
+    },
+    {
       legacyId: "4001",
       nip: "196501012000011001",
       fullName: "Hendra Kusuma",
       employeeType: "PNS",
       unitId: "U00",
       positionTitle: "Wakil Direktur Umum dan Keuangan",
+      directSupervisorId: "5001",
       roles: ["APPROVER"],
     },
     {
@@ -159,12 +179,14 @@ async function main() {
 
   console.log("\n✅ Seed selesai!")
   console.log("\nAkun mock SSO (gunakan di /login):")
-  console.log("  admin    / admin123    → ADMIN_KEPEGAWAIAN")
-  console.log("  wadir1   / wadir123    → APPROVER  (Wakil Direktur)")
-  console.log("  kabag1   / kabag123    → APPROVER  (Kepala Bagian TU)")
-  console.log("  atasan1  / atasan123   → APPROVER  (Kepala Sub-Bagian)")
-  console.log("  pegawai1 / pegawai123  → PEGAWAI")
-  console.log("  pppk1    / pppk123     → PEGAWAI")
+  console.log("  admin      / admin123     → ADMIN_KEPEGAWAIAN")
+  console.log("  direktur1  / direktur123  → APPROVER  (Direktur)")
+  console.log("  wadir1     / wadir123     → APPROVER  (Wakil Direktur)")
+  console.log("  kabag1     / kabag123     → APPROVER  (Kepala Bagian TU)")
+  console.log("  atasan1    / atasan123    → APPROVER  (Kepala Sub-Bagian)")
+  console.log("  pegawai1   / pegawai123   → PEGAWAI")
+  console.log("  pppk1      / pppk123      → PEGAWAI")
+  console.log("  staf_dir1  / stafdir123   → PEGAWAI   (Staf Sekretariat Direktur)")
 }
 
 main()
