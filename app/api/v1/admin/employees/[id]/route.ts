@@ -5,10 +5,13 @@ import { prisma } from "@/lib/prisma"
 import { Errors } from "@/lib/errors"
 import { writeAuditLog } from "@/lib/audit"
 
+const EMPLOYEE_TYPES = ["PNS", "PPPK", "PPPK_PARUH_WAKTU", "BLUD"] as const
+
 const updateSchema = z.object({
   positionId: z.string().nullable().optional(),
-  room: z.string().optional(),
+  unitId: z.string().optional(),
   directSupervisorLegacyId: z.string().nullable().optional(),
+  employeeType: z.enum(EMPLOYEE_TYPES).optional(),
 })
 
 type Props = { params: Promise<{ id: string }> }
@@ -47,6 +50,12 @@ export async function PUT(req: NextRequest, { params }: Props) {
     }
   }
 
+  // Validasi unitId jika diisi
+  if (parsed.data.unitId) {
+    const unit = await prisma.workUnit.findUnique({ where: { id: parsed.data.unitId } })
+    if (!unit) return Errors.validation("Unit kerja tidak ditemukan")
+  }
+
   // Validasi atasan jika diisi
   if (parsed.data.directSupervisorLegacyId) {
     const supervisor = await prisma.employee.findUnique({
@@ -61,10 +70,11 @@ export async function PUT(req: NextRequest, { params }: Props) {
       ...(parsed.data.positionId !== undefined
         ? { positionId: parsed.data.positionId, positionTitle: positionName ?? null }
         : {}),
-      ...(parsed.data.room !== undefined ? { room: parsed.data.room } : {}),
+      ...(parsed.data.unitId !== undefined ? { unitId: parsed.data.unitId } : {}),
       ...(parsed.data.directSupervisorLegacyId !== undefined
         ? { directSupervisorId: parsed.data.directSupervisorLegacyId }
         : {}),
+      ...(parsed.data.employeeType !== undefined ? { employeeType: parsed.data.employeeType } : {}),
     },
     include: {
       unit: { select: { name: true } },
