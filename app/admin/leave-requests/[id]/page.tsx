@@ -100,6 +100,9 @@ export default async function AdminLeaveRequestDetailPage({ params }: Props) {
             value: `${new Date(req.startDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} — ${new Date(req.endDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} (${req.totalDays} hari)`,
           },
           { label: "Alasan", value: req.reason },
+          ...(req.addressDuringLeave
+            ? [{ label: "Alamat Selama Cuti", value: req.addressDuringLeave }]
+            : []),
           {
             label: "Pegawai Pengganti",
             value: req.delegate

@@ -87,6 +87,9 @@ export default async function LeaveRequestDetailPage({ params }: Props) {
           },
           { label: "Jumlah Hari", value: `${req.totalDays} hari` },
           { label: "Alasan", value: req.reason },
+          ...(req.addressDuringLeave
+            ? [{ label: "Alamat Selama Cuti", value: req.addressDuringLeave }]
+            : []),
           {
             label: "Pegawai Pengganti",
             value: req.delegate

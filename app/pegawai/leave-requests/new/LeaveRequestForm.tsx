@@ -32,6 +32,7 @@ export default function LeaveRequestForm({ leaveTypes, colleagues }: Props) {
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
   const [reason, setReason] = useState("")
+  const [addressDuringLeave, setAddressDuringLeave] = useState("")
   const [delegateId, setDelegateId] = useState("")
   const [files, setFiles] = useState<File[]>([])
 
@@ -94,6 +95,7 @@ export default function LeaveRequestForm({ leaveTypes, colleagues }: Props) {
           startDate,
           endDate,
           reason,
+          addressDuringLeave: addressDuringLeave || undefined,
           delegateEmployeeId: delegateId,
           attachmentFileIds: fileIds,
         }),
@@ -202,6 +204,20 @@ export default function LeaveRequestForm({ leaveTypes, colleagues }: Props) {
           required
           rows={3}
           placeholder="Tuliskan alasan pengajuan cuti..."
+          className={inputClass}
+        />
+      </div>
+
+      {/* Alamat selama cuti */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Alamat Selama Cuti <span className="text-gray-400 text-xs font-normal">(opsional)</span>
+        </label>
+        <textarea
+          value={addressDuringLeave}
+          onChange={(e) => setAddressDuringLeave(e.target.value)}
+          rows={2}
+          placeholder="Contoh: Jl. Mawar No. 5, Kel. Sukamaju, Kec. Cilandak, Jakarta Selatan"
           className={inputClass}
         />
       </div>
