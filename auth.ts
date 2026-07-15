@@ -56,12 +56,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.unitId = user.unitId
         token.nip = user.nip
       }
+      // Migrate token lama yang masih pakai field `role` (singular)
+      if (!token.roles && token.role) {
+        token.roles = [token.role]
+      }
       return token
     },
     session({ session, token }) {
       if (token) {
         session.user.id = token.id as string
-        session.user.roles = token.roles as AppRole[]
+        session.user.roles = (token.roles as AppRole[]) ?? (token.role ? [token.role as AppRole] : ["PEGAWAI"])
         session.user.employeeId = token.employeeId as string
         session.user.unitId = token.unitId as string
         session.user.nip = token.nip as string
