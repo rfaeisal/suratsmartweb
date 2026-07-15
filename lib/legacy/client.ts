@@ -76,6 +76,19 @@ const MOCK_ACCOUNTS: Record<string, { password: string; employee: LegacyEmployee
       isActive: true,
     },
   },
+  "kabag1": {
+    password: "kabag123",
+    employee: {
+      legacyId: "3001",
+      nip: "197001012000011001",
+      fullName: "Ahmad Fauzi",
+      employeeType: "PNS",
+      unit: { legacyId: "U01", name: "Bagian Umum" },
+      positionTitle: "Kepala Bagian Tata Usaha",
+      directSupervisorLegacyId: undefined,
+      isActive: true,
+    },
+  },
 }
 
 function mockValidateSSO(username: string, password: string): SSOResult {
