@@ -60,7 +60,28 @@ Response:
 ```
 
 ### 2.3 `GET /api/employees?unitId=&updatedSince=` — Sinkronisasi Massal
-Untuk job sinkronisasi berkala seluruh/sebagian data pegawai (opsional, memudahkan sync awal & incremental).
+Untuk sinkronisasi awal seluruh data pegawai dan incremental sync.
+
+Query params (semua opsional):
+- `unitId` — filter per unit kerja (legacyId unit)
+- `updatedSince` — filter pegawai yang datanya berubah sejak waktu ini (ISO 8601, mis. `2026-07-01T00:00:00Z`)
+
+Response:
+```json
+[
+  {
+    "legacyId": "12345",
+    "nip": "198501012010011001",
+    "fullName": "Budi Santoso",
+    "employeeType": "PNS",
+    "unit": { "legacyId": "U01", "name": "Bagian Umum" },
+    "positionTitle": "Staf",
+    "directSupervisorLegacyId": "12300",
+    "isActive": true
+  }
+]
+```
+> Gunakan `updatedSince` untuk incremental sync — sistem lama hanya mengembalikan pegawai yang profilnya berubah sejak timestamp tersebut, agar payload tidak terlalu besar.
 
 ### 2.4 `POST /api/leave/approved` — Terima Data Cuti yang Sudah Disetujui **(paling kritikal)**
 Dipanggil oleh Next.js setelah SK cuti terbit, agar tercatat di profil pegawai pada sistem lama.

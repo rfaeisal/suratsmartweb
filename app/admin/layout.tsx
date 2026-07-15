@@ -20,6 +20,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: "/admin/units", label: "Unit Kerja" },
     { href: "/admin/sessions", label: "Manajemen Sesi" },
     { href: "/admin/users", label: "Manajemen Pengguna" },
+    { href: "/admin/sync", label: "Sinkronisasi Pegawai" },
   ]
 
   return (

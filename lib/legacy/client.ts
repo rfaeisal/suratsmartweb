@@ -138,3 +138,19 @@ export async function getLegacyEmployee(legacyId: string): Promise<LegacyEmploye
     return null
   }
 }
+
+export async function getAllLegacyEmployees(params?: {
+  unitId?: string
+  updatedSince?: string
+}): Promise<LegacyEmployee[]> {
+  if (process.env.LEGACY_SSO_MOCK === "true") {
+    const all = Object.values(MOCK_ACCOUNTS).map((a) => a.employee)
+    if (params?.unitId) return all.filter((e) => e.unit.legacyId === params.unitId)
+    return all
+  }
+  const qs = new URLSearchParams()
+  if (params?.unitId) qs.set("unitId", params.unitId)
+  if (params?.updatedSince) qs.set("updatedSince", params.updatedSince)
+  const path = `/employees${qs.toString() ? `?${qs}` : ""}`
+  return legacyFetch<LegacyEmployee[]>(path)
+}
