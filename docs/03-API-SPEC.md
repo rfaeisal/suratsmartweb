@@ -203,9 +203,9 @@ Menetapkan atau menyusun ulang alur approval. **Hanya bisa dipanggil jika `deleg
 ```json
 {
   "steps": [
-    { "stepOrder": 1, "approverEmployeeId": "...", "roleLabel": "Atasan Langsung" },
-    { "stepOrder": 2, "approverEmployeeId": "...", "roleLabel": "Kepala Bagian TU" },
-    { "stepOrder": 3, "approverEmployeeId": "...", "roleLabel": "Wakil Direktur" }
+    { "stepOrder": 1, "approverEmployeeId": "...", "roleLabel": "Atasan Langsung (opsional)" },
+    { "stepOrder": 2, "approverEmployeeId": "...", "roleLabel": "Kepala Bagian TU (opsional)" },
+    { "stepOrder": 3, "approverEmployeeId": "..." }
   ]
 }
 ```

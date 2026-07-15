@@ -11,7 +11,7 @@ const schema = z.object({
     .array(
       z.object({
         employeeId: z.string().min(1),
-        roleLabel: z.string().min(1).max(100),
+        roleLabel: z.string().max(100).optional().default(""),
       })
     )
     .min(1)

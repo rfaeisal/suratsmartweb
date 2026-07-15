@@ -44,8 +44,8 @@ export default function SetApprovalFlowForm({ leaveRequestId, employees }: Props
     setError("")
 
     for (const s of steps) {
-      if (!s.employeeId || !s.roleLabel.trim()) {
-        setError("Semua baris harus diisi: pilih approver dan label jabatan")
+      if (!s.employeeId) {
+        setError("Pilih approver untuk setiap langkah")
         return
       }
     }
@@ -109,8 +109,7 @@ export default function SetApprovalFlowForm({ leaveRequestId, employees }: Props
                 type="text"
                 value={step.roleLabel}
                 onChange={(e) => updateStep(idx, "roleLabel", e.target.value)}
-                placeholder="Label jabatan (mis. Kepala Seksi)"
-                required
+                placeholder="Label jabatan (opsional)"
                 maxLength={100}
                 className={inputClass}
               />
