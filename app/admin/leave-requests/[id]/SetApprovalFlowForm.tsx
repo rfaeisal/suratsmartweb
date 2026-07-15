@@ -209,7 +209,16 @@ export default function SetApprovalFlowForm({ leaveRequestId, employees, noChain
               <SearchableSelect
                 options={options}
                 value={step.employeeId}
-                onChange={(val) => updateStep(idx, "employeeId", val)}
+                onChange={(val) => {
+                  const emp = employees.find((e) => e.id === val)
+                  setSteps((prev) =>
+                    prev.map((s, i) =>
+                      i === idx
+                        ? { employeeId: val, roleLabel: emp?.positionTitle ?? s.roleLabel }
+                        : s
+                    )
+                  )
+                }}
                 placeholder="Cari nama atau jabatan…"
                 inputClass={inputClass}
               />
