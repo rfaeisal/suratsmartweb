@@ -19,7 +19,8 @@ model Employee {
   unitId             String
   unit               WorkUnit     @relation(fields: [unitId], references: [id])
   positionTitle      String?
-  directSupervisorId String?      // merujuk Employee.id (bukan legacyId) atasan langsung
+  directSupervisorId String?
+  room               String?
   isActive           Boolean      @default(true)
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
