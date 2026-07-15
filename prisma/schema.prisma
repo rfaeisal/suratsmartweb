@@ -38,6 +38,15 @@ enum EmployeeType {
   BLUD
 }
 
+model Position {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  level     Int
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model WorkUnit {
   id        String     @id @default(cuid())
   name      String
