@@ -12,9 +12,9 @@ const updateRolesSchema = z.object({
     .min(1, "Minimal 1 role harus dipilih"),
 })
 
-type Props = { params: Promise<{ id: string }> }
+type Props = { params: Promise<{ userId: string }> }
 
-// GET /api/v1/admin/users/[id]/roles — lihat roles user
+// GET /api/v1/admin/users/[userId]/roles — lihat roles user
 export async function GET(_req: NextRequest, { params }: Props) {
   const session = await auth()
   if (!session?.user) return Errors.unauthorized()
@@ -22,7 +22,7 @@ export async function GET(_req: NextRequest, { params }: Props) {
     return Errors.forbidden()
   }
 
-  const { id } = await params
+  const { userId: id } = await params
   const user = await prisma.appUser.findUnique({
     where: { id },
     select: {
@@ -36,7 +36,7 @@ export async function GET(_req: NextRequest, { params }: Props) {
   return NextResponse.json(user)
 }
 
-// PUT /api/v1/admin/users/[id]/roles — set roles user (replace semua)
+// PUT /api/v1/admin/users/[userId]/roles — set roles user (replace semua)
 export async function PUT(req: NextRequest, { params }: Props) {
   const session = await auth()
   if (!session?.user) return Errors.unauthorized()
@@ -44,7 +44,7 @@ export async function PUT(req: NextRequest, { params }: Props) {
     return Errors.forbidden()
   }
 
-  const { id } = await params
+  const { userId: id } = await params
 
   let body: unknown
   try {
