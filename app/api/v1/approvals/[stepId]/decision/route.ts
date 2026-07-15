@@ -94,7 +94,25 @@ export async function POST(req: NextRequest, { params }: Props) {
       metadata: { leaveRequestId, note: note ?? null, stepOrder: step.stepOrder },
     })
 
-    if (requesterAppUserId) {
+    if (decision === "APPROVED" && !isLastStep) {
+      // Notifikasi ke approver berikutnya
+      const nextStep = allSteps.find((s: { stepOrder: number }) => s.stepOrder === step.stepOrder + 1) as
+        | { approverId: string }
+        | undefined
+      if (nextStep) {
+        const nextApproverUser = await prisma.appUser.findUnique({
+          where: { employeeId: nextStep.approverId },
+        })
+        if (nextApproverUser) {
+          await sendNotification({
+            event: "APPROVAL_REQUESTED",
+            targetUserId: nextApproverUser.id,
+            data: { leaveRequestId },
+          })
+        }
+      }
+    } else if (requesterAppUserId) {
+      // Notifikasi ke pengaju: approved (final), rejected, atau returned
       const eventMap = {
         APPROVED: "REQUEST_APPROVED",
         REJECTED: "REQUEST_REJECTED",
