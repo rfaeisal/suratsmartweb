@@ -80,7 +80,7 @@ export default async function LeaveRequestDetailPage({ params }: Props) {
         <h3 className="font-medium text-gray-900 text-sm mb-3">Detail Pengajuan</h3>
         {[
           { label: "Pegawai", value: `${req.requester.fullName} (${req.requester.nip})` },
-          { label: "Unit", value: req.requester.unit.name },
+          { label: "Unit", value: req.requester.unit?.name ?? "—" },
           {
             label: "Tanggal",
             value: `${new Date(req.startDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} — ${new Date(req.endDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}`,

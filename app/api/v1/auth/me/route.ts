@@ -28,6 +28,6 @@ export async function GET(req: NextRequest) {
     fullName: appUser.employee.fullName,
     employeeType: appUser.employee.employeeType,
     roles: appUser.roles,
-    unit: { id: appUser.employee.unit.id, name: appUser.employee.unit.name },
+    unit: appUser.employee.unit ? { id: appUser.employee.unit.id, name: appUser.employee.unit.name } : null,
   })
 }

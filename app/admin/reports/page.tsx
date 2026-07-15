@@ -209,7 +209,7 @@ export default async function ReportsPage({ searchParams }: Props) {
                     </td>
                     <td className="px-4 py-3">
                       <p className="font-medium text-gray-900">{r.requester.fullName}</p>
-                      <p className="text-xs text-gray-400">{r.requester.unit.name} · {r.requester.employeeType}</p>
+                      <p className="text-xs text-gray-400">{r.requester.unit?.name ?? "—"} · {r.requester.employeeType}</p>
                     </td>
                     <td className="px-4 py-3 text-gray-700">{r.leaveType.name}</td>
                     <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">

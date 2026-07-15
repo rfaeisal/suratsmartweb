@@ -6,10 +6,11 @@ export interface LegacyEmployee {
   nip: string
   fullName: string
   employeeType: EmployeeType
-  unit: { legacyId: string; name: string }
+  isActive: boolean
+  // Fields berikut tidak digunakan saat sync — dikelola manual di CutiSmart
+  unit?: { legacyId: string; name: string }
   positionTitle?: string
   directSupervisorLegacyId?: string
-  isActive: boolean
 }
 
 export interface SSOValidateResult {
@@ -24,6 +25,19 @@ export type SSOResult = SSOValidateResult | SSOInvalidResult
 
 // ── Akun mock untuk development ─────────────────────────────────────────────
 const MOCK_ACCOUNTS: Record<string, { password: string; employee: LegacyEmployee }> = {
+  superadmin: {
+    password: "superadmin123",
+    employee: {
+      legacyId: "9998",
+      nip: "000000000000000001",
+      fullName: "Super Administrator",
+      employeeType: "PNS",
+      unit: { legacyId: "U00", name: "Bagian Kepegawaian" },
+      positionTitle: "Admin Kepegawaian",
+      directSupervisorLegacyId: undefined,
+      isActive: true,
+    },
+  },
   admin: {
     password: "admin123",
     employee: {
@@ -128,6 +142,32 @@ const MOCK_ACCOUNTS: Record<string, { password: string; employee: LegacyEmployee
       isActive: true,
     },
   },
+  "pegawai.baru": {
+    password: "baru123",
+    employee: {
+      legacyId: "6001",
+      nip: "200001012025011001",
+      fullName: "Fajar Nugroho",
+      employeeType: "PPPK",
+      unit: { legacyId: "U01", name: "Bagian Umum" },
+      positionTitle: "Analis Kepegawaian",
+      directSupervisorLegacyId: "1001",
+      isActive: true,
+    },
+  },
+  "pegawai.baru2": {
+    password: "baru123",
+    employee: {
+      legacyId: "6002",
+      nip: "199805152024012001",
+      fullName: "Wulandari Putri",
+      employeeType: "BLUD",
+      unit: { legacyId: "U01", name: "Bagian Umum" },
+      positionTitle: "Pengelola Administrasi",
+      directSupervisorLegacyId: "2001",
+      isActive: true,
+    },
+  },
 }
 
 function mockValidateSSO(username: string, password: string): SSOResult {
@@ -197,7 +237,7 @@ export async function getAllLegacyEmployees(params?: {
 }): Promise<LegacyEmployee[]> {
   if (process.env.LEGACY_SSO_MOCK === "true") {
     const all = Object.values(MOCK_ACCOUNTS).map((a) => a.employee)
-    if (params?.unitId) return all.filter((e) => e.unit.legacyId === params.unitId)
+    if (params?.unitId) return all.filter((e) => e.unit?.legacyId === params.unitId)
     return all
   }
   const qs = new URLSearchParams()

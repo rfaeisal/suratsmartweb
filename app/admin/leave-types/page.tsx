@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import type { EmployeeType } from "@prisma/client"
+import LeaveTypesTable from "./LeaveTypesTable"
 
 async function createLeaveType(formData: FormData) {
   "use server"
@@ -39,7 +40,7 @@ export default async function LeaveTypesPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Jenis Cuti</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Master Jenis Cuti</h2>
           <p className="text-sm text-gray-500 mt-1">Kelola master data jenis cuti dan aturannya</p>
         </div>
       </div>
@@ -120,88 +121,7 @@ export default async function LeaveTypesPage() {
       </div>
 
       {/* Tabel jenis cuti */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Kode</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Nama</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Berlaku untuk</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Kuota (hari)</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Lampiran</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Status</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-700">Aksi</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {leaveTypes.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
-                  Belum ada jenis cuti. Tambahkan di atas.
-                </td>
-              </tr>
-            )}
-            {leaveTypes.map((lt) => (
-              <tr key={lt.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 font-mono text-xs text-gray-600">{lt.code}</td>
-                <td className="px-4 py-3 text-gray-900">{lt.name}</td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-1 flex-wrap">
-                    {lt.applicableTo.map((et) => (
-                      <span
-                        key={et}
-                        className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700"
-                      >
-                        {et}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-gray-600">
-                  {lt.defaultQuotaDays ?? <span className="text-gray-400">–</span>}
-                </td>
-                <td className="px-4 py-3 text-gray-600">
-                  {lt.requiresAttachment ? "Wajib" : "Opsional"}
-                </td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                      lt.isActive
-                        ? "bg-green-50 text-green-700"
-                        : "bg-gray-100 text-gray-500"
-                    }`}
-                  >
-                    {lt.isActive ? "Aktif" : "Nonaktif"}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <form action={toggleLeaveType.bind(null, lt.id, !lt.isActive)}>
-                    <button
-                      type="submit"
-                      title={lt.isActive ? "Nonaktifkan" : "Aktifkan"}
-                      className={`p-1.5 rounded-lg transition-colors ${
-                        lt.isActive
-                          ? "text-amber-500 hover:text-amber-700 hover:bg-amber-50"
-                          : "text-green-500 hover:text-green-700 hover:bg-green-50"
-                      }`}
-                    >
-                      {lt.isActive ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>
-                        </svg>
-                      ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-                        </svg>
-                      )}
-                    </button>
-                  </form>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <LeaveTypesTable leaveTypes={leaveTypes} toggleAction={toggleLeaveType} />
     </div>
   )
 }

@@ -2,149 +2,247 @@
 
 import { useState } from "react"
 
-interface SyncResult {
+interface PreviewEmployee {
+  legacyId: string
+  nip: string
+  fullName: string
+}
+
+interface PreviewResult {
+  totalFromLegacy: number
+  newCount: number
+  employees: PreviewEmployee[]
+}
+
+interface ImportResult {
   total: number
-  synced: number
+  imported: number
+  skipped: number
   failed: number
   errors: { legacyId: string; fullName: string; error: string }[]
 }
 
-interface Props {
-  units: { id: string; name: string }[]
-}
+export default function SyncEmployeesForm() {
+  const [previewing, setPreviewing] = useState(false)
+  const [preview, setPreview] = useState<PreviewResult | null>(null)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState<ImportResult | null>(null)
+  const [error, setError] = useState("")
 
-export default function SyncEmployeesForm({ units }: Props) {
-  const [unitId, setUnitId] = useState("")
-  const [updatedSince, setUpdatedSince] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<SyncResult | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  async function handlePreview() {
+    setPreviewing(true)
+    setPreview(null)
+    setImportResult(null)
+    setSelected(new Set())
+    setError("")
+    try {
+      const res = await fetch("/api/v1/admin/sync/employees")
+      const data = await res.json()
+      if (!res.ok) { setError(data.error?.message ?? "Gagal mengambil data"); return }
+      setPreview(data)
+      setSelected(new Set(data.employees.map((e: PreviewEmployee) => e.legacyId)))
+    } catch {
+      setError("Koneksi gagal")
+    } finally {
+      setPreviewing(false)
+    }
+  }
 
-  async function handleSync() {
-    setLoading(true)
-    setResult(null)
-    setError(null)
+  function toggleAll() {
+    if (!preview) return
+    if (selected.size === preview.employees.length) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(preview.employees.map((e) => e.legacyId)))
+    }
+  }
 
-    const body: Record<string, string> = {}
-    if (unitId) body.unitId = unitId
-    if (updatedSince) body.updatedSince = new Date(updatedSince).toISOString()
+  function toggleOne(legacyId: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(legacyId)) next.delete(legacyId)
+      else next.add(legacyId)
+      return next
+    })
+  }
 
+  async function handleImport() {
+    if (selected.size === 0) return
+    setImporting(true)
+    setError("")
     try {
       const res = await fetch("/api/v1/admin/sync/employees", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ legacyIds: [...selected] }),
       })
       const data = await res.json()
-      if (!res.ok && res.status !== 207) {
-        setError(data.error?.message ?? "Gagal menghubungi server")
-      } else {
-        setResult(data)
-      }
+      if (!res.ok && res.status !== 207) { setError(data.error?.message ?? "Gagal mengimpor"); return }
+      setImportResult(data)
+      setPreview(null)
+      setSelected(new Set())
     } catch {
       setError("Koneksi gagal")
     } finally {
-      setLoading(false)
+      setImporting(false)
     }
   }
 
+  const allSelected = preview ? selected.size === preview.employees.length : false
+  const someSelected = selected.size > 0 && !allSelected
+
   return (
     <div className="space-y-6">
-      {/* Filter */}
+      {/* Tombol cek */}
       <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4">Filter Sinkronisasi</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Unit Kerja</label>
-            <select
-              value={unitId}
-              onChange={(e) => setUnitId(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Semua Unit</option>
-              {units.map((u) => (
-                <option key={u.id} value={u.id}>{u.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Diperbarui Sejak <span className="text-gray-400">(opsional, untuk incremental sync)</span>
-            </label>
-            <input
-              type="datetime-local"
-              value={updatedSince}
-              onChange={(e) => setUpdatedSince(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-        <div className="mt-4 flex items-center gap-3">
-          <button
-            onClick={handleSync}
-            disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-          >
-            {loading ? "Menyinkronkan…" : "Tarik & Sinkronkan Data Pegawai"}
-          </button>
-          {loading && (
-            <span className="text-sm text-gray-500">Menghubungi sistem lama…</span>
-          )}
-        </div>
+        <h2 className="text-sm font-semibold text-gray-900 mb-3">Cari Pegawai Baru dari Sistem Lama</h2>
+        <p className="text-xs text-gray-500 mb-4">
+          Sistem akan memeriksa daftar pegawai di sistem kepegawaian lama dan menampilkan pegawai yang NIP-nya belum terdaftar di CutiSmart.
+        </p>
+        <button
+          onClick={handlePreview}
+          disabled={previewing}
+          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+        >
+          {previewing ? "Mengambil data…" : "Cek Pegawai Baru"}
+        </button>
       </div>
 
-      {/* Error */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">
-          {error}
-        </div>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{error}</div>
       )}
 
-      {/* Result */}
-      {result && (
+      {/* Hasil import */}
+      {importResult && (
         <div className="space-y-4">
-          {/* Summary cards */}
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900">{result.total}</p>
-              <p className="text-xs text-gray-500 mt-0.5">Total Pegawai</p>
+              <p className="text-2xl font-bold text-gray-900">{importResult.total}</p>
+              <p className="text-xs text-gray-500 mt-0.5">Dipilih</p>
             </div>
             <div className="bg-white rounded-xl border border-green-200 p-4 text-center">
-              <p className="text-2xl font-bold text-green-700">{result.synced}</p>
-              <p className="text-xs text-gray-500 mt-0.5">Berhasil Disinkronkan</p>
+              <p className="text-2xl font-bold text-green-700">{importResult.imported}</p>
+              <p className="text-xs text-gray-500 mt-0.5">Berhasil Diimpor</p>
             </div>
-            <div className={`bg-white rounded-xl border p-4 text-center ${result.failed > 0 ? "border-red-200" : "border-gray-200"}`}>
-              <p className={`text-2xl font-bold ${result.failed > 0 ? "text-red-600" : "text-gray-400"}`}>{result.failed}</p>
+            <div className={`bg-white rounded-xl border p-4 text-center ${importResult.failed > 0 ? "border-red-200" : "border-gray-200"}`}>
+              <p className={`text-2xl font-bold ${importResult.failed > 0 ? "text-red-600" : "text-gray-400"}`}>
+                {importResult.failed}
+              </p>
               <p className="text-xs text-gray-500 mt-0.5">Gagal</p>
             </div>
           </div>
 
-          {/* Success banner */}
-          {result.failed === 0 && (
+          {importResult.imported > 0 && importResult.failed === 0 && (
             <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-700">
-              Semua {result.total} data pegawai berhasil disinkronkan.
+              {importResult.imported} pegawai baru berhasil ditambahkan ke CutiSmart.
             </div>
           )}
 
-          {/* Error detail */}
-          {result.errors.length > 0 && (
+          {importResult.errors.length > 0 && (
             <div className="bg-white rounded-xl border border-red-200 overflow-hidden">
-              <div className="px-5 py-3 border-b border-red-100 bg-red-50">
-                <p className="text-sm font-semibold text-red-700">
-                  {result.errors.length} pegawai gagal disinkronkan
-                </p>
+              <div className="px-4 py-3 border-b border-red-100 bg-red-50">
+                <p className="text-sm font-semibold text-red-700">{importResult.errors.length} gagal diimpor</p>
               </div>
               <div className="divide-y divide-gray-100">
-                {result.errors.map((e) => (
-                  <div key={e.legacyId} className="px-5 py-3 flex items-start gap-3">
-                    <div className="flex-1 min-w-0">
+                {importResult.errors.map((e) => (
+                  <div key={e.legacyId} className="px-4 py-3 flex items-start gap-3">
+                    <div className="flex-1">
                       <p className="text-sm font-medium text-gray-900">{e.fullName}</p>
-                      <p className="text-xs text-gray-400">ID: {e.legacyId}</p>
                     </div>
                     <p className="text-xs text-red-600 text-right max-w-xs">{e.error}</p>
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+        </div>
+      )}
+
+      {/* Preview daftar pegawai baru */}
+      {preview && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">
+                {preview.newCount === 0
+                  ? "Tidak ada pegawai baru"
+                  : `${preview.newCount} pegawai baru ditemukan`}
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Total di sistem lama: {preview.totalFromLegacy} •{" "}
+                Sudah ada di CutiSmart: {preview.totalFromLegacy - preview.newCount}
+              </p>
+            </div>
+            {preview.newCount > 0 && (
+              <button
+                onClick={handleImport}
+                disabled={importing || selected.size === 0}
+                className="px-4 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors shrink-0"
+              >
+                {importing ? "Mengimpor…" : `Import ${selected.size} Pegawai`}
+              </button>
+            )}
+          </div>
+
+          {preview.newCount === 0 ? (
+            <div className="px-4 py-10 text-center text-sm text-gray-400">
+              Semua pegawai dari sistem lama sudah ada di CutiSmart.
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50">
+                  <th className="px-4 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      ref={(el) => { if (el) el.indeterminate = someSelected }}
+                      onChange={toggleAll}
+                      className="rounded"
+                    />
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">NIP</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nama Pegawai</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {preview.employees.map((emp) => (
+                  <tr
+                    key={emp.legacyId}
+                    className="hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => toggleOne(emp.legacyId)}
+                  >
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(emp.legacyId)}
+                        onChange={() => toggleOne(emp.legacyId)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="rounded"
+                      />
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-600">{emp.nip}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900">{emp.fullName}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {preview.newCount > 0 && (
+            <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
+              <span className="text-xs text-gray-400">
+                {selected.size} dari {preview.newCount} dipilih
+              </span>
+              <button
+                onClick={handleImport}
+                disabled={importing || selected.size === 0}
+                className="px-4 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+              >
+                {importing ? "Mengimpor…" : `Import ${selected.size} Pegawai`}
+              </button>
             </div>
           )}
         </div>

@@ -7,7 +7,7 @@ declare module "next-auth" {
       id: string
       roles: AppRole[]
       employeeId: string
-      unitId: string
+      unitId: string | null
       nip: string
     } & DefaultSession["user"]
   }
@@ -16,7 +16,7 @@ declare module "next-auth" {
     id: string
     roles: AppRole[]
     employeeId: string
-    unitId: string
+    unitId: string | null
     nip: string
     name: string
   }

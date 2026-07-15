@@ -30,12 +30,14 @@ Response sukses (200):
     "nip": "198501012010011001",
     "fullName": "Nama Pegawai",
     "employeeType": "PNS",
-    "unit": { "legacyId": "U01", "name": "Bagian Umum" },
-    "positionTitle": "Staf",
-    "directSupervisorLegacyId": "12300"
+    "isActive": true
   }
 }
 ```
+Nilai yang valid untuk `employeeType`: `PNS`, `PPPK`, `PPPK_PARUH_WAKTU`, `BLUD`.
+
+> **Catatan**: field `unit`, `positionTitle`, dan `directSupervisorLegacyId` **tidak perlu disertakan** — data ini dikelola secara manual oleh admin kepegawaian di CutiSmart dan tidak diambil dari sistem lama.
+
 Response gagal (200 dengan `valid: false`, atau 401):
 ```json
 { "valid": false, "message": "Username atau password salah" }
@@ -43,7 +45,7 @@ Response gagal (200 dengan `valid: false`, atau 401):
 > Catatan keamanan: endpoint ini menerima password pegawai dari Next.js — pastikan dikirim hanya via HTTPS/jaringan internal terenkripsi, dan sistem lama **tidak boleh mengembalikan password** dalam bentuk apa pun.
 
 ### 2.2 `GET /api/employees/:legacyId` — Ambil Detail Pegawai
-Untuk sinkronisasi data profil terbaru (unit, jabatan, atasan) secara berkala atau saat dibutuhkan.
+Untuk pencocokan data identitas pegawai secara individual.
 
 Response:
 ```json
@@ -52,18 +54,15 @@ Response:
   "nip": "...",
   "fullName": "...",
   "employeeType": "PNS",
-  "unit": { "legacyId": "U01", "name": "Bagian Umum" },
-  "positionTitle": "...",
-  "directSupervisorLegacyId": "...",
   "isActive": true
 }
 ```
+> Field `unit`, `positionTitle`, dan `directSupervisorLegacyId` tidak perlu disertakan.
 
-### 2.3 `GET /api/employees?unitId=&updatedSince=` — Sinkronisasi Massal
+### 2.3 `GET /api/employees?updatedSince=` — Sinkronisasi Massal
 Untuk sinkronisasi awal seluruh data pegawai dan incremental sync.
 
 Query params (semua opsional):
-- `unitId` — filter per unit kerja (legacyId unit)
 - `updatedSince` — filter pegawai yang datanya berubah sejak waktu ini (ISO 8601, mis. `2026-07-01T00:00:00Z`)
 
 Response:
@@ -74,13 +73,12 @@ Response:
     "nip": "198501012010011001",
     "fullName": "Budi Santoso",
     "employeeType": "PNS",
-    "unit": { "legacyId": "U01", "name": "Bagian Umum" },
-    "positionTitle": "Staf",
-    "directSupervisorLegacyId": "12300",
     "isActive": true
   }
 ]
 ```
+> Field `unit`, `positionTitle`, dan `directSupervisorLegacyId` tidak perlu disertakan — CutiSmart tidak menggunakannya saat sinkronisasi.
+
 > Gunakan `updatedSince` untuk incremental sync — sistem lama hanya mengembalikan pegawai yang profilnya berubah sejak timestamp tersebut, agar payload tidak terlalu besar.
 
 ### 2.4 `POST /api/leave/approved` — Terima Data Cuti yang Sudah Disetujui **(paling kritikal)**

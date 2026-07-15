@@ -14,6 +14,7 @@ export default function UserRolesForm({ userId, currentRoles, allRoles }: Props)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
   function toggle(role: string) {
+    if (role === "PEGAWAI") return
     setSelected((prev) =>
       prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
     )
@@ -49,17 +50,21 @@ export default function UserRolesForm({ userId, currentRoles, allRoles }: Props)
   return (
     <div className="flex flex-col items-end gap-2 shrink-0">
       <div className="flex flex-wrap gap-2 justify-end">
-        {allRoles.map((role) => (
-          <label key={role} className="flex items-center gap-1.5 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={selected.includes(role)}
-              onChange={() => toggle(role)}
-              className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span className="text-xs text-gray-700">{role}</span>
-          </label>
-        ))}
+        {allRoles.map((role) => {
+          const locked = role === "PEGAWAI"
+          return (
+            <label key={role} className={`flex items-center gap-1.5 select-none ${locked ? "cursor-default opacity-60" : "cursor-pointer"}`}>
+              <input
+                type="checkbox"
+                checked={selected.includes(role)}
+                onChange={() => toggle(role)}
+                disabled={locked}
+                className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:cursor-default"
+              />
+              <span className="text-xs text-gray-700">{role}</span>
+            </label>
+          )
+        })}
       </div>
       <div className="flex items-center gap-2">
         {msg && (

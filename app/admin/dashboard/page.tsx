@@ -196,7 +196,7 @@ export default async function DashboardPage() {
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">{r.requester.fullName}</p>
-                  <p className="text-xs text-gray-500">{r.leaveType.name} — {r.requester.unit.name}</p>
+                  <p className="text-xs text-gray-500">{r.leaveType.name} — {r.requester.unit?.name ?? "—"}</p>
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded font-medium shrink-0 ${STATUS_COLOR[r.status] ?? ""}`}>
                   {STATUS_LABELS[r.status] ?? r.status}

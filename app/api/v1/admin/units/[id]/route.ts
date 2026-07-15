@@ -28,7 +28,11 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     where: { id },
     include: {
       parent: { select: { id: true, name: true } },
-      children: { select: { id: true, name: true } },
+      children: { select: { id: true, name: true, _count: { select: { employees: true } } }, orderBy: { name: "asc" } },
+      employees: {
+        include: { position: { select: { name: true, level: true } } },
+        orderBy: { fullName: "asc" },
+      },
     },
   })
   if (!unit) return Errors.notFound("Unit kerja")
@@ -68,6 +72,50 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     return Errors.validation("Unit kerja tidak bisa menjadi parent dari dirinya sendiri")
   }
 
-  const updated = await prisma.workUnit.update({ where: { id }, data: parsed.data })
+  if (parsed.data.parentId) {
+    const parent = await prisma.workUnit.findUnique({ where: { id: parsed.data.parentId } })
+    if (!parent) return Errors.notFound("Unit kerja induk")
+  }
+
+  const updated = await prisma.workUnit.update({
+    where: { id },
+    data: {
+      ...(parsed.data.name !== undefined ? { name: parsed.data.name } : {}),
+      ...(parsed.data.parentId !== undefined ? { parentId: parsed.data.parentId } : {}),
+    },
+    include: {
+      parent: { select: { id: true, name: true } },
+      _count: { select: { employees: true } },
+    },
+  })
   return NextResponse.json(updated)
+}
+
+export async function DELETE(req: NextRequest, { params }: RouteParams) {
+  try {
+    await requireAuth(req, ["ADMIN_KEPEGAWAIAN", "SUPERADMIN"])
+  } catch (err) {
+    if (err instanceof AuthError) {
+      if (err.code === "FORBIDDEN") return Errors.forbidden()
+      if (err.code === "SESSION_REVOKED") return Errors.sessionRevoked()
+      return Errors.unauthorized(err.message)
+    }
+    return Errors.internal()
+  }
+
+  const { id } = await params
+
+  const unit = await prisma.workUnit.findUnique({
+    where: { id },
+    include: { _count: { select: { employees: true, children: true } } },
+  })
+  if (!unit) return Errors.notFound("Unit kerja")
+
+  if (unit._count.employees > 0)
+    return Errors.validation(`Unit masih memiliki ${unit._count.employees} pegawai. Pindahkan pegawai terlebih dahulu.`)
+  if (unit._count.children > 0)
+    return Errors.validation("Unit masih memiliki sub-unit. Hapus sub-unit terlebih dahulu.")
+
+  await prisma.workUnit.delete({ where: { id } })
+  return new NextResponse(null, { status: 204 })
 }

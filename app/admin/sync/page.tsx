@@ -1,6 +1,5 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { prisma } from "@/lib/prisma"
 import SyncEmployeesForm from "./SyncEmployeesForm"
 
 export default async function SyncPage() {
@@ -10,23 +9,20 @@ export default async function SyncPage() {
     redirect("/pegawai/dashboard")
   }
 
-  const units = await prisma.workUnit.findMany({ orderBy: { name: "asc" } })
-
   return (
     <div>
       <h1 className="text-xl font-bold text-gray-900 mb-1">Sinkronisasi Data Pegawai</h1>
       <p className="text-sm text-gray-500 mb-6">
-        Tarik data pegawai terbaru dari sistem kepegawaian lama ke database CutiSmart.
-        Data yang sudah ada akan diperbarui, data baru akan ditambahkan.
+        Cek dan impor pegawai dari sistem kepegawaian lama yang belum terdaftar di CutiSmart.
+        Pencocokan dilakukan berdasarkan NIP — pegawai yang NIP-nya sudah ada di CutiSmart akan diabaikan.
       </p>
 
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-sm text-amber-800">
-        <strong>Catatan:</strong> Sinkronisasi otomatis terjadi setiap kali pegawai login.
-        Gunakan fitur ini untuk sinkronisasi massal — misalnya saat pertama kali setup,
-        atau setelah ada perubahan data besar di sistem lama.
+        <strong>Catatan:</strong> Data pegawai yang sudah ada tidak akan diubah oleh fitur ini.
+        Gunakan saat ada pegawai baru di sistem lama yang belum memiliki akun CutiSmart.
       </div>
 
-      <SyncEmployeesForm units={units} />
+      <SyncEmployeesForm />
     </div>
   )
 }

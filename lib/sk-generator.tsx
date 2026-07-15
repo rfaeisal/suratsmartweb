@@ -189,7 +189,7 @@ export async function generateAndSaveSkPdf(leaveRequestId: string): Promise<{
     requesterName: req.requester.fullName,
     requesterNip: req.requester.nip,
     requesterPosition: req.requester.positionTitle ?? "—",
-    requesterUnit: req.requester.unit.name,
+    requesterUnit: req.requester.unit?.name ?? "—",
     leaveTypeName: req.leaveType.name,
     startDate: new Date(req.startDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }),
     endDate: new Date(req.endDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }),

@@ -51,7 +51,7 @@ export default async function AdminLeaveRequestDetailPage({ params }: Props) {
   if (!req) notFound()
 
   // Bangun rantai atasan pengaju secara rekursif via directSupervisorId (legacyId)
-  const superiorChain: { id: string; fullName: string; positionTitle: string | null; unit: { name: string } }[] = []
+  const superiorChain: { id: string; fullName: string; positionTitle: string | null; unit: { name: string } | null }[] = []
   let nextLegacyId: string | null = req.requester.directSupervisorId ?? null
   const visited = new Set<string>()
   while (nextLegacyId && !visited.has(nextLegacyId)) {
@@ -111,7 +111,7 @@ export default async function AdminLeaveRequestDetailPage({ params }: Props) {
             label: "Pegawai",
             value: `${req.requester.fullName} (${req.requester.nip}) — ${req.requester.employeeType}`,
           },
-          { label: "Unit", value: req.requester.unit.name },
+          { label: "Unit", value: req.requester.unit?.name ?? "—" },
           { label: "Jabatan", value: req.requester.positionTitle ?? "—" },
           {
             label: "Tanggal",

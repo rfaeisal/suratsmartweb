@@ -1,12 +1,18 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import Link from "next/link"
 import EmployeeEditForm from "./EmployeeEditForm"
 
 interface PositionInfo {
   id: string
   name: string
   level: number
+}
+
+interface WorkUnitInfo {
+  id: string
+  name: string
 }
 
 interface Supervisor {
@@ -24,7 +30,6 @@ interface EmployeeRow {
   positionTitle: string | null
   positionId: string | null
   position: PositionInfo | null
-  room: string | null
   directSupervisorId: string | null
   isActive: boolean
   unit: { id: string; name: string }
@@ -49,6 +54,7 @@ interface EmployeeOption {
 const EMPLOYEE_TYPE_LABELS: Record<string, string> = {
   PNS: "PNS",
   PPPK: "PPPK",
+  PPPK_PARUH_WAKTU: "PPPK Paruh Waktu",
   BLUD: "BLUD",
 }
 
@@ -56,11 +62,12 @@ export default function EmployeesPage() {
   const [data, setData] = useState<PageData | null>(null)
   const [allEmployees, setAllEmployees] = useState<EmployeeOption[]>([])
   const [positions, setPositions] = useState<PositionInfo[]>([])
+  const [workUnits, setWorkUnits] = useState<WorkUnitInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
   const [search, setSearch] = useState("")
-  const [unitId, setUnitId] = useState("")
+  const [filterUnitId, setFilterUnitId] = useState("")
   const [employeeType, setEmployeeType] = useState("")
   const [page, setPage] = useState(1)
 
@@ -70,7 +77,7 @@ export default function EmployeesPage() {
     try {
       const qs = new URLSearchParams()
       if (search) qs.set("search", search)
-      if (unitId) qs.set("unitId", unitId)
+      if (filterUnitId) qs.set("unitId", filterUnitId)
       if (employeeType) qs.set("employeeType", employeeType)
       qs.set("page", String(page))
       const res = await fetch(`/api/v1/admin/employees?${qs}`)
@@ -81,12 +88,11 @@ export default function EmployeesPage() {
     } finally {
       setLoading(false)
     }
-  }, [search, unitId, employeeType, page])
+  }, [search, filterUnitId, employeeType, page])
 
   useEffect(() => { fetchData() }, [fetchData])
 
   useEffect(() => {
-    // Load semua pegawai untuk dropdown atasan
     fetch("/api/v1/admin/employees?page=1&perPage=1000")
       .then((r) => r.json())
       .then((d: PageData) =>
@@ -96,16 +102,20 @@ export default function EmployeesPage() {
       )
       .catch(() => {})
 
-    // Load master jabatan
     fetch("/api/v1/admin/positions")
       .then((r) => r.json())
       .then((list: PositionInfo[]) => setPositions(list))
+      .catch(() => {})
+
+    fetch("/api/v1/admin/units")
+      .then((r) => r.json())
+      .then((list: WorkUnitInfo[]) => setWorkUnits(list))
       .catch(() => {})
   }, [])
 
   function handleSaved(
     id: string,
-    updated: { positionId: string | null; positionName: string | null; room: string | null; directSupervisorId: string | null }
+    updated: { positionId: string | null; positionName: string | null; unitId: string; unitName: string; directSupervisorId: string | null; employeeType: string }
   ) {
     if (!data) return
     const supervisorInfo = updated.directSupervisorId
@@ -122,47 +132,101 @@ export default function EmployeesPage() {
               position: updated.positionId
                 ? (positions.find((p) => p.id === updated.positionId) ?? null)
                 : null,
-              room: updated.room,
+              unit: { id: updated.unitId, name: updated.unitName },
               directSupervisorId: updated.directSupervisorId,
               supervisor: supervisorInfo
                 ? { legacyId: supervisorInfo.legacyId, fullName: supervisorInfo.fullName, positionTitle: supervisorInfo.positionTitle }
                 : null,
+              employeeType: updated.employeeType,
             }
           : e
       ),
     })
   }
 
-  const inputClass = "px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+  const activeFilterCount = [search, filterUnitId, employeeType].filter(Boolean).length
 
   return (
     <div>
       <h1 className="text-xl font-bold text-gray-900 mb-5">Daftar Pegawai</h1>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-5">
-        <input
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-          placeholder="Cari nama / NIP / jabatan…"
-          className={`${inputClass} w-64`}
-        />
-        <select
-          value={employeeType}
-          onChange={(e) => { setEmployeeType(e.target.value); setPage(1) }}
-          className={inputClass}
-        >
-          <option value="">Semua tipe</option>
-          {Object.entries(EMPLOYEE_TYPE_LABELS).map(([v, l]) => (
-            <option key={v} value={v}>{l}</option>
+      <div className="bg-white border border-gray-200 rounded-xl p-4 mb-5 space-y-3">
+        {/* Row 1: search + unit */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          {/* Search */}
+          <div className="relative flex-1">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+              placeholder="Cari nama, NIP, atau jabatan…"
+              className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            {search && (
+              <button
+                onClick={() => { setSearch(""); setPage(1) }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            )}
+          </div>
+
+          {/* Unit select */}
+          <div className="relative sm:w-56">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            <select
+              value={filterUnitId}
+              onChange={(e) => { setFilterUnitId(e.target.value); setPage(1) }}
+              className="w-full appearance-none pl-8 pr-8 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Semua unit kerja</option>
+              {[...workUnits].sort((a, b) => a.name.localeCompare(b.name)).map((u) => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+            <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+        </div>
+
+        {/* Row 2: tipe pegawai pills + reset */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-gray-400 font-medium shrink-0">Tipe:</span>
+          {[{ value: "", label: "Semua" }, ...Object.entries(EMPLOYEE_TYPE_LABELS).map(([v, l]) => ({ value: v, label: l }))].map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => { setEmployeeType(value); setPage(1) }}
+              className={`px-3 py-1 text-xs font-medium rounded-lg border transition-colors ${
+                employeeType === value
+                  ? "bg-blue-600 text-white border-blue-600"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:text-gray-800"
+              }`}
+            >
+              {label}
+            </button>
           ))}
-        </select>
-        <button
-          onClick={() => { setSearch(""); setUnitId(""); setEmployeeType(""); setPage(1) }}
-          className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
-        >
-          Reset
-        </button>
+
+          {activeFilterCount > 0 && (
+            <button
+              onClick={() => { setSearch(""); setFilterUnitId(""); setEmployeeType(""); setPage(1) }}
+              className="ml-auto flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg border border-red-100 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+              Reset filter ({activeFilterCount})
+            </button>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -173,7 +237,7 @@ export default function EmployeesPage() {
         <div className="py-16 text-center text-sm text-gray-400">Memuat…</div>
       ) : !data || data.data.length === 0 ? (
         <div className="py-16 text-center text-sm text-gray-400">
-          {search || employeeType ? "Tidak ada pegawai yang cocok dengan filter." : "Belum ada data pegawai. Lakukan sinkronisasi terlebih dahulu."}
+          {search || filterUnitId || employeeType ? "Tidak ada pegawai yang cocok dengan filter." : "Belum ada data pegawai. Lakukan sinkronisasi terlebih dahulu."}
         </div>
       ) : (
         <>
@@ -187,9 +251,8 @@ export default function EmployeesPage() {
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50">
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nama / NIP</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Unit</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Unit Kerja</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Jabatan</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Ruangan</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Atasan Langsung</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tipe</th>
                     <th className="px-4 py-3"></th>
@@ -205,7 +268,14 @@ export default function EmployeesPage() {
                           <p className="font-medium text-gray-900">{emp.fullName}</p>
                           <p className="text-xs text-gray-400 mt-0.5">{emp.nip}</p>
                         </td>
-                        <td className="px-4 py-3 text-gray-600">{emp.unit.name}</td>
+                        <td className="px-4 py-3">
+                          <Link
+                            href={`/admin/units/${emp.unit.id}`}
+                            className="text-blue-600 hover:text-blue-800 hover:underline"
+                          >
+                            {emp.unit.name}
+                          </Link>
+                        </td>
                         <td className="px-4 py-3">
                           {jabatan ? (
                             <div>
@@ -217,9 +287,6 @@ export default function EmployeesPage() {
                           ) : (
                             <span className="text-gray-300 italic">—</span>
                           )}
-                        </td>
-                        <td className="px-4 py-3 text-gray-600">
-                          {emp.room ?? <span className="text-gray-300 italic">—</span>}
                         </td>
                         <td className="px-4 py-3 text-gray-600">
                           {emp.supervisor ? (
@@ -237,9 +304,10 @@ export default function EmployeesPage() {
                           <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                             emp.employeeType === "PNS" ? "bg-blue-50 text-blue-700" :
                             emp.employeeType === "PPPK" ? "bg-green-50 text-green-700" :
+                            emp.employeeType === "PPPK_PARUH_WAKTU" ? "bg-teal-50 text-teal-700" :
                             "bg-amber-50 text-amber-700"
                           }`}>
-                            {emp.employeeType}
+                            {EMPLOYEE_TYPE_LABELS[emp.employeeType] ?? emp.employeeType}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right">
@@ -247,10 +315,12 @@ export default function EmployeesPage() {
                             employeeId={emp.id}
                             initial={{
                               positionId: emp.positionId,
-                              room: emp.room,
+                              unitId: emp.unit.id,
                               directSupervisorId: emp.directSupervisorId,
+                              employeeType: emp.employeeType,
                             }}
                             positions={positions}
+                            workUnits={workUnits}
                             allEmployees={allEmployees}
                             onSaved={(updated) => handleSaved(emp.id, updated)}
                           />
@@ -289,3 +359,4 @@ export default function EmployeesPage() {
     </div>
   )
 }
+

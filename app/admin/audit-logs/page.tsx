@@ -1,3 +1,5 @@
+import { auth } from "@/auth"
+import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
 
@@ -24,6 +26,9 @@ const ACTION_LABELS: Record<string, string> = {
 }
 
 export default async function AuditLogsPage({ searchParams }: Props) {
+  const session = await auth()
+  if (!session?.user?.roles.includes("SUPERADMIN")) redirect("/admin/dashboard")
+
   const {
     action,
     entityType,

@@ -88,7 +88,7 @@ export default async function DelegateInboxPage() {
                 <div>
                   <p className="font-medium text-gray-900">{req.requester.fullName}</p>
                   <p className="text-xs text-gray-500">
-                    {req.requester.positionTitle} — {req.requester.unit.name}
+                    {req.requester.positionTitle} — {req.requester.unit?.name ?? "—"}
                   </p>
                 </div>
                 <span className="text-xs text-gray-400 shrink-0">

@@ -1,13 +1,14 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { SearchableSelect, type SelectOption } from "@/components/SearchableSelect"
 
 interface Employee {
   id: string
   fullName: string
   positionTitle: string | null
-  unit: { name: string }
+  unit: { name: string } | null
 }
 
 interface Props {
@@ -19,105 +20,6 @@ interface Props {
 interface StepRow {
   employeeId: string
   roleLabel: string
-}
-
-// ── Searchable dropdown ───────────────────────────────────────────────────────
-
-interface SelectOption {
-  value: string
-  label: string
-  sub: string
-}
-
-function SearchableSelect({
-  options,
-  value,
-  onChange,
-  placeholder,
-  inputClass,
-}: {
-  options: SelectOption[]
-  value: string
-  onChange: (value: string) => void
-  placeholder?: string
-  inputClass: string
-}) {
-  const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState("")
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    function onClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-        setQuery("")
-      }
-    }
-    document.addEventListener("mousedown", onClickOutside)
-    return () => document.removeEventListener("mousedown", onClickOutside)
-  }, [])
-
-  const selected = options.find((o) => o.value === value)
-  const filtered = query
-    ? options.filter(
-        (o) =>
-          o.label.toLowerCase().includes(query.toLowerCase()) ||
-          o.sub.toLowerCase().includes(query.toLowerCase())
-      )
-    : options
-
-  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setQuery(e.target.value)
-    setOpen(true)
-    if (!e.target.value) onChange("")
-  }
-
-  function handleFocus() {
-    setQuery("")
-    setOpen(true)
-  }
-
-  function select(val: string) {
-    onChange(val)
-    setOpen(false)
-    setQuery("")
-  }
-
-  return (
-    <div ref={containerRef} className="relative">
-      <input
-        type="text"
-        value={open ? query : (selected?.label ?? "")}
-        onChange={handleInputChange}
-        onFocus={handleFocus}
-        placeholder={placeholder}
-        autoComplete="off"
-        className={inputClass}
-      />
-      {open && (
-        <div className="absolute z-50 top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
-          {filtered.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-gray-400">Tidak ada hasil</p>
-          ) : (
-            filtered.map((o) => (
-              <button
-                key={o.value}
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => select(o.value)}
-                className={`w-full text-left px-3 py-2 hover:bg-blue-50 transition-colors ${
-                  o.value === value ? "bg-blue-50" : ""
-                }`}
-              >
-                <p className="text-sm font-medium text-gray-900">{o.label}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{o.sub}</p>
-              </button>
-            ))
-          )}
-        </div>
-      )}
-    </div>
-  )
 }
 
 // ── Form utama ────────────────────────────────────────────────────────────────
@@ -132,7 +34,7 @@ export default function SetApprovalFlowForm({ leaveRequestId, employees, noChain
   const options: SelectOption[] = employees.map((emp) => ({
     value: emp.id,
     label: emp.fullName,
-    sub: [emp.positionTitle, emp.unit.name].filter(Boolean).join(" — "),
+    sub: [emp.positionTitle, emp.unit?.name].filter(Boolean).join(" — "),
   }))
 
   function addStep() {
@@ -220,7 +122,6 @@ export default function SetApprovalFlowForm({ leaveRequestId, employees, noChain
                   )
                 }}
                 placeholder="Cari nama atau jabatan…"
-                inputClass={inputClass}
               />
               <input
                 type="text"

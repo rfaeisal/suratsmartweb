@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { Tooltip } from "@/components/Tooltip"
 
 interface Position {
   id: string
@@ -19,6 +20,8 @@ export default function PositionsClient({ initial }: Props) {
   const [newLevel, setNewLevel] = useState("")
   const [adding, setAdding] = useState(false)
   const [addError, setAddError] = useState("")
+
+  const [search, setSearch] = useState("")
 
   const [editId, setEditId] = useState<string | null>(null)
   const [editName, setEditName] = useState("")
@@ -94,6 +97,10 @@ export default function PositionsClient({ initial }: Props) {
     if (res.ok) setPositions((prev) => prev.filter((p) => p.id !== id))
   }
 
+  const filteredPositions = positions.filter((p) =>
+    !search || p.name.toLowerCase().includes(search.toLowerCase())
+  )
+
   return (
     <div className="space-y-6">
       {/* Form tambah */}
@@ -136,6 +143,16 @@ export default function PositionsClient({ initial }: Props) {
 
       {/* Tabel */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        {positions.length > 0 && (
+          <div className="px-4 py-3 border-b border-gray-200">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cari nama jabatan…"
+              className={`${inputClass} w-64`}
+            />
+          </div>
+        )}
         {positions.length === 0 ? (
           <p className="py-12 text-center text-sm text-gray-400">Belum ada jabatan. Tambahkan di atas.</p>
         ) : (
@@ -149,7 +166,13 @@ export default function PositionsClient({ initial }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {positions.map((pos) => (
+              {filteredPositions.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-8 text-center text-sm text-gray-400">
+                    Tidak ada jabatan yang cocok dengan &ldquo;{search}&rdquo;.
+                  </td>
+                </tr>
+              ) : filteredPositions.map((pos) => (
                 <tr key={pos.id} className={`hover:bg-gray-50 transition-colors ${!pos.isActive ? "opacity-50" : ""}`}>
                   <td className="px-4 py-3">
                     {editId === pos.id ? (
@@ -188,61 +211,66 @@ export default function PositionsClient({ initial }: Props) {
                     {editId === pos.id ? (
                       <div className="flex gap-2 justify-end items-center">
                         {editError && <span className="text-xs text-red-600 mr-1">{editError}</span>}
-                        <button
-                          onClick={() => handleSave(pos.id)}
-                          disabled={saving}
-                          title="Simpan"
-                          className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 disabled:opacity-50 transition-colors"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12"/>
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => setEditId(null)}
-                          title="Batal"
-                          className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                          </svg>
-                        </button>
+                        <Tooltip label="Simpan">
+                          <button
+                            onClick={() => handleSave(pos.id)}
+                            disabled={saving}
+                            className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 disabled:opacity-50 transition-colors"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                          </button>
+                        </Tooltip>
+                        <Tooltip label="Batal">
+                          <button
+                            onClick={() => setEditId(null)}
+                            className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                          </button>
+                        </Tooltip>
                       </div>
                     ) : (
                       <div className="flex gap-1 justify-end">
-                        <button
-                          onClick={() => startEdit(pos)}
-                          title="Edit"
-                          className="p-1.5 rounded-lg text-blue-500 hover:text-blue-700 hover:bg-blue-50 transition-colors"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => toggleActive(pos)}
-                          title={pos.isActive ? "Nonaktifkan" : "Aktifkan"}
-                          className={`p-1.5 rounded-lg transition-colors ${pos.isActive ? "text-amber-500 hover:text-amber-700 hover:bg-amber-50" : "text-green-500 hover:text-green-700 hover:bg-green-50"}`}
-                        >
-                          {pos.isActive ? (
+                        <Tooltip label="Edit">
+                          <button
+                            onClick={() => startEdit(pos)}
+                            className="p-1.5 rounded-lg text-blue-500 hover:text-blue-700 hover:bg-blue-50 transition-colors"
+                          >
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                             </svg>
-                          ) : (
+                          </button>
+                        </Tooltip>
+                        <Tooltip label={pos.isActive ? "Nonaktifkan" : "Aktifkan"}>
+                          <button
+                            onClick={() => toggleActive(pos)}
+                            className={`p-1.5 rounded-lg transition-colors ${pos.isActive ? "text-amber-500 hover:text-amber-700 hover:bg-amber-50" : "text-green-500 hover:text-green-700 hover:bg-green-50"}`}
+                          >
+                            {pos.isActive ? (
+                              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>
+                              </svg>
+                            ) : (
+                              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                              </svg>
+                            )}
+                          </button>
+                        </Tooltip>
+                        <Tooltip label="Hapus">
+                          <button
+                            onClick={() => handleDelete(pos.id)}
+                            className="p-1.5 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors"
+                          >
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
                             </svg>
-                          )}
-                        </button>
-                        <button
-                          onClick={() => handleDelete(pos.id)}
-                          title="Hapus"
-                          className="p-1.5 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                          </svg>
-                        </button>
+                          </button>
+                        </Tooltip>
                       </div>
                     )}
                   </td>

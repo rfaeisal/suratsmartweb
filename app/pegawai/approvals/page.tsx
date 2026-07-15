@@ -152,7 +152,7 @@ export default async function ApprovalsPage() {
                   <div>
                     <span className="text-gray-500 text-xs">Pemohon</span>
                     <p className="text-gray-900">{req.requester.fullName}</p>
-                    <p className="text-xs text-gray-400">{req.requester.unit.name}</p>
+                    <p className="text-xs text-gray-400">{req.requester.unit?.name ?? "—"}</p>
                   </div>
                   <div>
                     <span className="text-gray-500 text-xs">Tanggal</span>

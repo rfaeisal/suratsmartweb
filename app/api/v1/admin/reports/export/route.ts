@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
       r.requester.fullName,
       r.requester.nip,
       r.requester.employeeType,
-      r.requester.unit.name,
+      r.requester.unit?.name ?? "",
       r.leaveType.name,
       new Date(r.startDate).toLocaleDateString("id-ID"),
       new Date(r.endDate).toLocaleDateString("id-ID"),

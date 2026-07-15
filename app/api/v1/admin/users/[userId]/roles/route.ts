@@ -72,9 +72,14 @@ export async function PUT(req: NextRequest, { params }: Props) {
     return Errors.forbidden()
   }
 
+  // PEGAWAI selalu wajib ada
+  const finalRoles = parsed.data.roles.includes("PEGAWAI")
+    ? parsed.data.roles
+    : (["PEGAWAI", ...parsed.data.roles] as AppRole[])
+
   const updatedUser = await prisma.appUser.update({
     where: { id },
-    data: { roles: parsed.data.roles as AppRole[] },
+    data: { roles: finalRoles as AppRole[] },
     select: {
       id: true,
       roles: true,

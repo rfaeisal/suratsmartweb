@@ -59,10 +59,21 @@ async function main() {
     unitId: string
     positionTitle: string
     directSupervisorId?: string
+    username?: string
     roles: Array<"PEGAWAI" | "APPROVER" | "ADMIN_KEPEGAWAIAN" | "SUPERADMIN">
   }
 
   const mockEmployees: MockEmployee[] = [
+    {
+      legacyId: "9998",
+      nip: "000000000000000001",
+      fullName: "Super Administrator",
+      employeeType: "PNS",
+      unitId: "U00",
+      positionTitle: "Admin Kepegawaian",
+      username: "superadmin",
+      roles: ["PEGAWAI", "SUPERADMIN", "ADMIN_KEPEGAWAIAN"],
+    },
     {
       legacyId: "9999",
       nip: "000000000000000000",
@@ -70,7 +81,8 @@ async function main() {
       employeeType: "PNS",
       unitId: "U00",
       positionTitle: "Admin Kepegawaian",
-      roles: ["ADMIN_KEPEGAWAIAN"],
+      username: "admin",
+      roles: ["PEGAWAI", "ADMIN_KEPEGAWAIAN"],
     },
     {
       legacyId: "5001",
@@ -79,7 +91,8 @@ async function main() {
       employeeType: "PNS",
       unitId: "U00",
       positionTitle: "Direktur",
-      roles: ["APPROVER"],
+      username: "direktur1",
+      roles: ["PEGAWAI", "APPROVER"],
     },
     {
       legacyId: "5002",
@@ -89,6 +102,7 @@ async function main() {
       unitId: "U00",
       positionTitle: "Staf Sekretariat Direktur",
       directSupervisorId: "5001",
+      username: "staf_dir1",
       roles: ["PEGAWAI"],
     },
     {
@@ -99,7 +113,8 @@ async function main() {
       unitId: "U00",
       positionTitle: "Wakil Direktur Umum dan Keuangan",
       directSupervisorId: "5001",
-      roles: ["APPROVER"],
+      username: "wadir1",
+      roles: ["PEGAWAI", "APPROVER"],
     },
     {
       legacyId: "3001",
@@ -109,7 +124,8 @@ async function main() {
       unitId: "U01",
       positionTitle: "Kepala Bagian Tata Usaha",
       directSupervisorId: "4001",
-      roles: ["APPROVER"],
+      username: "kabag1",
+      roles: ["PEGAWAI", "APPROVER"],
     },
     {
       legacyId: "2001",
@@ -119,7 +135,8 @@ async function main() {
       unitId: "U01",
       positionTitle: "Kepala Sub-Bagian Umum",
       directSupervisorId: "3001",
-      roles: ["APPROVER"],
+      username: "atasan1",
+      roles: ["PEGAWAI", "APPROVER"],
     },
     {
       legacyId: "1001",
@@ -129,6 +146,7 @@ async function main() {
       unitId: "U01",
       positionTitle: "Staf",
       directSupervisorId: "2001",
+      username: "pegawai1",
       roles: ["PEGAWAI"],
     },
     {
@@ -139,6 +157,29 @@ async function main() {
       unitId: "U01",
       positionTitle: "Staf",
       directSupervisorId: "2001",
+      username: "pppk1",
+      roles: ["PEGAWAI"],
+    },
+    {
+      legacyId: "6001",
+      nip: "200001012025011001",
+      fullName: "Fajar Nugroho",
+      employeeType: "PPPK",
+      unitId: "U01",
+      positionTitle: "Analis Kepegawaian",
+      directSupervisorId: "1001",
+      username: "pegawai.baru",
+      roles: ["PEGAWAI"],
+    },
+    {
+      legacyId: "6002",
+      nip: "199805152024012001",
+      fullName: "Wulandari Putri",
+      employeeType: "BLUD",
+      unitId: "U01",
+      positionTitle: "Pengelola Administrasi",
+      directSupervisorId: "2001",
+      username: "pegawai.baru2",
       roles: ["PEGAWAI"],
     },
   ]
@@ -168,8 +209,8 @@ async function main() {
 
     const user = await prisma.appUser.upsert({
       where: { employeeId: employee.id },
-      create: { employeeId: employee.id, roles: emp.roles },
-      update: { roles: emp.roles },
+      create: { employeeId: employee.id, roles: emp.roles, username: emp.username ?? null },
+      update: { roles: emp.roles, ...(emp.username ? { username: emp.username } : {}) },
     })
 
     console.log(`✓ ${emp.fullName} (${emp.legacyId}) → ${user.roles.join(", ")}`)
@@ -203,15 +244,22 @@ async function main() {
   }
 
   console.log("\n✅ Seed selesai!")
-  console.log("\nAkun mock SSO (gunakan di /login):")
-  console.log("  admin      / admin123     → ADMIN_KEPEGAWAIAN")
-  console.log("  direktur1  / direktur123  → APPROVER  (Direktur)")
-  console.log("  wadir1     / wadir123     → APPROVER  (Wakil Direktur)")
-  console.log("  kabag1     / kabag123     → APPROVER  (Kepala Bagian TU)")
-  console.log("  atasan1    / atasan123    → APPROVER  (Kepala Sub-Bagian)")
-  console.log("  pegawai1   / pegawai123   → PEGAWAI")
-  console.log("  pppk1      / pppk123      → PEGAWAI")
-  console.log("  staf_dir1  / stafdir123   → PEGAWAI   (Staf Sekretariat Direktur)")
+  console.log("\n📋 Akun testing (username / password → role):")
+  console.log("  ┌─────────────────┬──────────────┬─────────────────────────────────────────┐")
+  console.log("  │ Username        │ Password     │ Role & Jabatan                          │")
+  console.log("  ├─────────────────┼──────────────┼─────────────────────────────────────────┤")
+  console.log("  │ superadmin      │ superadmin123│ SUPERADMIN + ADMIN_KEPEGAWAIAN          │")
+  console.log("  │ admin           │ admin123     │ ADMIN_KEPEGAWAIAN                       │")
+  console.log("  │ direktur1       │ direktur123  │ APPROVER — Direktur                     │")
+  console.log("  │ wadir1          │ wadir123     │ APPROVER — Wakil Direktur               │")
+  console.log("  │ kabag1          │ kabag123     │ APPROVER — Kepala Bagian TU             │")
+  console.log("  │ atasan1         │ atasan123    │ APPROVER — Kepala Sub-Bagian Umum       │")
+  console.log("  │ pegawai1        │ pegawai123   │ PEGAWAI  — Staf (PNS)                   │")
+  console.log("  │ pppk1           │ pppk123      │ PEGAWAI  — Staf (PPPK)                  │")
+  console.log("  │ pegawai.baru    │ baru123      │ PEGAWAI  — Analis Kepegawaian (PPPK)    │")
+  console.log("  │ pegawai.baru2   │ baru123      │ PEGAWAI  — Pengelola Administrasi (BLUD)│")
+  console.log("  │ staf_dir1       │ stafdir123   │ PEGAWAI  — Staf Sekretariat Direktur    │")
+  console.log("  └─────────────────┴──────────────┴─────────────────────────────────────────┘")
 }
 
 main()

@@ -61,7 +61,11 @@ Response sukses:
   }
 }
 ```
-> **`roles` adalah array** — satu user bisa punya lebih dari satu role (mis. `["PEGAWAI", "APPROVER"]`). Flutter harus menampilkan UI untuk **semua** role yang dimiliki secara bersamaan (mis. tab "Pengajuan Saya" dan tab "Inbox Approval" sekaligus).
+Nilai yang valid untuk `employeeType`: `PNS`, `PPPK`, `PPPK_PARUH_WAKTU`, `BLUD`.
+
+> **`unit` bisa `null`** — jika admin belum menetapkan unit kerja pegawai di CutiSmart. Flutter harus menangani nilai `null` pada field ini.
+
+> **`roles` adalah array** — satu user bisa punya lebih dari satu role (mis. `["PEGAWAI", "APPROVER"]`). Role `PEGAWAI` **selalu ada** di setiap akun — tidak bisa dihapus. Flutter harus menampilkan UI untuk **semua** role yang dimiliki secara bersamaan (mis. tab "Pengajuan Saya" dan tab "Inbox Approval" sekaligus).
 
 Response gagal — sesi lain masih aktif:
 ```json
@@ -81,8 +85,8 @@ Dipanggil secara berkala/otomatis untuk mendapatkan access token baru. Jika sesi
 
 ### `GET /api/v1/auth/me` `[Mobile]`
 Dipanggil saat app pertama dibuka untuk auto-login: validasi sesi masih `ACTIVE` + ambil data user terbaru.
-Response: `{ id, nip, fullName, employeeType, roles: string[], unit: { id, name } }`
-Jika sesi tidak valid → `401`.
+Response: `{ id, nip, fullName, employeeType, roles: string[], unit: { id, name } | null }`
+Field `unit` bisa `null` jika admin belum menetapkan unit kerja. Jika sesi tidak valid → `401`.
 
 ### `POST /api/v1/auth/logout` `[Mobile]`
 Revoke `UserSession` device yang sedang login (`revokedBy: "SELF"`) dan hapus FCM token device tersebut.
@@ -222,7 +226,7 @@ Kirim ulang manual data cuti ke sistem lama untuk log berstatus `FAILED` (dipaka
 
 ### `GET /api/v1/admin/reports/leave-recap` `[Web]`
 Rekapan cuti untuk periode tertentu.
-Query params: `startDate`, `endDate`, `unitId` (opsional), `employeeType` (opsional), `leaveTypeId` (opsional).
+Query params: `startDate`, `endDate`, `unitId` (opsional), `employeeType` (opsional — nilai: `PNS`, `PPPK`, `PPPK_PARUH_WAKTU`, `BLUD`), `leaveTypeId` (opsional).
 ```json
 {
   "period": { "startDate": "2026-01-01", "endDate": "2026-06-30" },
@@ -240,13 +244,29 @@ Query params: `startDate`, `endDate`, `unitId` (opsional), `employeeType` (opsio
 - `GET/POST/PUT /api/v1/admin/leave-quotas`
 - `GET/POST/PUT /api/v1/admin/units`
 
+### Manajemen Pengguna `[Web]`
+
+Halaman admin `/admin/users` (khusus SUPERADMIN) menampilkan dua tab:
+
+**Tab 1 — Pengguna Terdaftar**: daftar `AppUser` yang sudah pernah login. Bisa dicari berdasarkan nama, NIP, atau username; difilter berdasarkan role. Menampilkan field `username` (diisi otomatis saat login; tampil `—` jika masih `null`).
+
+**Tab 2 — Belum Pernah Login**: daftar `Employee` aktif yang belum punya `AppUser` (query: `where: { isActive: true, user: null }`). Berguna untuk memantau adopsi sistem. Dilengkapi fitur export:
+- **Export Excel** (`xlsx`) — file `.xlsx` dengan 6 kolom: No, Nama Lengkap, NIP, Jenis Pegawai, Jabatan, Unit Kerja.
+- **Export PDF** (`jspdf` + `jspdf-autotable`) — landscape A4, header biru, baris selang-seling abu, tanggal cetak tercantum.
+
+Implementasi export via `lib/export/never-logged-in.ts` dengan dynamic import agar tidak membesar bundle awal.
+
 ### Manajemen Role Pengguna `[Web]`
 
 #### `GET /api/v1/admin/users/:id/roles`
-Melihat roles user (`{ id, roles: string[], employee: { fullName, nip } }`).
+Melihat roles user.
+```json
+{ "id": "...", "username": "budi.santoso", "roles": ["PEGAWAI", "APPROVER"], "employee": { "fullName": "Budi Santoso", "nip": "198501012010011001" } }
+```
+Field `username` bisa `null` jika pegawai belum pernah login.
 
 #### `PUT /api/v1/admin/users/:id/roles`
-Mengubah roles user (replace semua). Body: `{ "roles": ["PEGAWAI", "APPROVER"] }`. Minimal 1 role. Role `SUPERADMIN` hanya bisa diberikan/dicabut oleh `SUPERADMIN`.
+Mengubah roles user (replace semua). Body: `{ "roles": ["PEGAWAI", "APPROVER"] }`. Minimal 1 role. Role `PEGAWAI` **selalu ditambahkan otomatis** oleh server meski tidak disertakan dalam request — tidak bisa dihapus. Role `SUPERADMIN` hanya bisa diberikan/dicabut oleh `SUPERADMIN`.
 
 ### Manajemen Sesi Login `[Web]`
 

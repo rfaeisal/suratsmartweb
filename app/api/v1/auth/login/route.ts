@@ -48,7 +48,11 @@ export async function POST(req: NextRequest) {
   }
 
   // 2. Sinkron data pegawai ke database lokal
-  const employee = await syncEmployeeFromLegacy(ssoResult.employee)
+  const synced = await syncEmployeeFromLegacy(ssoResult.employee)
+  const employee = await prisma.employee.findUniqueOrThrow({
+    where: { id: synced.id },
+    include: { unit: { select: { id: true, name: true } } },
+  })
 
   // 3. Cari atau buat AppUser
   let appUser = await prisma.appUser.findUnique({
@@ -118,7 +122,7 @@ export async function POST(req: NextRequest) {
       fullName: employee.fullName,
       employeeType: employee.employeeType,
       roles: appUser.roles,
-      unit: { id: employee.unitId, name: ssoResult.employee.unit.name },
+      unit: employee.unit ? { id: employee.unit.id, name: employee.unit.name } : null,
     },
   })
 }
