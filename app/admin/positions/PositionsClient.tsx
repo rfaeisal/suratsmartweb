@@ -186,29 +186,62 @@ export default function PositionsClient({ initial }: Props) {
                   </td>
                   <td className="px-4 py-3 text-right">
                     {editId === pos.id ? (
-                      <div className="flex gap-2 justify-end">
+                      <div className="flex gap-2 justify-end items-center">
                         {editError && <span className="text-xs text-red-600 mr-1">{editError}</span>}
                         <button
                           onClick={() => handleSave(pos.id)}
                           disabled={saving}
-                          className="text-xs text-blue-600 hover:underline disabled:opacity-50"
+                          title="Simpan"
+                          className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 disabled:opacity-50 transition-colors"
                         >
-                          {saving ? "Menyimpan…" : "Simpan"}
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"/>
+                          </svg>
                         </button>
-                        <button onClick={() => setEditId(null)} className="text-xs text-gray-400 hover:text-gray-600">
-                          Batal
+                        <button
+                          onClick={() => setEditId(null)}
+                          title="Batal"
+                          className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                          </svg>
                         </button>
                       </div>
                     ) : (
-                      <div className="flex gap-3 justify-end">
-                        <button onClick={() => startEdit(pos)} className="text-xs text-blue-600 hover:underline">
-                          Edit
+                      <div className="flex gap-1 justify-end">
+                        <button
+                          onClick={() => startEdit(pos)}
+                          title="Edit"
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                          </svg>
                         </button>
-                        <button onClick={() => toggleActive(pos)} className="text-xs text-gray-500 hover:underline">
-                          {pos.isActive ? "Nonaktifkan" : "Aktifkan"}
+                        <button
+                          onClick={() => toggleActive(pos)}
+                          title={pos.isActive ? "Nonaktifkan" : "Aktifkan"}
+                          className={`p-1.5 rounded-lg transition-colors ${pos.isActive ? "text-gray-400 hover:text-amber-600 hover:bg-amber-50" : "text-gray-400 hover:text-green-600 hover:bg-green-50"}`}
+                        >
+                          {pos.isActive ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>
+                            </svg>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                            </svg>
+                          )}
                         </button>
-                        <button onClick={() => handleDelete(pos.id)} className="text-xs text-red-400 hover:text-red-600 hover:underline">
-                          Hapus
+                        <button
+                          onClick={() => handleDelete(pos.id)}
+                          title="Hapus"
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                          </svg>
                         </button>
                       </div>
                     )}
