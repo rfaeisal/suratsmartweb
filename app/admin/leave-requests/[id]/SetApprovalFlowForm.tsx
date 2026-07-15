@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 
 interface Employee {
@@ -13,6 +13,7 @@ interface Employee {
 interface Props {
   leaveRequestId: string
   employees: Employee[]
+  noChain?: boolean
 }
 
 interface StepRow {
@@ -20,12 +21,119 @@ interface StepRow {
   roleLabel: string
 }
 
-export default function SetApprovalFlowForm({ leaveRequestId, employees }: Props) {
+// ── Searchable dropdown ───────────────────────────────────────────────────────
+
+interface SelectOption {
+  value: string
+  label: string
+  sub: string
+}
+
+function SearchableSelect({
+  options,
+  value,
+  onChange,
+  placeholder,
+  inputClass,
+}: {
+  options: SelectOption[]
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+  inputClass: string
+}) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState("")
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+        setQuery("")
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside)
+    return () => document.removeEventListener("mousedown", onClickOutside)
+  }, [])
+
+  const selected = options.find((o) => o.value === value)
+  const filtered = query
+    ? options.filter(
+        (o) =>
+          o.label.toLowerCase().includes(query.toLowerCase()) ||
+          o.sub.toLowerCase().includes(query.toLowerCase())
+      )
+    : options
+
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setQuery(e.target.value)
+    setOpen(true)
+    if (!e.target.value) onChange("")
+  }
+
+  function handleFocus() {
+    setQuery("")
+    setOpen(true)
+  }
+
+  function select(val: string) {
+    onChange(val)
+    setOpen(false)
+    setQuery("")
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      <input
+        type="text"
+        value={open ? query : (selected?.label ?? "")}
+        onChange={handleInputChange}
+        onFocus={handleFocus}
+        placeholder={placeholder}
+        autoComplete="off"
+        className={inputClass}
+      />
+      {open && (
+        <div className="absolute z-50 top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
+          {filtered.length === 0 ? (
+            <p className="px-3 py-2 text-sm text-gray-400">Tidak ada hasil</p>
+          ) : (
+            filtered.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => select(o.value)}
+                className={`w-full text-left px-3 py-2 hover:bg-blue-50 transition-colors ${
+                  o.value === value ? "bg-blue-50" : ""
+                }`}
+              >
+                <p className="text-sm font-medium text-gray-900">{o.label}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{o.sub}</p>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Form utama ────────────────────────────────────────────────────────────────
+
+export default function SetApprovalFlowForm({ leaveRequestId, employees, noChain }: Props) {
   const router = useRouter()
   const [steps, setSteps] = useState<StepRow[]>([{ employeeId: "", roleLabel: "" }])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
+
+  const options: SelectOption[] = employees.map((emp) => ({
+    value: emp.id,
+    label: emp.fullName,
+    sub: [emp.positionTitle, emp.unit.name].filter(Boolean).join(" — "),
+  }))
 
   function addStep() {
     setSteps((prev) => [...prev, { employeeId: "", roleLabel: "" }])
@@ -81,6 +189,12 @@ export default function SetApprovalFlowForm({ leaveRequestId, employees }: Props
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {noChain && (
+        <div className="px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+          Atasan pegawai ini belum dikonfigurasi — menampilkan semua pegawai aktif sebagai pilihan approver.
+        </div>
+      )}
+
       {error && (
         <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
       )}
@@ -92,19 +206,13 @@ export default function SetApprovalFlowForm({ leaveRequestId, employees }: Props
               {idx + 1}
             </div>
             <div className="flex-1 grid grid-cols-2 gap-2">
-              <select
+              <SearchableSelect
+                options={options}
                 value={step.employeeId}
-                onChange={(e) => updateStep(idx, "employeeId", e.target.value)}
-                required
-                className={inputClass}
-              >
-                <option value="">— Pilih approver —</option>
-                {employees.map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.fullName}{emp.positionTitle ? ` — ${emp.positionTitle}` : ""} ({emp.unit.name})
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => updateStep(idx, "employeeId", val)}
+                placeholder="Cari nama atau jabatan…"
+                inputClass={inputClass}
+              />
               <input
                 type="text"
                 value={step.roleLabel}

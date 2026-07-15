@@ -23,19 +23,19 @@ const stepStatusColor: Record<string, string> = {
 export default async function AdminLeaveRequestDetailPage({ params }: Props) {
   const { id } = await params
 
-  const [req, employees] = await Promise.all([
-    prisma.leaveRequest.findUnique({
-      where: { id },
-      include: {
-        requester: {
-          select: {
-            fullName: true,
-            nip: true,
-            positionTitle: true,
-            employeeType: true,
-            unit: { select: { name: true } },
-          },
+  const req = await prisma.leaveRequest.findUnique({
+    where: { id },
+    include: {
+      requester: {
+        select: {
+          fullName: true,
+          nip: true,
+          positionTitle: true,
+          employeeType: true,
+          directSupervisorId: true,
+          unit: { select: { name: true } },
         },
+      },
         leaveType: { select: { code: true, name: true } },
         delegate: { select: { fullName: true, positionTitle: true } },
         attachments: { select: { id: true, fileName: true, uploadedAt: true } },
@@ -46,15 +46,33 @@ export default async function AdminLeaveRequestDetailPage({ params }: Props) {
         skDocument: { select: { skNumber: true, filePath: true, generatedAt: true } },
         integrationLogs: { orderBy: { createdAt: "desc" }, take: 5 },
       },
-    }),
-    prisma.employee.findMany({
-      where: { isActive: true },
-      select: { id: true, fullName: true, positionTitle: true, unit: { select: { name: true } } },
-      orderBy: [{ unit: { name: "asc" } }, { fullName: "asc" }],
-    }),
-  ])
+    })
 
   if (!req) notFound()
+
+  // Bangun rantai atasan pengaju secara rekursif via directSupervisorId (legacyId)
+  const superiorChain: { id: string; fullName: string; positionTitle: string | null; unit: { name: string } }[] = []
+  let nextLegacyId: string | null = req.requester.directSupervisorId ?? null
+  const visited = new Set<string>()
+  while (nextLegacyId && !visited.has(nextLegacyId)) {
+    visited.add(nextLegacyId)
+    const sup = await prisma.employee.findUnique({
+      where: { legacyId: nextLegacyId },
+      select: { id: true, fullName: true, positionTitle: true, directSupervisorId: true, unit: { select: { name: true } } },
+    })
+    if (!sup) break
+    superiorChain.push(sup)
+    nextLegacyId = sup.directSupervisorId
+  }
+
+  // Fallback: jika rantai kosong (atasan belum dikonfigurasi), tampilkan semua pegawai aktif
+  const employees = superiorChain.length > 0
+    ? superiorChain
+    : await prisma.employee.findMany({
+        where: { isActive: true },
+        select: { id: true, fullName: true, positionTitle: true, unit: { select: { name: true } } },
+        orderBy: [{ unit: { name: "asc" } }, { fullName: "asc" }],
+      })
 
   const canSetFlow =
     req.status === "PENDING_ADMIN_REVIEW" && req.delegateConfirmationStatus === "CONFIRMED"
@@ -195,7 +213,7 @@ export default async function AdminLeaveRequestDetailPage({ params }: Props) {
                 <span className="ml-2 text-amber-600">(akan menggantikan alur sebelumnya)</span>
               )}
             </p>
-            <SetApprovalFlowForm leaveRequestId={id} employees={employees} />
+            <SetApprovalFlowForm leaveRequestId={id} employees={employees} noChain={superiorChain.length === 0} />
           </div>
         )}
 
