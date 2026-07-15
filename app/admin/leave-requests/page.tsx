@@ -102,9 +102,12 @@ export default async function AdminLeaveRequestsPage({ searchParams }: Props) {
                   <td className="px-4 py-3">
                     <Link
                       href={`/admin/leave-requests/${r.id}`}
-                      className="text-xs text-blue-600 hover:underline"
+                      title="Lihat detail"
+                      className="p-1.5 rounded-lg text-blue-500 hover:text-blue-700 hover:bg-blue-50 transition-colors inline-flex"
                     >
-                      Detail →
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                      </svg>
                     </Link>
                   </td>
                 </tr>
