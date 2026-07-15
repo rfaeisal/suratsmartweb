@@ -1,10 +1,9 @@
 /**
  * Seed data untuk development/testing.
- * Akun mock SSO tersedia di lib/legacy/client.ts:
- *   admin / admin123       → ADMIN_KEPEGAWAIAN
- *   pegawai1 / pegawai123  → PEGAWAI
- *   atasan1 / atasan123    → APPROVER
- *   pppk1 / pppk123        → PEGAWAI
+ * Akun mock SSO tersedia di lib/legacy/client.ts.
+ *
+ * Hierarki approval:
+ *   pegawai1 / pppk1 → atasan1 (Kasubag) → kabag1 (Kabag TU) → wadir1 (Wadir)
  */
 import { PrismaClient } from "@prisma/client"
 import { PrismaPg } from "@prisma/adapter-pg"
@@ -15,45 +14,123 @@ const adapter = new PrismaPg({
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
-  // Unit kerja
-  const unitKepegawaian = await prisma.workUnit.upsert({
+  // ─── Unit kerja ─────────────────────────────────────────────────────────────
+  await prisma.workUnit.upsert({
     where: { id: "U00" },
     create: { id: "U00", name: "Bagian Kepegawaian" },
     update: { name: "Bagian Kepegawaian" },
   })
-
-  const unitUmum = await prisma.workUnit.upsert({
+  await prisma.workUnit.upsert({
     where: { id: "U01" },
     create: { id: "U01", name: "Bagian Umum" },
     update: { name: "Bagian Umum" },
   })
+  console.log("✓ Unit kerja: Bagian Kepegawaian, Bagian Umum")
 
-  console.log("✓ Unit kerja:", unitKepegawaian.name, unitUmum.name)
+  // ─── Pegawai mock ────────────────────────────────────────────────────────────
+  type MockEmployee = {
+    legacyId: string
+    nip: string
+    fullName: string
+    employeeType: "PNS" | "PPPK" | "BLUD"
+    unitId: string
+    positionTitle: string
+    directSupervisorId?: string
+    roles: Array<"PEGAWAI" | "APPROVER" | "ADMIN_KEPEGAWAIAN" | "SUPERADMIN">
+  }
 
-  // Pegawai mock (sinkron dari MOCK_ACCOUNTS di legacy/client.ts)
-  const adminEmployee = await prisma.employee.upsert({
-    where: { legacyId: "9999" },
-    create: {
+  const mockEmployees: MockEmployee[] = [
+    {
       legacyId: "9999",
       nip: "000000000000000000",
       fullName: "Administrator",
       employeeType: "PNS",
       unitId: "U00",
       positionTitle: "Admin Kepegawaian",
-      isActive: true,
+      roles: ["ADMIN_KEPEGAWAIAN"],
     },
-    update: { fullName: "Administrator" },
-  })
+    {
+      legacyId: "4001",
+      nip: "196501012000011001",
+      fullName: "Hendra Kusuma",
+      employeeType: "PNS",
+      unitId: "U00",
+      positionTitle: "Wakil Direktur Umum dan Keuangan",
+      roles: ["APPROVER"],
+    },
+    {
+      legacyId: "3001",
+      nip: "197001012000011001",
+      fullName: "Ahmad Fauzi",
+      employeeType: "PNS",
+      unitId: "U01",
+      positionTitle: "Kepala Bagian Tata Usaha",
+      directSupervisorId: "4001",
+      roles: ["APPROVER"],
+    },
+    {
+      legacyId: "2001",
+      nip: "197501012000011001",
+      fullName: "Siti Rahayu",
+      employeeType: "PNS",
+      unitId: "U01",
+      positionTitle: "Kepala Sub-Bagian Umum",
+      directSupervisorId: "3001",
+      roles: ["APPROVER"],
+    },
+    {
+      legacyId: "1001",
+      nip: "198501012010011001",
+      fullName: "Budi Santoso",
+      employeeType: "PNS",
+      unitId: "U01",
+      positionTitle: "Staf",
+      directSupervisorId: "2001",
+      roles: ["PEGAWAI"],
+    },
+    {
+      legacyId: "1002",
+      nip: "199001022021211001",
+      fullName: "Dian Pratiwi",
+      employeeType: "PPPK",
+      unitId: "U01",
+      positionTitle: "Staf",
+      directSupervisorId: "2001",
+      roles: ["PEGAWAI"],
+    },
+  ]
 
-  const adminUser = await prisma.appUser.upsert({
-    where: { employeeId: adminEmployee.id },
-    create: { employeeId: adminEmployee.id, roles: ["ADMIN_KEPEGAWAIAN"] },
-    update: { roles: ["ADMIN_KEPEGAWAIAN"] },
-  })
+  for (const emp of mockEmployees) {
+    const employee = await prisma.employee.upsert({
+      where: { legacyId: emp.legacyId },
+      create: {
+        legacyId: emp.legacyId,
+        nip: emp.nip,
+        fullName: emp.fullName,
+        employeeType: emp.employeeType,
+        unitId: emp.unitId,
+        positionTitle: emp.positionTitle,
+        directSupervisorId: emp.directSupervisorId ?? null,
+        isActive: true,
+      },
+      update: {
+        fullName: emp.fullName,
+        positionTitle: emp.positionTitle,
+        directSupervisorId: emp.directSupervisorId ?? null,
+        unitId: emp.unitId,
+      },
+    })
 
-  console.log("✓ Admin user:", adminEmployee.fullName, "→", adminUser.roles.join(", "))
+    const user = await prisma.appUser.upsert({
+      where: { employeeId: employee.id },
+      create: { employeeId: employee.id, roles: emp.roles },
+      update: { roles: emp.roles },
+    })
 
-  // Jenis cuti default (perlu dikonfirmasi ke kepegawaian sebelum go-live)
+    console.log(`✓ ${emp.fullName} (${emp.legacyId}) → ${user.roles.join(", ")}`)
+  }
+
+  // ─── Jenis cuti default ───────────────────────────────────────────────────────
   const leaveTypes: Array<{
     code: string
     name: string
@@ -81,11 +158,13 @@ async function main() {
   }
 
   console.log("\n✅ Seed selesai!")
-  console.log("\nAkun tersedia (mode mock SSO):")
-  console.log("  admin / admin123       → ADMIN_KEPEGAWAIAN")
+  console.log("\nAkun mock SSO (gunakan di /login):")
+  console.log("  admin    / admin123    → ADMIN_KEPEGAWAIAN")
+  console.log("  wadir1   / wadir123    → APPROVER  (Wakil Direktur)")
+  console.log("  kabag1   / kabag123    → APPROVER  (Kepala Bagian TU)")
+  console.log("  atasan1  / atasan123   → APPROVER  (Kepala Sub-Bagian)")
   console.log("  pegawai1 / pegawai123  → PEGAWAI")
-  console.log("  atasan1 / atasan123    → APPROVER")
-  console.log("  pppk1 / pppk123        → PEGAWAI")
+  console.log("  pppk1    / pppk123     → PEGAWAI")
 }
 
 main()
