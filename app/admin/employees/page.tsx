@@ -3,6 +3,12 @@
 import { useEffect, useState, useCallback } from "react"
 import EmployeeEditForm from "./EmployeeEditForm"
 
+interface PositionInfo {
+  id: string
+  name: string
+  level: number
+}
+
 interface Supervisor {
   legacyId: string
   fullName: string
@@ -16,6 +22,8 @@ interface EmployeeRow {
   fullName: string
   employeeType: string
   positionTitle: string | null
+  positionId: string | null
+  position: PositionInfo | null
   room: string | null
   directSupervisorId: string | null
   isActive: boolean
@@ -47,6 +55,7 @@ const EMPLOYEE_TYPE_LABELS: Record<string, string> = {
 export default function EmployeesPage() {
   const [data, setData] = useState<PageData | null>(null)
   const [allEmployees, setAllEmployees] = useState<EmployeeOption[]>([])
+  const [positions, setPositions] = useState<PositionInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
@@ -74,25 +83,29 @@ export default function EmployeesPage() {
     }
   }, [search, unitId, employeeType, page])
 
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
+  useEffect(() => { fetchData() }, [fetchData])
 
-  // Load all employees once for supervisor dropdown
   useEffect(() => {
+    // Load semua pegawai untuk dropdown atasan
     fetch("/api/v1/admin/employees?page=1&perPage=1000")
       .then((r) => r.json())
       .then((d: PageData) =>
         setAllEmployees(
-          d.data.map((e) => ({ id: e.id, legacyId: e.legacyId, fullName: e.fullName, positionTitle: e.positionTitle }))
+          d.data.map((e) => ({ id: e.id, legacyId: e.legacyId, fullName: e.fullName, positionTitle: e.position?.name ?? e.positionTitle }))
         )
       )
+      .catch(() => {})
+
+    // Load master jabatan
+    fetch("/api/v1/admin/positions")
+      .then((r) => r.json())
+      .then((list: PositionInfo[]) => setPositions(list))
       .catch(() => {})
   }, [])
 
   function handleSaved(
     id: string,
-    updated: { positionTitle: string | null; room: string | null; directSupervisorId: string | null }
+    updated: { positionId: string | null; positionName: string | null; room: string | null; directSupervisorId: string | null }
   ) {
     if (!data) return
     const supervisorInfo = updated.directSupervisorId
@@ -104,7 +117,13 @@ export default function EmployeesPage() {
         e.id === id
           ? {
               ...e,
-              ...updated,
+              positionId: updated.positionId,
+              positionTitle: updated.positionName,
+              position: updated.positionId
+                ? (positions.find((p) => p.id === updated.positionId) ?? null)
+                : null,
+              room: updated.room,
+              directSupervisorId: updated.directSupervisorId,
               supervisor: supervisorInfo
                 ? { legacyId: supervisorInfo.legacyId, fullName: supervisorInfo.fullName, positionTitle: supervisorInfo.positionTitle }
                 : null,
@@ -177,60 +196,73 @@ export default function EmployeesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {data.data.map((emp) => (
-                    <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3">
-                        <p className="font-medium text-gray-900">{emp.fullName}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">{emp.nip}</p>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">{emp.unit.name}</td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {emp.positionTitle ?? <span className="text-gray-300 italic">—</span>}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {emp.room ?? <span className="text-gray-300 italic">—</span>}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {emp.supervisor ? (
-                          <div>
-                            <p>{emp.supervisor.fullName}</p>
-                            {emp.supervisor.positionTitle && (
-                              <p className="text-xs text-gray-400 mt-0.5">{emp.supervisor.positionTitle}</p>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-gray-300 italic">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                          emp.employeeType === "PNS" ? "bg-blue-50 text-blue-700" :
-                          emp.employeeType === "PPPK" ? "bg-green-50 text-green-700" :
-                          "bg-amber-50 text-amber-700"
-                        }`}>
-                          {emp.employeeType}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <EmployeeEditForm
-                          employeeId={emp.id}
-                          initial={{
-                            positionTitle: emp.positionTitle,
-                            room: emp.room,
-                            directSupervisorId: emp.directSupervisorId,
-                          }}
-                          allEmployees={allEmployees}
-                          onSaved={(updated) => handleSaved(emp.id, updated)}
-                        />
-                      </td>
-                    </tr>
-                  ))}
+                  {data.data.map((emp) => {
+                    const jabatan = emp.position?.name ?? emp.positionTitle
+                    const jabatanLevel = emp.position?.level
+                    return (
+                      <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-gray-900">{emp.fullName}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{emp.nip}</p>
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">{emp.unit.name}</td>
+                        <td className="px-4 py-3">
+                          {jabatan ? (
+                            <div>
+                              <p className="text-gray-900">{jabatan}</p>
+                              {jabatanLevel !== undefined && (
+                                <p className="text-xs text-gray-400 mt-0.5">Level {jabatanLevel}</p>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-gray-300 italic">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {emp.room ?? <span className="text-gray-300 italic">—</span>}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {emp.supervisor ? (
+                            <div>
+                              <p>{emp.supervisor.fullName}</p>
+                              {emp.supervisor.positionTitle && (
+                                <p className="text-xs text-gray-400 mt-0.5">{emp.supervisor.positionTitle}</p>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-gray-300 italic">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            emp.employeeType === "PNS" ? "bg-blue-50 text-blue-700" :
+                            emp.employeeType === "PPPK" ? "bg-green-50 text-green-700" :
+                            "bg-amber-50 text-amber-700"
+                          }`}>
+                            {emp.employeeType}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <EmployeeEditForm
+                            employeeId={emp.id}
+                            initial={{
+                              positionId: emp.positionId,
+                              room: emp.room,
+                              directSupervisorId: emp.directSupervisorId,
+                            }}
+                            positions={positions}
+                            allEmployees={allEmployees}
+                            onSaved={(updated) => handleSaved(emp.id, updated)}
+                          />
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
           </div>
 
-          {/* Pagination */}
           {data.totalPages > 1 && (
             <div className="flex items-center justify-between mt-4">
               <button

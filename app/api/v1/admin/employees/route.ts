@@ -36,7 +36,10 @@ export async function GET(req: NextRequest) {
     prisma.employee.count({ where }),
     prisma.employee.findMany({
       where,
-      include: { unit: { select: { id: true, name: true } } },
+      include: {
+        unit: { select: { id: true, name: true } },
+        position: { select: { id: true, name: true, level: true } },
+      },
       orderBy: [{ unit: { name: "asc" } }, { fullName: "asc" }],
       skip: (page - 1) * perPage,
       take: perPage,

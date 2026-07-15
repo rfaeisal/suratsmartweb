@@ -2,6 +2,12 @@
 
 import { useState } from "react"
 
+interface PositionOption {
+  id: string
+  name: string
+  level: number
+}
+
 interface EmployeeOption {
   id: string
   legacyId: string
@@ -12,21 +18,30 @@ interface EmployeeOption {
 interface Props {
   employeeId: string
   initial: {
-    positionTitle: string | null
+    positionId: string | null
     room: string | null
     directSupervisorId: string | null
   }
+  positions: PositionOption[]
   allEmployees: EmployeeOption[]
-  onSaved: (updated: { positionTitle: string | null; room: string | null; directSupervisorId: string | null }) => void
+  onSaved: (updated: {
+    positionId: string | null
+    positionName: string | null
+    room: string | null
+    directSupervisorId: string | null
+  }) => void
 }
 
-export default function EmployeeEditForm({ employeeId, initial, allEmployees, onSaved }: Props) {
+export default function EmployeeEditForm({ employeeId, initial, positions, allEmployees, onSaved }: Props) {
   const [open, setOpen] = useState(false)
-  const [positionTitle, setPositionTitle] = useState(initial.positionTitle ?? "")
+  const [positionId, setPositionId] = useState(initial.positionId ?? "")
   const [room, setRoom] = useState(initial.room ?? "")
   const [supervisorLegacyId, setSupervisorLegacyId] = useState(initial.directSupervisorId ?? "")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
+
+  // Urutkan dari level tertinggi ke terendah
+  const sortedPositions = [...positions].sort((a, b) => b.level - a.level || a.name.localeCompare(b.name))
 
   async function save() {
     setSaving(true)
@@ -36,7 +51,7 @@ export default function EmployeeEditForm({ employeeId, initial, allEmployees, on
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          positionTitle: positionTitle || undefined,
+          positionId: positionId || null,
           room: room || undefined,
           directSupervisorLegacyId: supervisorLegacyId || null,
         }),
@@ -45,7 +60,13 @@ export default function EmployeeEditForm({ employeeId, initial, allEmployees, on
         const d = await res.json().catch(() => ({}))
         setError(d.error?.message ?? "Gagal menyimpan")
       } else {
-        onSaved({ positionTitle: positionTitle || null, room: room || null, directSupervisorId: supervisorLegacyId || null })
+        const selectedPos = positions.find((p) => p.id === positionId) ?? null
+        onSaved({
+          positionId: positionId || null,
+          positionName: selectedPos?.name ?? null,
+          room: room || null,
+          directSupervisorId: supervisorLegacyId || null,
+        })
         setOpen(false)
       }
     } catch {
@@ -74,12 +95,18 @@ export default function EmployeeEditForm({ employeeId, initial, allEmployees, on
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Jabatan</label>
-                <input
-                  value={positionTitle}
-                  onChange={(e) => setPositionTitle(e.target.value)}
-                  placeholder="Contoh: Kepala Sub-Bagian Umum"
+                <select
+                  value={positionId}
+                  onChange={(e) => setPositionId(e.target.value)}
                   className={inputClass}
-                />
+                >
+                  <option value="">— Pilih jabatan —</option>
+                  {sortedPositions.map((pos) => (
+                    <option key={pos.id} value={pos.id}>
+                      {pos.name} (Level {pos.level})
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Ruangan</label>
