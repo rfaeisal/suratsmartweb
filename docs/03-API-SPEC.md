@@ -83,11 +83,14 @@ Daftar pegawai satu unit (untuk memilih delegasi/pengganti).
   "startDate": "2026-08-01",
   "endDate": "2026-08-05",
   "reason": "string",
+  "addressDuringLeave": "string (opsional) — alamat tinggal pegawai selama menjalani cuti",
   "delegateEmployeeId": "...",
   "attachmentFileIds": ["..."]
 }
 ```
 Response: objek `LeaveRequest` status `SUBMITTED`.
+
+Field `addressDuringLeave` bersifat opsional. Jika diisi, minimal 5 karakter. Disimpan dan ditampilkan di detail pengajuan.
 
 ### `GET /api/v1/leave-requests?status=&mine=true`
 List pengajuan milik user (untuk monitoring pegawai).
