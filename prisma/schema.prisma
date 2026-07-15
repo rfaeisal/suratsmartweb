@@ -19,6 +19,8 @@ model Employee {
   unitId             String
   unit               WorkUnit     @relation(fields: [unitId], references: [id])
   positionTitle      String?
+  positionId         String?
+  position           Position? @relation(fields: [positionId], references: [id])
   directSupervisorId String?
   room               String?
   isActive           Boolean      @default(true)
@@ -39,12 +41,14 @@ enum EmployeeType {
 }
 
 model Position {
-  id        String   @id @default(cuid())
-  name      String   @unique
+  id        String     @id @default(cuid())
+  name      String     @unique
   level     Int
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  employees Employee[]
 }
 
 model WorkUnit {

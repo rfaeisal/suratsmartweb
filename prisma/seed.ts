@@ -3,7 +3,7 @@
  * Akun mock SSO tersedia di lib/legacy/client.ts.
  *
  * Hierarki approval:
- *   pegawai1 / pppk1 → atasan1 (Kasubag) → kabag1 (Kabag TU) → wadir1 (Wadir)
+ *   pegawai1 / pppk1 → atasan1 (Kasubag) → kabag1 (Kabag TU) → wadir1 (Wadir) → direktur1
  */
 import { PrismaClient } from "@prisma/client"
 import { PrismaPg } from "@prisma/adapter-pg"
@@ -26,6 +26,29 @@ async function main() {
     update: { name: "Bagian Umum" },
   })
   console.log("✓ Unit kerja: Bagian Kepegawaian, Bagian Umum")
+
+  // ─── Master jabatan ──────────────────────────────────────────────────────────
+  // level: angka lebih besar = jabatan lebih tinggi dalam hierarki
+  const positionDefs = [
+    { name: "Staf",                            level: 1 },
+    { name: "Staf Sekretariat Direktur",       level: 1 },
+    { name: "Kepala Sub-Bagian Umum",          level: 2 },
+    { name: "Admin Kepegawaian",               level: 2 },
+    { name: "Kepala Bagian Tata Usaha",        level: 3 },
+    { name: "Wakil Direktur Umum dan Keuangan", level: 4 },
+    { name: "Direktur",                        level: 5 },
+  ]
+
+  const positionMap: Record<string, string> = {}
+  for (const def of positionDefs) {
+    const pos = await prisma.position.upsert({
+      where: { name: def.name },
+      create: { name: def.name, level: def.level },
+      update: { level: def.level },
+    })
+    positionMap[def.name] = pos.id
+    console.log(`✓ Jabatan: ${def.name} (level ${def.level})`)
+  }
 
   // ─── Pegawai mock ────────────────────────────────────────────────────────────
   type MockEmployee = {
@@ -130,12 +153,14 @@ async function main() {
         employeeType: emp.employeeType,
         unitId: emp.unitId,
         positionTitle: emp.positionTitle,
+        positionId: positionMap[emp.positionTitle] ?? null,
         directSupervisorId: emp.directSupervisorId ?? null,
         isActive: true,
       },
       update: {
         fullName: emp.fullName,
         positionTitle: emp.positionTitle,
+        positionId: positionMap[emp.positionTitle] ?? null,
         directSupervisorId: emp.directSupervisorId ?? null,
         unitId: emp.unitId,
       },
