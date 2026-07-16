@@ -30,6 +30,13 @@ export default async function AdminLeaveRequestsPage({ searchParams }: Props) {
         requester: { select: { fullName: true, nip: true, unit: { select: { name: true } } } },
         leaveType: { select: { name: true } },
         delegate: { select: { fullName: true } },
+        approvalSteps: {
+          where: { status: "PENDING" },
+          select: { stepOrder: true, roleLabel: true, approver: { select: { fullName: true } } },
+          orderBy: { stepOrder: "asc" },
+          take: 1,
+        },
+        _count: { select: { approvalSteps: true } },
       },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * limit,
@@ -99,6 +106,15 @@ export default async function AdminLeaveRequestsPage({ searchParams }: Props) {
                     <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${statusColor(r.status)}`}>
                       {formatStatus(r.status)}
                     </span>
+                    {r.approvalSteps[0] && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        {(r.status === "IN_APPROVAL") && (
+                          <span>Langkah {r.approvalSteps[0].stepOrder}/{r._count.approvalSteps} — </span>
+                        )}
+                        {r.approvalSteps[0].approver.fullName}
+                        <span className="text-gray-300"> ({r.approvalSteps[0].roleLabel})</span>
+                      </p>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <Tooltip label="Lihat detail">
