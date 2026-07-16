@@ -2,6 +2,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
+import QRCode from "qrcode"
 
 async function submitDecision(leaveRequestId: string, employeeId: string, formData: FormData) {
   "use server"
@@ -103,6 +104,26 @@ export default async function DelegateInboxPage() {
     orderBy: { createdAt: "desc" },
   })
 
+  const qrMap = Object.fromEntries(
+    await Promise.all(
+      pending.map(async (req) => {
+        const start = new Date(req.startDate).toLocaleDateString("id-ID")
+        const end = new Date(req.endDate).toLocaleDateString("id-ID")
+        const dataUrl = await QRCode.toDataURL(
+          [
+            `No: ${req.requestNumber}`,
+            `Pemohon: ${req.requester.fullName}`,
+            `NIP: ${req.requester.nip}`,
+            `Jenis: ${req.leaveType.name}`,
+            `Tgl: ${start} - ${end}`,
+          ].join("\n"),
+          { width: 80, margin: 1 },
+        )
+        return [req.id, dataUrl]
+      }),
+    ),
+  )
+
   return (
     <div>
       <div className="mb-6">
@@ -126,10 +147,20 @@ export default async function DelegateInboxPage() {
                   <p className="text-xs text-gray-500">
                     {req.requester.positionTitle} — {req.requester.unit?.name ?? "—"}
                   </p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {new Date(req.createdAt).toLocaleDateString("id-ID")}
+                  </p>
                 </div>
-                <span className="text-xs text-gray-400 shrink-0">
-                  {new Date(req.createdAt).toLocaleDateString("id-ID")}
-                </span>
+                {qrMap[req.id] && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={qrMap[req.id]}
+                    alt="QR pengajuan"
+                    width={64}
+                    height={64}
+                    className="shrink-0 rounded border border-gray-100"
+                  />
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
