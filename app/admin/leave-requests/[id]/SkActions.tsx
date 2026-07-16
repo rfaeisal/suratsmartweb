@@ -50,8 +50,8 @@ export default function SkActions({ leaveRequestId, currentStatus, hasSkDocument
         method: "POST",
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error?.message ?? "Gagal kirim ke sistem lama")
-      setMessage(`Berhasil dikirim ke sistem lama. Status: ${data.status}`)
+      if (!res.ok) throw new Error(data.error?.message ?? "Gagal kirim ke EHOS")
+      setMessage(`Berhasil dikirim ke EHOS. Status: ${data.status}`)
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Terjadi kesalahan")
@@ -112,13 +112,13 @@ export default function SkActions({ leaveRequestId, currentStatus, hasSkDocument
               ? "Mengirim..."
               : currentStatus === "SEND_FAILED"
               ? "Kirim Ulang ke Sistem Lama"
-              : "Kirim ke Sistem Lama"}
+              : "Kirim ke EHOS"}
           </button>
         )}
 
         {currentStatus === "SENT_TO_LEGACY" && (
           <span className="px-4 py-2 bg-gray-100 text-gray-500 text-sm rounded-lg">
-            Sudah dikirim ke sistem lama
+            Sudah dikirim ke EHOS
           </span>
         )}
       </div>

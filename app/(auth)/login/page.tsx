@@ -92,7 +92,7 @@ function LoginForm() {
         </form>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          Login menggunakan akun SIMPEG Anda
+          Login menggunakan akun EHOS Anda
         </p>
       </div>
     </div>
