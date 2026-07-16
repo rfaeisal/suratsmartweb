@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth/require-auth"
 import { AuthError } from "@/lib/auth/require-auth"
 import { Errors } from "@/lib/errors"
-import fs from "node:fs/promises"
+import { isRemoteUrl, readLocalFile } from "@/lib/storage"
 import path from "node:path"
 
 const STORAGE_PATH = path.resolve(process.env.FILE_STORAGE_PATH ?? "./uploads")
@@ -29,24 +29,37 @@ export async function GET(req: NextRequest, { params }: Props) {
     })
     if (!skDoc) return Errors.notFound("SK belum digenerate")
 
-    // Akses: pemilik, admin, atau salah satu approver
     const isAdmin = user.roles.includes("ADMIN_KEPEGAWAIAN") || user.roles.includes("SUPERADMIN")
     const isOwner = skDoc.leaveRequest.requesterId === user.employeeId
     const isApprover = skDoc.leaveRequest.approvalSteps.some((s) => s.approverId === user.employeeId)
     if (!isAdmin && !isOwner && !isApprover) return Errors.forbidden()
 
-    // Cegah path traversal — pastikan file berada di dalam STORAGE_PATH
-    const resolvedPath = path.resolve(skDoc.filePath)
-    if (!resolvedPath.startsWith(STORAGE_PATH)) {
-      return Errors.forbidden()
+    const disposition = `attachment; filename="SK-${skDoc.leaveRequest.requestNumber}.pdf"`
+
+    // Blob storage: redirect langsung ke URL publik
+    if (isRemoteUrl(skDoc.filePath)) {
+      const blobRes = await fetch(skDoc.filePath)
+      if (!blobRes.ok) return Errors.notFound("File SK tidak ditemukan di storage")
+      const buffer = await blobRes.arrayBuffer()
+      return new NextResponse(buffer, {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": disposition,
+          "Content-Length": buffer.byteLength.toString(),
+          "Cache-Control": "private, no-store",
+        },
+      })
     }
 
-    const buffer = await fs.readFile(resolvedPath)
+    // Local storage: baca dari filesystem, cegah path traversal
+    const resolvedPath = path.resolve(skDoc.filePath)
+    if (!resolvedPath.startsWith(STORAGE_PATH)) return Errors.forbidden()
 
-    return new NextResponse(buffer, {
+    const buffer = await readLocalFile(resolvedPath)
+    return new NextResponse(buffer.buffer as ArrayBuffer, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="SK-${skDoc.leaveRequest.requestNumber}.pdf"`,
+        "Content-Disposition": disposition,
         "Content-Length": buffer.length.toString(),
         "Cache-Control": "private, no-store",
       },

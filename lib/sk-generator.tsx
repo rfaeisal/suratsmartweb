@@ -12,9 +12,8 @@ import {
 // react-pdf tidak export tipe Style secara langsung — gunakan inferensi dari StyleSheet
 type PdfStyle = ReturnType<typeof StyleSheet.create>[string]
 import QRCode from "qrcode"
-import path from "node:path"
-import fs from "node:fs/promises"
 import { prisma } from "@/lib/prisma"
+import { savePdf } from "@/lib/storage"
 
 // ─── Konfigurasi instansi ──────────────────────────────────────────────────────
 // TODO: konfirmasi ke bagian kepegawaian — sesuaikan env var sebelum produksi
@@ -706,12 +705,8 @@ export async function generateAndSaveSkPdf(leaveRequestId: string): Promise<{
   }
 
   const buffer = await renderToBuffer(<SkDocument data={skData} />)
-
-  const storageDir = path.join(process.env.FILE_STORAGE_PATH ?? "./uploads", "sk")
-  await fs.mkdir(storageDir, { recursive: true })
   const fileName = `${req.requestNumber}.pdf`
-  const filePath = path.join(storageDir, fileName)
-  await fs.writeFile(filePath, buffer)
+  const filePath = await savePdf(buffer, fileName)
 
   return { skNumber, filePath }
 }
