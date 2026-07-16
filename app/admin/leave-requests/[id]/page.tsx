@@ -164,48 +164,93 @@ export default async function AdminLeaveRequestDetailPage({ params }: Props) {
         </div>
       )}
 
-      {/* Alur Approval */}
+      {/* Riwayat Approval */}
       <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h3 className="font-medium text-gray-900 text-sm mb-4">Alur Persetujuan</h3>
+        <h3 className="font-medium text-gray-900 text-sm mb-4">Riwayat Persetujuan</h3>
 
-        {req.approvalSteps.length > 0 ? (
-          <div className="space-y-3 mb-5">
+        <div className="relative mb-5">
+          <div className="absolute left-3 top-0 bottom-0 w-px bg-gray-100" />
+          <div className="space-y-5">
+
+            {/* Pengajuan dikirim */}
+            <div className="flex items-start gap-4 relative">
+              <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center shrink-0 z-10">
+                <div className="w-2 h-2 rounded-full bg-blue-500" />
+              </div>
+              <div className="flex-1 pt-0.5">
+                <p className="text-sm font-medium text-gray-900">Pengajuan Dikirim</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {new Date(req.createdAt).toLocaleString("id-ID", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                </p>
+              </div>
+            </div>
+
+            {/* Konfirmasi delegasi */}
+            {req.delegateId && (
+              <div className="flex items-start gap-4 relative">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 z-10 ${
+                  req.delegateConfirmationStatus === "CONFIRMED" ? "bg-green-100" :
+                  req.delegateConfirmationStatus === "DECLINED" ? "bg-red-100" : "bg-gray-100"
+                }`}>
+                  <div className={`w-2 h-2 rounded-full ${
+                    req.delegateConfirmationStatus === "CONFIRMED" ? "bg-green-500" :
+                    req.delegateConfirmationStatus === "DECLINED" ? "bg-red-500" : "bg-gray-400"
+                  }`} />
+                </div>
+                <div className="flex-1 pt-0.5">
+                  <p className="text-sm font-medium text-gray-900">
+                    Konfirmasi Pegawai Pengganti
+                    {req.delegateConfirmationStatus === "CONFIRMED" && <span className="ml-2 text-xs font-normal text-green-600">Bersedia</span>}
+                    {req.delegateConfirmationStatus === "DECLINED" && <span className="ml-2 text-xs font-normal text-red-600">Menolak</span>}
+                    {req.delegateConfirmationStatus === "PENDING" && <span className="ml-2 text-xs font-normal text-gray-400">Menunggu</span>}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">{req.delegate?.fullName}</p>
+                  {req.delegateNote && <p className="text-xs text-gray-400 italic mt-0.5">"{req.delegateNote}"</p>}
+                  {req.delegateDecidedAt && (
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {new Date(req.delegateDecidedAt).toLocaleString("id-ID", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Tiap ApprovalStep */}
             {req.approvalSteps.map((step) => (
-              <div key={step.id} className="flex items-start gap-3">
-                <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${
-                    step.status === "APPROVED"
-                      ? "bg-green-100 text-green-700"
-                      : step.status === "REJECTED"
-                      ? "bg-red-100 text-red-700"
-                      : step.status === "RETURNED"
-                      ? "bg-orange-100 text-orange-700"
-                      : "bg-gray-100 text-gray-500"
-                  }`}
-                >
+              <div key={step.id} className="flex items-start gap-4 relative">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 z-10 ${
+                  step.status === "APPROVED" ? "bg-green-100 text-green-700" :
+                  step.status === "REJECTED" ? "bg-red-100 text-red-700" :
+                  step.status === "RETURNED" ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-500"
+                }`}>
                   {step.stepOrder}
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900">{step.approver.fullName}</span>
-                    <span className="text-xs text-gray-400">{step.roleLabel}</span>
-                    <span className={`text-xs font-medium ${stepStatusColor[step.status]}`}>
+                <div className="flex-1 pt-0.5">
+                  <p className="text-sm font-medium text-gray-900">
+                    {step.approver.fullName}
+                    <span className="ml-1 text-xs font-normal text-gray-400">({step.roleLabel})</span>
+                    <span className={`ml-2 text-xs font-normal ${stepStatusColor[step.status]}`}>
                       {stepStatusLabel[step.status]}
                     </span>
-                  </div>
-                  {step.note && (
-                    <p className="text-xs text-gray-500 mt-0.5 italic">"{step.note}"</p>
-                  )}
-                  {step.decidedAt && (
-                    <p className="text-xs text-gray-400">{new Date(step.decidedAt).toLocaleString("id-ID")}</p>
+                  </p>
+                  {step.approver.nip && <p className="text-xs text-gray-400">NIP {step.approver.nip}</p>}
+                  {step.note && <p className="text-xs text-gray-400 italic mt-0.5">"{step.note}"</p>}
+                  {step.decidedAt ? (
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {new Date(step.decidedAt).toLocaleString("id-ID", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-400 mt-0.5">Menunggu keputusan</p>
                   )}
                 </div>
               </div>
             ))}
+
+            {req.approvalSteps.length === 0 && req.delegateConfirmationStatus === "CONFIRMED" && (
+              <p className="text-sm text-gray-400 pl-10">Belum ada alur approval ditetapkan.</p>
+            )}
           </div>
-        ) : (
-          <p className="text-sm text-gray-400 mb-4">Belum ada alur approval ditetapkan.</p>
-        )}
+        </div>
 
         {/* Form set approval flow */}
         {canSetFlow && (
@@ -223,10 +268,7 @@ export default async function AdminLeaveRequestDetailPage({ params }: Props) {
         {req.status === "PENDING_ADMIN_REVIEW" && req.delegateConfirmationStatus !== "CONFIRMED" && (
           <div className="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-xs">
             Alur approval belum dapat ditetapkan karena konfirmasi pegawai pengganti masih{" "}
-            <strong>
-              {req.delegateConfirmationStatus === "PENDING" ? "menunggu" : "ditolak"}
-            </strong>
-            .
+            <strong>{req.delegateConfirmationStatus === "PENDING" ? "menunggu" : "ditolak"}</strong>.
           </div>
         )}
       </div>
