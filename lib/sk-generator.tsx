@@ -55,6 +55,7 @@ interface SkData {
   startDate: string
   endDate: string
   addressDuringLeave: string
+  emergencyPhone: string
   // Kuota tahunan (section V)
   quotaRows: QuotaRow[]
   // Approval
@@ -403,7 +404,7 @@ function SkDocument({ data }: { data: SkData }) {
               <Text>{data.addressDuringLeave || "—"}</Text>
               <View style={{ flexDirection: "row", marginTop: 4 }}>
                 <Text style={s.bold}>TELP  </Text>
-                <Text></Text>
+                <Text>{data.emergencyPhone || ""}</Text>
               </View>
             </View>
             {/* Kanan: hormat saya + QR pegawai */}
@@ -693,6 +694,7 @@ export async function generateAndSaveSkPdf(leaveRequestId: string): Promise<{
     startDate: formatIdDate(new Date(req.startDate)),
     endDate:   formatIdDate(new Date(req.endDate)),
     addressDuringLeave: req.addressDuringLeave ?? "",
+    emergencyPhone: req.emergencyPhone ?? "",
     quotaRows,
     directSupervisor,
     finalApprover,

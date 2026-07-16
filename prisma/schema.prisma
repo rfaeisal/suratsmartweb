@@ -113,6 +113,7 @@ model LeaveRequest {
   totalDays                  Int
   reason                     String
   addressDuringLeave         String?
+  emergencyPhone             String?
   delegateId                 String?
   delegate                   Employee?                  @relation("Delegate", fields: [delegateId], references: [id])
   status                     LeaveRequestStatus         @default(SUBMITTED)

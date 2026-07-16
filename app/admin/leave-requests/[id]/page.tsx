@@ -121,6 +121,9 @@ export default async function AdminLeaveRequestDetailPage({ params }: Props) {
           ...(req.addressDuringLeave
             ? [{ label: "Alamat Selama Cuti", value: req.addressDuringLeave }]
             : []),
+          ...(req.emergencyPhone
+            ? [{ label: "Kontak Darurat", value: req.emergencyPhone }]
+            : []),
           {
             label: "Pegawai Pengganti",
             value: req.delegate

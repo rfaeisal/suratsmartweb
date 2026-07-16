@@ -33,6 +33,7 @@ export default function LeaveRequestForm({ leaveTypes, colleagues }: Props) {
   const [endDate, setEndDate] = useState("")
   const [reason, setReason] = useState("")
   const [addressDuringLeave, setAddressDuringLeave] = useState("")
+  const [emergencyPhone, setEmergencyPhone] = useState("")
   const [delegateId, setDelegateId] = useState("")
   const [files, setFiles] = useState<File[]>([])
 
@@ -96,6 +97,7 @@ export default function LeaveRequestForm({ leaveTypes, colleagues }: Props) {
           endDate,
           reason,
           addressDuringLeave: addressDuringLeave || undefined,
+          emergencyPhone: emergencyPhone || undefined,
           delegateEmployeeId: delegateId,
           attachmentFileIds: fileIds,
         }),
@@ -220,6 +222,25 @@ export default function LeaveRequestForm({ leaveTypes, colleagues }: Props) {
           placeholder="Contoh: Jl. Mawar No. 5, Kel. Sukamaju, Kec. Cilandak, Jakarta Selatan"
           className={inputClass}
         />
+      </div>
+
+      {/* Nomor Kontak Darurat */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          No. Kontak Darurat Selama Cuti{" "}
+          <span className="text-gray-400 text-xs font-normal">(opsional)</span>
+        </label>
+        <input
+          type="tel"
+          value={emergencyPhone}
+          onChange={(e) => setEmergencyPhone(e.target.value)}
+          placeholder="Contoh: 08123456789"
+          maxLength={20}
+          className={inputClass}
+        />
+        <p className="mt-1 text-xs text-gray-400">
+          Nomor yang bisa dihubungi selama cuti berlangsung
+        </p>
       </div>
 
       {/* Pegawai Pengganti */}

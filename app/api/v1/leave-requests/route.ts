@@ -18,6 +18,7 @@ const createSchema = z.object({
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal: YYYY-MM-DD"),
   reason: z.string().min(5, "Alasan minimal 5 karakter"),
   addressDuringLeave: z.string().min(5, "Alamat minimal 5 karakter").optional(),
+  emergencyPhone: z.string().max(20).optional(),
   delegateEmployeeId: z.string().min(1),
   attachmentFileIds: z.array(z.string()).default([]),
 })
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest) {
     return Errors.validation("Data tidak valid", parsed.error.flatten().fieldErrors)
   }
 
-  const { leaveTypeId, startDate, endDate, reason, addressDuringLeave, delegateEmployeeId, attachmentFileIds } =
+  const { leaveTypeId, startDate, endDate, reason, addressDuringLeave, emergencyPhone, delegateEmployeeId, attachmentFileIds } =
     parsed.data
 
   const start = new Date(startDate)
@@ -148,6 +149,7 @@ export async function POST(req: NextRequest) {
         totalDays,
         reason,
         addressDuringLeave: addressDuringLeave ?? null,
+        emergencyPhone: emergencyPhone ?? null,
         delegateId: delegateEmployeeId,
         status: "SUBMITTED",
         delegateConfirmationStatus: "PENDING",
