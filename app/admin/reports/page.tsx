@@ -236,7 +236,6 @@ export default async function ReportsPage({ searchParams }: Props) {
               </tfoot>
             </table>
           </div>
-          </div>
         </div>
       )}
 
