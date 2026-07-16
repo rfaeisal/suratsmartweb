@@ -26,9 +26,10 @@ async function submitDecision(stepId: string, actorEmployeeId: string, formData:
   if (!step) return
   if (step.approverId !== actorEmployeeId) return
   if (step.status !== "PENDING") return
-  if (step.leaveRequest.status !== "IN_APPROVAL") return
+  if (step.leaveRequest.status !== "IN_APPROVAL" && step.leaveRequest.status !== "PENDING_KEPALA_RUANGAN") return
   if (step.stepOrder !== step.leaveRequest.currentStepOrder) return
 
+  const isKepalaRuanganStep = step.leaveRequest.status === "PENDING_KEPALA_RUANGAN"
   const allSteps = step.leaveRequest.approvalSteps
   const isLastStep = step.stepOrder === Math.max(...allSteps.map((s) => s.stepOrder))
   const leaveRequestId = step.leaveRequestId
@@ -40,7 +41,13 @@ async function submitDecision(stepId: string, actorEmployeeId: string, formData:
     })
 
     if (decision === "APPROVED") {
-      if (isLastStep) {
+      if (isKepalaRuanganStep) {
+        // Kepala ruangan selesai → masuk antrian review admin kepegawaian
+        await tx.leaveRequest.update({
+          where: { id: leaveRequestId },
+          data: { status: "PENDING_ADMIN_REVIEW", currentStepOrder: step.stepOrder },
+        })
+      } else if (isLastStep) {
         await tx.leaveRequest.update({
           where: { id: leaveRequestId },
           data: { status: "APPROVED", currentStepOrder: step.stepOrder },
@@ -85,7 +92,7 @@ export default async function ApprovalsPage() {
     where: {
       approverId: employeeId,
       status: "PENDING",
-      leaveRequest: { status: "IN_APPROVAL" },
+      leaveRequest: { status: { in: ["IN_APPROVAL", "PENDING_KEPALA_RUANGAN"] } },
     },
     include: {
       leaveRequest: {
