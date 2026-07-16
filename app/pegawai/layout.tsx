@@ -17,13 +17,14 @@ export default async function PegawaiLayout({ children }: { children: React.Reac
         status: "SUBMITTED",
       },
     }),
-    prisma.approvalStep.count({
+    prisma.approvalStep.findMany({
       where: {
         approverId: employeeId,
         status: "PENDING",
         leaveRequest: { status: { in: ["IN_APPROVAL", "PENDING_KEPALA_RUANGAN"] } },
       },
-    }),
+      select: { stepOrder: true, leaveRequest: { select: { currentStepOrder: true } } },
+    }).then((steps) => steps.filter((s) => s.stepOrder === s.leaveRequest.currentStepOrder).length),
   ])
 
   const navItems = [
