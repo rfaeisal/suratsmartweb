@@ -88,19 +88,19 @@ export default async function DashboardPage() {
         <div className="space-y-2">
           {pendingAdminCount > 0 && (
             <Link href="/admin/leave-requests?status=PENDING_ADMIN_REVIEW">
-              <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800 hover:bg-amber-100 transition-colors">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800 hover:bg-amber-100 transition-colors">
                 <span className="font-medium">{pendingAdminCount} pengajuan</span>
-                menunggu penetapan alur approval
-                <span className="ml-auto text-xs">Lihat →</span>
+                <span>menunggu penetapan alur approval</span>
+                <span className="ml-auto text-xs shrink-0">Lihat →</span>
               </div>
             </Link>
           )}
           {sendFailedCount > 0 && (
             <Link href="/admin/leave-requests?status=SEND_FAILED">
-              <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-800 hover:bg-red-100 transition-colors">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-800 hover:bg-red-100 transition-colors">
                 <span className="font-medium">{sendFailedCount} pengajuan</span>
-                gagal dikirim ke sistem lama — perlu kirim ulang
-                <span className="ml-auto text-xs">Lihat →</span>
+                <span>gagal dikirim ke EHOS — perlu kirim ulang</span>
+                <span className="ml-auto text-xs shrink-0">Lihat →</span>
               </div>
             </Link>
           )}
@@ -116,9 +116,9 @@ export default async function DashboardPage() {
           { label: "Sesi Mobile Aktif", value: activeSessionCount, href: "/admin/sessions" },
         ].map((stat) => (
           <Link key={stat.label} href={stat.href}>
-            <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
-              <p className="text-xs text-gray-500">{stat.label}</p>
-              <p className="text-3xl font-bold text-gray-900 mt-1">{stat.value}</p>
+            <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-5 hover:shadow-md transition-shadow">
+              <p className="text-xs text-gray-500 leading-tight">{stat.label}</p>
+              <p className="text-2xl md:text-3xl font-bold text-gray-900 mt-1">{stat.value}</p>
             </div>
           </Link>
         ))}
@@ -144,7 +144,7 @@ export default async function DashboardPage() {
                       {STATUS_LABELS[g.status] ?? g.status}
                     </span>
                     <span className="ml-auto font-semibold text-gray-900 text-sm">{g._count._all}</span>
-                    <div className="w-20 bg-gray-100 rounded-full h-1.5">
+                    <div className="w-12 md:w-20 bg-gray-100 rounded-full h-1.5 shrink-0">
                       <div
                         className="bg-blue-500 h-1.5 rounded-full"
                         style={{ width: `${Math.round((g._count._all / totalThisYear) * 100)}%` }}
@@ -167,7 +167,7 @@ export default async function DashboardPage() {
                 <div key={g.leaveTypeId} className="flex items-center gap-3">
                   <span className="text-sm text-gray-700 flex-1">{ltNameMap[g.leaveTypeId] ?? "—"}</span>
                   <span className="text-sm font-semibold text-gray-900">{g._count._all}</span>
-                  <div className="w-24 bg-gray-100 rounded-full h-1.5">
+                  <div className="w-16 md:w-24 bg-gray-100 rounded-full h-1.5 shrink-0">
                     <div
                       className="bg-green-500 h-1.5 rounded-full"
                       style={{ width: `${Math.round((g._count._all / totalThisYear) * 100)}%` }}
