@@ -47,17 +47,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   const leaveRequest = await prisma.leaveRequest.findUnique({
     where: { id: leaveRequestId },
     include: {
-      requester: {
-        select: {
-          fullName: true,
-          unit: {
-            select: {
-              kepalaRuanganId: true,
-              kepalaRuangan: { select: { id: true, fullName: true } },
-            },
-          },
-        },
-      },
+      requester: { select: { fullName: true, unitId: true } },
       leaveType: { select: { name: true } },
     },
   })
@@ -109,7 +99,17 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
   // ─── CONFIRMED ──────────────────────────────────────────────────────────────
 
-  const kepalaRuanganId = leaveRequest.requester.unit?.kepalaRuanganId ?? null
+  // Query terpisah untuk hindari masalah nested include/select dengan adapter-pg
+  let kepalaRuanganId: string | null = null
+  let kepalaRuanganName: string | null = null
+  if (leaveRequest.requester.unitId) {
+    const unit = await prisma.workUnit.findUnique({
+      where: { id: leaveRequest.requester.unitId },
+      select: { kepalaRuanganId: true, kepalaRuangan: { select: { fullName: true } } },
+    })
+    kepalaRuanganId = unit?.kepalaRuanganId ?? null
+    kepalaRuanganName = unit?.kepalaRuangan?.fullName ?? null
+  }
 
   if (kepalaRuanganId) {
     // Pegawai ini punya kepala ruangan → otomatis buat step approval + ubah status
@@ -161,7 +161,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         targetUserId: requesterUser.id,
         data: {
           leaveType: leaveRequest.leaveType.name,
-          message: `Pengganti menyetujui. Menunggu persetujuan Kepala Ruangan (${leaveRequest.requester.unit?.kepalaRuangan?.fullName ?? ""}).`,
+          message: `Pengganti menyetujui. Menunggu persetujuan Kepala Ruangan (${kepalaRuanganName ?? ""}).`,
         },
       })
     }
