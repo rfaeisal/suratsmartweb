@@ -109,6 +109,7 @@ export default async function ApprovalsPage() {
             select: { fullName: true, nip: true, positionTitle: true, unit: { select: { name: true } } },
           },
           leaveType: { select: { name: true } },
+          delegate: { select: { fullName: true, positionTitle: true } },
         },
       },
     },
@@ -169,7 +170,14 @@ export default async function ApprovalsPage() {
                     </p>
                     <p className="text-xs text-gray-400">{req.totalDays} hari</p>
                   </div>
-                  <div className="col-span-2">
+                  {req.delegate && (
+                    <div>
+                      <span className="text-gray-500 text-xs">Penerima Delegasi</span>
+                      <p className="text-gray-900">{req.delegate.fullName}</p>
+                      <p className="text-xs text-gray-400">{req.delegate.positionTitle}</p>
+                    </div>
+                  )}
+                  <div className={req.delegate ? "" : "col-span-2"}>
                     <span className="text-gray-500 text-xs">Alasan</span>
                     <p className="text-gray-900">{req.reason}</p>
                   </div>
