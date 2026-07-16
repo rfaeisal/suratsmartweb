@@ -75,6 +75,30 @@ export default async function LeaveRequestDetailPage({ params }: Props) {
         </div>
       </div>
 
+      {/* Step approval aktif */}
+      {(() => {
+        const activeStep = req.approvalSteps.find(
+          (s) => s.status === "PENDING" && s.stepOrder === req.currentStepOrder,
+        )
+        if (!activeStep) return null
+        const totalSteps = req.approvalSteps.length
+        return (
+          <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+            <div className="w-2 h-2 rounded-full bg-blue-500 shrink-0 animate-pulse" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-blue-600 font-medium">
+                Menunggu persetujuan
+                {req.status === "IN_APPROVAL" && ` · Langkah ${activeStep.stepOrder}/${totalSteps}`}
+              </p>
+              <p className="text-sm font-semibold text-blue-900 truncate">
+                {activeStep.approver.fullName}
+                <span className="ml-1.5 text-xs font-normal text-blue-600">({activeStep.roleLabel})</span>
+              </p>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Detail */}
       <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
         <h3 className="font-medium text-gray-900 text-sm mb-3">Detail Pengajuan</h3>
