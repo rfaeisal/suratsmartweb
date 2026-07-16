@@ -330,6 +330,7 @@ export default function EmployeesPage() {
                   })}
                 </tbody>
               </table>
+          </div>
             </div>
           </div>
 

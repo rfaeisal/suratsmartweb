@@ -128,6 +128,7 @@ export default function LeaveTypesTable({ leaveTypes, toggleAction }: Props) {
           )}
         </tbody>
       </table>
+          </div>
     </div>
   )
 }
