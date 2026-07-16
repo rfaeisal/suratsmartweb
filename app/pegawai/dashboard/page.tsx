@@ -10,7 +10,16 @@ export default async function PegawaiDashboardPage() {
   const [requests, employee] = await Promise.all([
     prisma.leaveRequest.findMany({
       where: { requesterId: employeeId },
-      include: { leaveType: { select: { name: true } } },
+      include: {
+        leaveType: { select: { name: true } },
+        approvalSteps: {
+          where: { status: "PENDING" },
+          select: { stepOrder: true, roleLabel: true, approver: { select: { fullName: true } } },
+          orderBy: { stepOrder: "asc" },
+          take: 1,
+        },
+        _count: { select: { approvalSteps: true } },
+      },
       orderBy: { createdAt: "desc" },
     }),
     prisma.employee.findUnique({
@@ -78,6 +87,16 @@ export default async function PegawaiDashboardPage() {
                       })}{" "}
                       <span className="text-gray-400">({r.totalDays} hari)</span>
                     </p>
+                    {r.approvalSteps[0] && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Menunggu:{" "}
+                        <span className="text-gray-600">{r.approvalSteps[0].approver.fullName}</span>
+                        <span className="text-gray-300"> ({r.approvalSteps[0].roleLabel})</span>
+                        {r.status === "IN_APPROVAL" && (
+                          <span className="text-gray-300"> · Langkah {r.approvalSteps[0].stepOrder}/{r._count.approvalSteps}</span>
+                        )}
+                      </p>
+                    )}
                   </div>
                   <span className="text-xs text-gray-400 shrink-0">
                     {new Date(r.createdAt).toLocaleDateString("id-ID")}
