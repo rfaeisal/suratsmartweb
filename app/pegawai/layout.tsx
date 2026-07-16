@@ -21,7 +21,7 @@ export default async function PegawaiLayout({ children }: { children: React.Reac
       where: {
         approverId: employeeId,
         status: "PENDING",
-        leaveRequest: { status: "IN_APPROVAL" },
+        leaveRequest: { status: { in: ["IN_APPROVAL", "PENDING_KEPALA_RUANGAN"] } },
       },
     }),
   ])
