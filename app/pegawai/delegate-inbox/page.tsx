@@ -18,29 +18,65 @@ async function submitDecision(leaveRequestId: string, employeeId: string, formDa
       status: "SUBMITTED",
       delegateConfirmationStatus: "PENDING",
     },
+    include: { requester: { select: { unitId: true } } },
   })
   if (!leaveRequest) return
 
-  const newStatus = decision === "CONFIRMED" ? "PENDING_ADMIN_REVIEW" : "DELEGATE_DECLINED"
+  if (decision === "DECLINED") {
+    await prisma.leaveRequest.update({
+      where: { id: leaveRequestId },
+      data: {
+        status: "DELEGATE_DECLINED",
+        delegateConfirmationStatus: "DECLINED",
+        delegateDecidedAt: new Date(),
+        delegateNote: note || null,
+      },
+    })
+    await prisma.auditLog.create({
+      data: { actorId: employeeId, action: "DELEGATE_DECLINED", entityType: "LeaveRequest", entityId: leaveRequestId, metadata: { note: note || null } },
+    })
+    revalidatePath("/pegawai/delegate-inbox")
+    return
+  }
 
-  await prisma.leaveRequest.update({
-    where: { id: leaveRequestId },
-    data: {
-      status: newStatus,
-      delegateConfirmationStatus: decision === "CONFIRMED" ? "CONFIRMED" : "DECLINED",
-      delegateDecidedAt: new Date(),
-      delegateNote: note || null,
-    },
-  })
+  // Cek kepala ruangan di unit pemohon
+  let kepalaRuanganId: string | null = null
+  if (leaveRequest.requester.unitId) {
+    const unit = await prisma.workUnit.findUnique({
+      where: { id: leaveRequest.requester.unitId },
+      select: { kepalaRuanganId: true },
+    })
+    kepalaRuanganId = unit?.kepalaRuanganId ?? null
+  }
+
+  if (kepalaRuanganId) {
+    await prisma.$transaction(async (tx) => {
+      await tx.leaveRequest.update({
+        where: { id: leaveRequestId },
+        data: {
+          status: "PENDING_KEPALA_RUANGAN",
+          delegateConfirmationStatus: "CONFIRMED",
+          delegateDecidedAt: new Date(),
+          currentStepOrder: 1,
+        },
+      })
+      await tx.approvalStep.create({
+        data: { leaveRequestId, stepOrder: 1, approverId: kepalaRuanganId!, roleLabel: "Kepala Ruangan", status: "PENDING" },
+      })
+    })
+  } else {
+    await prisma.leaveRequest.update({
+      where: { id: leaveRequestId },
+      data: {
+        status: "PENDING_ADMIN_REVIEW",
+        delegateConfirmationStatus: "CONFIRMED",
+        delegateDecidedAt: new Date(),
+      },
+    })
+  }
 
   await prisma.auditLog.create({
-    data: {
-      actorId: employeeId,
-      action: `DELEGATE_${decision}`,
-      entityType: "LeaveRequest",
-      entityId: leaveRequestId,
-      metadata: { note: note || null },
-    },
+    data: { actorId: employeeId, action: "DELEGATE_CONFIRMED", entityType: "LeaveRequest", entityId: leaveRequestId, metadata: { kepalaRuanganId } },
   })
 
   revalidatePath("/pegawai/delegate-inbox")

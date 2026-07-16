@@ -99,16 +99,13 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
   // ─── CONFIRMED ──────────────────────────────────────────────────────────────
 
-  // Query terpisah untuk hindari masalah nested include/select dengan adapter-pg
   let kepalaRuanganId: string | null = null
   let kepalaRuanganName: string | null = null
-  console.log("[delegate-confirm] requester.unitId:", leaveRequest.requester.unitId)
   if (leaveRequest.requester.unitId) {
     const unit = await prisma.workUnit.findUnique({
       where: { id: leaveRequest.requester.unitId },
       select: { kepalaRuanganId: true },
     })
-    console.log("[delegate-confirm] unit row:", JSON.stringify(unit))
     kepalaRuanganId = unit?.kepalaRuanganId ?? null
     if (kepalaRuanganId) {
       const kepala = await prisma.employee.findUnique({
@@ -118,7 +115,6 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       kepalaRuanganName = kepala?.fullName ?? null
     }
   }
-  console.log("[delegate-confirm] kepalaRuanganId resolved:", kepalaRuanganId)
 
   if (kepalaRuanganId) {
     // Pegawai ini punya kepala ruangan → otomatis buat step approval + ubah status
