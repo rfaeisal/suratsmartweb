@@ -110,6 +110,17 @@ export default async function ApprovalsPage() {
           },
           leaveType: { select: { name: true } },
           delegate: { select: { fullName: true, positionTitle: true } },
+          approvalSteps: {
+            select: {
+              stepOrder: true,
+              roleLabel: true,
+              status: true,
+              decidedAt: true,
+              note: true,
+              approver: { select: { fullName: true } },
+            },
+            orderBy: { stepOrder: "asc" },
+          },
         },
       },
     },
@@ -182,6 +193,39 @@ export default async function ApprovalsPage() {
                     <p className="text-gray-900">{req.reason}</p>
                   </div>
                 </div>
+
+                {/* Riwayat approval sebelumnya */}
+                {req.approvalSteps.filter((s) => s.status !== "PENDING" && s.stepOrder < step.stepOrder).length > 0 && (
+                  <div className="mb-4 border-t border-gray-100 pt-4">
+                    <p className="text-xs font-medium text-gray-500 mb-2">Sudah disetujui oleh</p>
+                    <div className="space-y-1.5">
+                      {req.approvalSteps
+                        .filter((s) => s.status !== "PENDING" && s.stepOrder < step.stepOrder)
+                        .map((s) => (
+                          <div key={s.stepOrder} className="flex items-start justify-between gap-3 text-sm">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className={`shrink-0 w-1.5 h-1.5 rounded-full mt-1.5 ${
+                                s.status === "APPROVED" ? "bg-green-500" : s.status === "REJECTED" ? "bg-red-500" : "bg-orange-400"
+                              }`} />
+                              <div className="min-w-0">
+                                <span className="font-medium text-gray-800">{s.approver?.fullName ?? "—"}</span>
+                                <span className="text-gray-400 ml-1">({s.roleLabel})</span>
+                                {s.note && <p className="text-xs text-gray-400 truncate">{s.note}</p>}
+                              </div>
+                            </div>
+                            {s.decidedAt && (
+                              <span className="text-xs text-gray-400 shrink-0">
+                                {new Date(s.decidedAt).toLocaleString("id-ID", {
+                                  day: "2-digit", month: "short", year: "numeric",
+                                  hour: "2-digit", minute: "2-digit",
+                                })}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
 
                 <form action={submitDecision.bind(null, step.id, employeeId)} className="space-y-3">
                   <div>
