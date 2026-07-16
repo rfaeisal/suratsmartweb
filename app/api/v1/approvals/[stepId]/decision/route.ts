@@ -45,8 +45,9 @@ export async function POST(req: NextRequest, { params }: Props) {
     if (step.status !== "PENDING") {
       return Errors.invalidApprovalState("Langkah ini sudah diputuskan sebelumnya")
     }
-    if (step.leaveRequest.status !== "IN_APPROVAL") {
-      return Errors.invalidApprovalState("Pengajuan tidak dalam status IN_APPROVAL")
+    const validStatuses = ["IN_APPROVAL", "PENDING_KEPALA_RUANGAN"]
+    if (!validStatuses.includes(step.leaveRequest.status)) {
+      return Errors.invalidApprovalState("Pengajuan tidak dalam status yang dapat disetujui")
     }
     if (step.stepOrder !== step.leaveRequest.currentStepOrder) {
       return Errors.invalidApprovalState("Bukan giliran Anda untuk memutuskan langkah ini")
@@ -57,6 +58,8 @@ export async function POST(req: NextRequest, { params }: Props) {
     const leaveRequestId = step.leaveRequestId
     const requesterAppUserId = step.leaveRequest.requester.user?.id
 
+    const isKepalaRuanganStep = step.leaveRequest.status === "PENDING_KEPALA_RUANGAN"
+
     await prisma.$transaction(async (tx) => {
       await tx.approvalStep.update({
         where: { id: stepId },
@@ -64,7 +67,13 @@ export async function POST(req: NextRequest, { params }: Props) {
       })
 
       if (decision === "APPROVED") {
-        if (isLastStep) {
+        if (isKepalaRuanganStep) {
+          // Kepala ruangan selesai → giliran admin kepegawaian menetapkan sisa alur
+          await tx.leaveRequest.update({
+            where: { id: leaveRequestId },
+            data: { status: "PENDING_ADMIN_REVIEW", currentStepOrder: step.stepOrder },
+          })
+        } else if (isLastStep) {
           await tx.leaveRequest.update({
             where: { id: leaveRequestId },
             data: { status: "APPROVED", currentStepOrder: step.stepOrder },
@@ -94,7 +103,16 @@ export async function POST(req: NextRequest, { params }: Props) {
       metadata: { leaveRequestId, note: note ?? null, stepOrder: step.stepOrder },
     })
 
-    if (decision === "APPROVED" && !isLastStep) {
+    if (decision === "APPROVED" && isKepalaRuanganStep) {
+      // Sudah pindah ke PENDING_ADMIN_REVIEW — tidak ada next step, notifikasi ke pengaju saja
+      if (requesterAppUserId) {
+        await sendNotification({
+          event: "APPROVAL_REQUESTED",
+          targetUserId: requesterAppUserId,
+          data: { leaveRequestId, message: "Kepala Ruangan telah menyetujui. Menunggu penetapan alur oleh Admin Kepegawaian." },
+        })
+      }
+    } else if (decision === "APPROVED" && !isLastStep) {
       // Notifikasi ke approver berikutnya
       const nextStep = allSteps.find((s: { stepOrder: number }) => s.stepOrder === step.stepOrder + 1) as
         | { approverId: string }

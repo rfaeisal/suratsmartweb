@@ -47,7 +47,17 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   const leaveRequest = await prisma.leaveRequest.findUnique({
     where: { id: leaveRequestId },
     include: {
-      requester: { select: { fullName: true } },
+      requester: {
+        select: {
+          fullName: true,
+          unit: {
+            select: {
+              kepalaRuanganId: true,
+              kepalaRuangan: { select: { id: true, fullName: true } },
+            },
+          },
+        },
+      },
       leaveType: { select: { name: true } },
     },
   })
@@ -64,42 +74,137 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     )
   }
 
-  const newStatus = decision === "CONFIRMED" ? "PENDING_ADMIN_REVIEW" : "DELEGATE_DECLINED"
-  const newDelegateStatus = decision === "CONFIRMED" ? "CONFIRMED" : "DECLINED"
+  if (decision === "DECLINED") {
+    await prisma.leaveRequest.update({
+      where: { id: leaveRequestId },
+      data: {
+        status: "DELEGATE_DECLINED",
+        delegateConfirmationStatus: "DECLINED",
+        delegateDecidedAt: new Date(),
+        delegateNote: note,
+      },
+    })
 
+    await writeAuditLog({
+      actorId: user.userId,
+      action: "DELEGATE_DECLINED",
+      entityType: "LeaveRequest",
+      entityId: leaveRequestId,
+      metadata: { note },
+    })
+
+    const requesterUser = await prisma.appUser.findUnique({
+      where: { employeeId: leaveRequest.requesterId },
+    })
+    if (requesterUser) {
+      await sendNotification({
+        event: "DELEGATE_DECLINED",
+        targetUserId: requesterUser.id,
+        data: { leaveType: leaveRequest.leaveType.name, note: note ?? "" },
+      })
+    }
+
+    return NextResponse.json({ success: true, newStatus: "DELEGATE_DECLINED" })
+  }
+
+  // ─── CONFIRMED ──────────────────────────────────────────────────────────────
+
+  const kepalaRuanganId = leaveRequest.requester.unit?.kepalaRuanganId ?? null
+
+  if (kepalaRuanganId) {
+    // Pegawai ini punya kepala ruangan → otomatis buat step approval + ubah status
+    await prisma.$transaction(async (tx) => {
+      await tx.leaveRequest.update({
+        where: { id: leaveRequestId },
+        data: {
+          status: "PENDING_KEPALA_RUANGAN",
+          delegateConfirmationStatus: "CONFIRMED",
+          delegateDecidedAt: new Date(),
+          currentStepOrder: 1,
+        },
+      })
+
+      await tx.approvalStep.create({
+        data: {
+          leaveRequestId,
+          stepOrder: 1,
+          approverId: kepalaRuanganId,
+          roleLabel: "Kepala Ruangan",
+          status: "PENDING",
+        },
+      })
+    })
+
+    // Notifikasi ke kepala ruangan
+    const kepalaUser = await prisma.appUser.findUnique({
+      where: { employeeId: kepalaRuanganId },
+    })
+    if (kepalaUser) {
+      await sendNotification({
+        event: "APPROVAL_REQUESTED",
+        targetUserId: kepalaUser.id,
+        data: {
+          requesterName: leaveRequest.requester.fullName,
+          leaveType: leaveRequest.leaveType.name,
+          role: "Kepala Ruangan",
+        },
+      })
+    }
+
+    // Notifikasi ke pegawai pengaju (info: menunggu kepala ruangan)
+    const requesterUser = await prisma.appUser.findUnique({
+      where: { employeeId: leaveRequest.requesterId },
+    })
+    if (requesterUser) {
+      await sendNotification({
+        event: "APPROVAL_REQUESTED",
+        targetUserId: requesterUser.id,
+        data: {
+          leaveType: leaveRequest.leaveType.name,
+          message: `Pengganti menyetujui. Menunggu persetujuan Kepala Ruangan (${leaveRequest.requester.unit?.kepalaRuangan?.fullName ?? ""}).`,
+        },
+      })
+    }
+
+    await writeAuditLog({
+      actorId: user.userId,
+      action: "DELEGATE_CONFIRMED",
+      entityType: "LeaveRequest",
+      entityId: leaveRequestId,
+      metadata: { kepalaRuanganId, autoStep: true },
+    })
+
+    return NextResponse.json({ success: true, newStatus: "PENDING_KEPALA_RUANGAN" })
+  }
+
+  // Tidak ada kepala ruangan → langsung ke admin kepegawaian (alur lama)
   await prisma.leaveRequest.update({
     where: { id: leaveRequestId },
     data: {
-      status: newStatus,
-      delegateConfirmationStatus: newDelegateStatus,
+      status: "PENDING_ADMIN_REVIEW",
+      delegateConfirmationStatus: "CONFIRMED",
       delegateDecidedAt: new Date(),
-      delegateNote: note,
     },
   })
 
   await writeAuditLog({
     actorId: user.userId,
-    action: `DELEGATE_${decision}`,
+    action: "DELEGATE_CONFIRMED",
     entityType: "LeaveRequest",
     entityId: leaveRequestId,
-    metadata: { note },
+    metadata: { kepalaRuanganId: null, autoStep: false },
   })
 
-  // Notifikasi ke pegawai pengaju
   const requesterUser = await prisma.appUser.findUnique({
     where: { employeeId: leaveRequest.requesterId },
   })
   if (requesterUser) {
     await sendNotification({
-      event: decision === "CONFIRMED" ? "APPROVAL_REQUESTED" : "DELEGATE_DECLINED",
+      event: "APPROVAL_REQUESTED",
       targetUserId: requesterUser.id,
-      data: {
-        leaveType: leaveRequest.leaveType.name,
-        decision,
-        note: note ?? "",
-      },
+      data: { leaveType: leaveRequest.leaveType.name },
     })
   }
 
-  return NextResponse.json({ success: true, newStatus })
+  return NextResponse.json({ success: true, newStatus: "PENDING_ADMIN_REVIEW" })
 }

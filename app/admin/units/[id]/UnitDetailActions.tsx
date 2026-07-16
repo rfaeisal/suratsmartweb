@@ -11,23 +11,33 @@ interface UnitOption {
   name: string
 }
 
+interface EmployeeOption {
+  id: string
+  fullName: string
+  positionTitle: string | null
+}
+
 interface Props {
   unit: {
     id: string
     name: string
     parentId: string | null
+    kepalaRuanganId: string | null
+    kepalaRuangan: { id: string; fullName: string; positionTitle: string | null } | null
     parent: { id: string; name: string } | null
     _count: { employees: number; children: number }
   }
   allUnits: UnitOption[]
+  allEmployees: EmployeeOption[]
 }
 
-export default function UnitDetailActions({ unit, allUnits }: Props) {
+export default function UnitDetailActions({ unit, allUnits, allEmployees }: Props) {
   const router = useRouter()
 
   const [editOpen, setEditOpen] = useState(false)
   const [editName, setEditName] = useState(unit.name)
   const [editParentId, setEditParentId] = useState(unit.parentId ?? "")
+  const [editKepalaId, setEditKepalaId] = useState(unit.kepalaRuanganId ?? "")
   const [saving, setSaving] = useState(false)
   const [editError, setEditError] = useState("")
 
@@ -44,7 +54,11 @@ export default function UnitDetailActions({ unit, allUnits }: Props) {
       const res = await fetch(`/api/v1/admin/units/${unit.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: editName.trim(), parentId: editParentId || null }),
+        body: JSON.stringify({
+          name: editName.trim(),
+          parentId: editParentId || null,
+          kepalaRuanganId: editKepalaId || null,
+        }),
       })
       if (!res.ok) {
         const d = await res.json().catch(() => ({}))
@@ -106,7 +120,7 @@ export default function UnitDetailActions({ unit, allUnits }: Props) {
             <h1 className="text-xl font-bold text-gray-900">{unit.name}</h1>
             <Tooltip label="Edit">
               <button
-                onClick={() => { setEditName(unit.name); setEditParentId(unit.parentId ?? ""); setEditOpen(true) }}
+                onClick={() => { setEditName(unit.name); setEditParentId(unit.parentId ?? ""); setEditKepalaId(unit.kepalaRuanganId ?? ""); setEditOpen(true) }}
                 className="p-1.5 rounded-lg text-blue-500 hover:text-blue-700 hover:bg-blue-50 transition-colors"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -163,6 +177,20 @@ export default function UnitDetailActions({ unit, allUnits }: Props) {
                   placeholder="Cari unit induk…"
                   allowEmpty
                   emptyLabel="— Tidak ada (root) —"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Kepala Ruangan
+                  <span className="ml-1 text-gray-400 font-normal">(opsional)</span>
+                </label>
+                <SearchableSelect
+                  options={allEmployees.map((e) => ({ value: e.id, label: e.fullName, sub: e.positionTitle ?? "" }))}
+                  value={editKepalaId}
+                  onChange={setEditKepalaId}
+                  placeholder="Cari nama kepala ruangan…"
+                  allowEmpty
+                  emptyLabel="— Tidak ada —"
                 />
               </div>
             </div>

@@ -8,11 +8,12 @@ type Props = { params: Promise<{ id: string }> }
 export default async function UnitDetailPage({ params }: Props) {
   const { id } = await params
 
-  const [unit, allUnits] = await Promise.all([
+  const [unit, allUnits, allEmployees] = await Promise.all([
     prisma.workUnit.findUnique({
       where: { id },
       include: {
         parent: { select: { id: true, name: true } },
+        kepalaRuangan: { select: { id: true, fullName: true, positionTitle: true } },
         children: {
           select: { id: true, name: true, _count: { select: { employees: true } } },
           orderBy: { name: "asc" },
@@ -25,6 +26,11 @@ export default async function UnitDetailPage({ params }: Props) {
       },
     }),
     prisma.workUnit.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    prisma.employee.findMany({
+      where: { isActive: true },
+      select: { id: true, fullName: true, positionTitle: true },
+      orderBy: { fullName: "asc" },
+    }),
   ])
 
   if (!unit) notFound()
@@ -32,7 +38,29 @@ export default async function UnitDetailPage({ params }: Props) {
   return (
     <div className="space-y-6">
       {/* Header dengan tombol edit & hapus */}
-      <UnitDetailActions unit={unit} allUnits={allUnits} />
+      <UnitDetailActions unit={unit} allUnits={allUnits} allEmployees={allEmployees} />
+
+      {/* Info kepala ruangan */}
+      <div className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3">
+        <div className="shrink-0 w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </div>
+        <div>
+          <p className="text-xs text-gray-400 font-medium">Kepala Ruangan</p>
+          {unit.kepalaRuangan ? (
+            <p className="text-sm font-medium text-gray-900">
+              {unit.kepalaRuangan.fullName}
+              {unit.kepalaRuangan.positionTitle && (
+                <span className="ml-1 text-xs text-gray-400 font-normal">— {unit.kepalaRuangan.positionTitle}</span>
+              )}
+            </p>
+          ) : (
+            <p className="text-sm text-gray-400 italic">Belum ditetapkan</p>
+          )}
+        </div>
+      </div>
 
       {/* Sub-unit (jika ada) */}
       {unit.children.length > 0 && (

@@ -14,8 +14,7 @@ export async function GET(req: NextRequest) {
         approverId: user.employeeId,
         status: "PENDING",
         leaveRequest: {
-          status: "IN_APPROVAL",
-          // Pastikan ini adalah langkah aktif (stepOrder === currentStepOrder)
+          status: { in: ["IN_APPROVAL", "PENDING_KEPALA_RUANGAN"] },
           currentStepOrder: { gt: 0 },
         },
       },

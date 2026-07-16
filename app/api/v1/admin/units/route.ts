@@ -22,7 +22,10 @@ export async function GET(req: NextRequest) {
   }
 
   const units = await prisma.workUnit.findMany({
-    include: { parent: { select: { id: true, name: true } } },
+    include: {
+      parent: { select: { id: true, name: true } },
+      kepalaRuangan: { select: { id: true, fullName: true, positionTitle: true } },
+    },
     orderBy: { name: "asc" },
   })
 

@@ -59,14 +59,26 @@ export async function POST(req: NextRequest, { params }: Props) {
       return Errors.validation("Beberapa pegawai approver tidak ditemukan atau tidak aktif")
     }
 
-    // Hapus langkah lama (jika ada) dan buat yang baru dalam transaksi
     await prisma.$transaction(async (tx) => {
-      await tx.approvalStep.deleteMany({ where: { leaveRequestId: id } })
+      // Ambil step yang sudah APPROVED (kepala ruangan) — jangan dihapus
+      const approvedSteps = await tx.approvalStep.findMany({
+        where: { leaveRequestId: id, status: "APPROVED" },
+        orderBy: { stepOrder: "asc" },
+      })
+      const stepOffset = approvedSteps.length > 0
+        ? Math.max(...approvedSteps.map((s) => s.stepOrder))
+        : 0
 
+      // Hapus hanya step yang belum diputuskan (PENDING)
+      await tx.approvalStep.deleteMany({
+        where: { leaveRequestId: id, status: { not: "APPROVED" } },
+      })
+
+      // Buat step baru mulai setelah step yang sudah APPROVED
       await tx.approvalStep.createMany({
         data: steps.map((s, idx) => ({
           leaveRequestId: id,
-          stepOrder: idx + 1,
+          stepOrder: stepOffset + idx + 1,
           approverId: s.employeeId,
           roleLabel: s.roleLabel,
           status: "PENDING",
@@ -75,7 +87,7 @@ export async function POST(req: NextRequest, { params }: Props) {
 
       await tx.leaveRequest.update({
         where: { id },
-        data: { status: "IN_APPROVAL", currentStepOrder: 1 },
+        data: { status: "IN_APPROVAL", currentStepOrder: stepOffset + 1 },
       })
     })
 

@@ -56,6 +56,7 @@ export function formatStatus(status: string): string {
   const map: Record<string, string> = {
     SUBMITTED: "Menunggu Konfirmasi Pengganti",
     DELEGATE_DECLINED: "Pengganti Menolak",
+    PENDING_KEPALA_RUANGAN: "Menunggu Persetujuan Kepala Ruangan",
     PENDING_ADMIN_REVIEW: "Menunggu Admin",
     IN_APPROVAL: "Dalam Proses Persetujuan",
     RETURNED: "Dikembalikan untuk Revisi",
@@ -71,6 +72,7 @@ export function statusColor(status: string): string {
   const map: Record<string, string> = {
     SUBMITTED: "bg-yellow-50 text-yellow-700",
     DELEGATE_DECLINED: "bg-red-50 text-red-700",
+    PENDING_KEPALA_RUANGAN: "bg-purple-50 text-purple-700",
     PENDING_ADMIN_REVIEW: "bg-blue-50 text-blue-700",
     IN_APPROVAL: "bg-blue-50 text-blue-700",
     RETURNED: "bg-orange-50 text-orange-700",

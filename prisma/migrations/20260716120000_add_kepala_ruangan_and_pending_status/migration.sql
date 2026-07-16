@@ -1,0 +1,5 @@
+ALTER TABLE "Employee" ADD COLUMN "kepalaRuanganId" TEXT;
+ALTER TABLE "Employee" ADD CONSTRAINT "Employee_kepalaRuanganId_fkey"
+  FOREIGN KEY ("kepalaRuanganId") REFERENCES "Employee"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TYPE "LeaveRequestStatus" ADD VALUE 'PENDING_KEPALA_RUANGAN' BEFORE 'PENDING_ADMIN_REVIEW';

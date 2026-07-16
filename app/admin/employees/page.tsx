@@ -115,7 +115,7 @@ export default function EmployeesPage() {
 
   function handleSaved(
     id: string,
-    updated: { positionId: string | null; positionName: string | null; unitId: string; unitName: string; directSupervisorId: string | null; employeeType: string }
+    updated: { positionId: string | null; positionName: string | null; unitId: string; unitName: string; directSupervisorId: string | null; employeeType: string; }
   ) {
     if (!data) return
     const supervisorInfo = updated.directSupervisorId

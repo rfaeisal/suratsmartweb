@@ -7,6 +7,7 @@ import { Errors } from "@/lib/errors"
 const updateSchema = z.object({
   name: z.string().min(1).optional(),
   parentId: z.string().nullable().optional(),
+  kepalaRuanganId: z.string().nullable().optional(),
 })
 
 type RouteParams = { params: Promise<{ id: string }> }
@@ -28,6 +29,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     where: { id },
     include: {
       parent: { select: { id: true, name: true } },
+      kepalaRuangan: { select: { id: true, fullName: true, positionTitle: true } },
       children: { select: { id: true, name: true, _count: { select: { employees: true } } }, orderBy: { name: "asc" } },
       employees: {
         include: { position: { select: { name: true, level: true } } },
@@ -77,14 +79,21 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     if (!parent) return Errors.notFound("Unit kerja induk")
   }
 
+  if (parsed.data.kepalaRuanganId) {
+    const kepala = await prisma.employee.findUnique({ where: { id: parsed.data.kepalaRuanganId } })
+    if (!kepala || !kepala.isActive) return Errors.validation("Kepala ruangan tidak ditemukan atau tidak aktif")
+  }
+
   const updated = await prisma.workUnit.update({
     where: { id },
     data: {
       ...(parsed.data.name !== undefined ? { name: parsed.data.name } : {}),
       ...(parsed.data.parentId !== undefined ? { parentId: parsed.data.parentId } : {}),
+      ...(parsed.data.kepalaRuanganId !== undefined ? { kepalaRuanganId: parsed.data.kepalaRuanganId } : {}),
     },
     include: {
       parent: { select: { id: true, name: true } },
+      kepalaRuangan: { select: { id: true, fullName: true, positionTitle: true } },
       _count: { select: { employees: true } },
     },
   })
