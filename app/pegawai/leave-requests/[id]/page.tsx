@@ -133,40 +133,112 @@ export default async function LeaveRequestDetailPage({ params }: Props) {
         </div>
       )}
 
-      {/* Alur Approval */}
-      {req.approvalSteps.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="font-medium text-gray-900 text-sm mb-4">Alur Persetujuan</h3>
-          <div className="space-y-3">
-            {req.approvalSteps.map((step) => (
-              <div key={step.id} className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 shrink-0 mt-0.5">
-                  {step.stepOrder}
+      {/* Riwayat Approval */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <h3 className="font-medium text-gray-900 text-sm mb-4">Riwayat Persetujuan</h3>
+        <div className="relative">
+          {/* Garis vertikal */}
+          <div className="absolute left-3 top-0 bottom-0 w-px bg-gray-100" />
+
+          <div className="space-y-5">
+            {/* Langkah 0: Pengajuan dikirim */}
+            <div className="flex items-start gap-4 relative">
+              <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center shrink-0 z-10">
+                <div className="w-2 h-2 rounded-full bg-blue-500" />
+              </div>
+              <div className="flex-1 min-w-0 pt-0.5">
+                <p className="text-sm font-medium text-gray-900">Pengajuan Dikirim</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {new Date(req.createdAt).toLocaleString("id-ID", {
+                    day: "2-digit", month: "long", year: "numeric",
+                    hour: "2-digit", minute: "2-digit",
+                  })}
+                </p>
+              </div>
+            </div>
+
+            {/* Langkah 1: Konfirmasi delegasi */}
+            {req.delegateId && (
+              <div className="flex items-start gap-4 relative">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 z-10 ${
+                  req.delegateConfirmationStatus === "CONFIRMED" ? "bg-green-100" :
+                  req.delegateConfirmationStatus === "DECLINED" ? "bg-red-100" : "bg-gray-100"
+                }`}>
+                  <div className={`w-2 h-2 rounded-full ${
+                    req.delegateConfirmationStatus === "CONFIRMED" ? "bg-green-500" :
+                    req.delegateConfirmationStatus === "DECLINED" ? "bg-red-500" : "bg-gray-400"
+                  }`} />
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900">
-                      {step.approver.fullName}
-                    </span>
-                    <span className="text-xs text-gray-400">{step.roleLabel}</span>
-                    <span className={`text-xs font-medium ${stepStatusColor[step.status]}`}>
+                <div className="flex-1 min-w-0 pt-0.5">
+                  <p className="text-sm font-medium text-gray-900">
+                    Konfirmasi Pegawai Pengganti
+                    {req.delegateConfirmationStatus === "CONFIRMED" && (
+                      <span className="ml-2 text-xs font-normal text-green-600">Bersedia</span>
+                    )}
+                    {req.delegateConfirmationStatus === "DECLINED" && (
+                      <span className="ml-2 text-xs font-normal text-red-600">Menolak</span>
+                    )}
+                    {req.delegateConfirmationStatus === "PENDING" && (
+                      <span className="ml-2 text-xs font-normal text-gray-400">Menunggu</span>
+                    )}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">{req.delegate?.fullName}</p>
+                  {req.delegateNote && (
+                    <p className="text-xs text-gray-400 italic mt-0.5">"{req.delegateNote}"</p>
+                  )}
+                  {req.delegateDecidedAt && (
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {new Date(req.delegateDecidedAt).toLocaleString("id-ID", {
+                        day: "2-digit", month: "long", year: "numeric",
+                        hour: "2-digit", minute: "2-digit",
+                      })}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Langkah selanjutnya: tiap ApprovalStep */}
+            {req.approvalSteps.map((step) => (
+              <div key={step.id} className="flex items-start gap-4 relative">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 z-10 ${
+                  step.status === "APPROVED" ? "bg-green-100" :
+                  step.status === "REJECTED" ? "bg-red-100" :
+                  step.status === "RETURNED" ? "bg-orange-100" : "bg-gray-100"
+                }`}>
+                  <div className={`w-2 h-2 rounded-full ${
+                    step.status === "APPROVED" ? "bg-green-500" :
+                    step.status === "REJECTED" ? "bg-red-500" :
+                    step.status === "RETURNED" ? "bg-orange-400" : "bg-gray-400"
+                  }`} />
+                </div>
+                <div className="flex-1 min-w-0 pt-0.5">
+                  <p className="text-sm font-medium text-gray-900">
+                    {step.approver.fullName}
+                    <span className="ml-1 text-xs font-normal text-gray-400">({step.roleLabel})</span>
+                    <span className={`ml-2 text-xs font-normal ${stepStatusColor[step.status]}`}>
                       {stepStatusLabel[step.status]}
                     </span>
-                  </div>
+                  </p>
                   {step.note && (
-                    <p className="text-xs text-gray-500 mt-0.5 italic">"{step.note}"</p>
+                    <p className="text-xs text-gray-400 italic mt-0.5">"{step.note}"</p>
                   )}
-                  {step.decidedAt && (
+                  {step.decidedAt ? (
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {new Date(step.decidedAt).toLocaleString("id-ID")}
+                      {new Date(step.decidedAt).toLocaleString("id-ID", {
+                        day: "2-digit", month: "long", year: "numeric",
+                        hour: "2-digit", minute: "2-digit",
+                      })}
                     </p>
+                  ) : (
+                    <p className="text-xs text-gray-400 mt-0.5">Menunggu keputusan</p>
                   )}
                 </div>
               </div>
             ))}
           </div>
         </div>
-      )}
+      </div>
 
       {/* SK */}
       {req.skDocument && (
