@@ -64,19 +64,14 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  // 4. Cek sesi aktif — tolak login dari device berbeda
+  // 4. Cek sesi aktif — revoke otomatis jika login dari device berbeda
+  // TODO (production): kembalikan ke reject jika deviceId berbeda, atau tampilkan
+  // dialog konfirmasi "Akun Anda aktif di perangkat lain. Keluarkan perangkat itu?"
   const activeSession = await prisma.userSession.findFirst({
     where: { userId: appUser.id, status: "ACTIVE" },
   })
 
   if (activeSession) {
-    if (activeSession.deviceId !== deviceId) {
-      return Errors.sessionAlreadyActive(
-        activeSession.deviceLabel ?? undefined,
-        activeSession.createdAt,
-      )
-    }
-    // Re-login dari device yang sama — revoke sesi lama
     await prisma.userSession.update({
       where: { id: activeSession.id },
       data: { status: "REVOKED", revokedAt: new Date(), revokedBy: "SELF" },

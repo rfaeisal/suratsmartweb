@@ -7,6 +7,7 @@ import { rateLimit } from "@/lib/rate-limiter"
 
 const refreshSchema = z.object({
   refreshToken: z.string().min(1),
+  deviceId: z.string().min(1),
 })
 
 export async function POST(req: NextRequest) {
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
   const parsed = refreshSchema.safeParse(body)
   if (!parsed.success) return Errors.validation("refreshToken diperlukan")
 
-  const { refreshToken } = parsed.data
+  const { refreshToken, deviceId } = parsed.data
   const hash = hashRefreshToken(refreshToken)
 
   const session = await prisma.userSession.findUnique({
@@ -38,6 +39,9 @@ export async function POST(req: NextRequest) {
   }
   if (session.status === "REVOKED") {
     return Errors.sessionRevoked()
+  }
+  if (session.deviceId !== deviceId) {
+    return Errors.forbidden("deviceId tidak cocok dengan sesi aktif")
   }
 
   const accessToken = await signAccessToken({
