@@ -23,19 +23,37 @@ export async function GET(req: NextRequest) {
 
   const currentYear = new Date().getFullYear()
 
-  const leaveTypes = await prisma.leaveType.findMany({
-    where: {
-      isActive: true,
-      applicableTo: { has: employee.employeeType },
-    },
-    include: {
-      quotas: {
-        where: { employeeId: user.employeeId, year: currentYear },
-        select: { totalDays: true, usedDays: true },
+  const [leaveTypes, usedGroups] = await Promise.all([
+    prisma.leaveType.findMany({
+      where: {
+        isActive: true,
+        applicableTo: { has: employee.employeeType },
       },
-    },
-    orderBy: { name: "asc" },
-  })
+      include: {
+        quotas: {
+          where: { employeeId: user.employeeId, year: currentYear },
+          select: { totalDays: true, usedDays: true },
+        },
+      },
+      orderBy: { name: "asc" },
+    }),
+    prisma.leaveRequest.groupBy({
+      by: ["leaveTypeId"],
+      where: {
+        requesterId: user.employeeId,
+        status: { in: ["APPROVED", "SENT_TO_LEGACY"] },
+        startDate: {
+          gte: new Date(`${currentYear}-01-01`),
+          lte: new Date(`${currentYear}-12-31T23:59:59.999Z`),
+        },
+      },
+      _sum: { totalDays: true },
+    }),
+  ])
+
+  const usedMap = Object.fromEntries(
+    usedGroups.map((g) => [g.leaveTypeId, g._sum.totalDays ?? 0])
+  )
 
   const result = leaveTypes.map((lt) => {
     const quota = lt.quotas[0]
@@ -45,6 +63,7 @@ export async function GET(req: NextRequest) {
       name: lt.name,
       requiresAttachment: lt.requiresAttachment,
       remainingDays: quota ? quota.totalDays - quota.usedDays : null,
+      usedDaysThisYear: usedMap[lt.id] ?? 0,
     }
   })
 
