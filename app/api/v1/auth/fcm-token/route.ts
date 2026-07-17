@@ -8,6 +8,7 @@ const schema = z.object({
   token: z.string().min(1),
 })
 
+// Legacy endpoint — gunakan POST /api/v1/devices/register-token untuk client baru
 export async function POST(req: NextRequest) {
   let user
   try {
@@ -32,11 +33,28 @@ export async function POST(req: NextRequest) {
     return Errors.validation("Token FCM diperlukan")
   }
 
-  await prisma.fcmToken.upsert({
-    where: { token: parsed.data.token },
-    create: { userId: user.userId, token: parsed.data.token, platform: "android" },
-    update: { userId: user.userId },
-  })
+  // Ambil deviceId dari session aktif user
+  const session = user.sessionId !== "web"
+    ? await prisma.userSession.findUnique({
+        where: { id: user.sessionId },
+        select: { deviceId: true },
+      })
+    : null
+
+  const deviceId = session?.deviceId ?? null
+
+  if (deviceId) {
+    await prisma.fcmToken.upsert({
+      where: { deviceId },
+      create: { userId: user.userId, deviceId, token: parsed.data.token },
+      update: { token: parsed.data.token, userId: user.userId },
+    })
+  } else {
+    // Fallback: simpan tanpa deviceId (web session atau deviceId tidak tersedia)
+    await prisma.fcmToken.create({
+      data: { userId: user.userId, token: parsed.data.token },
+    })
+  }
 
   return NextResponse.json({ success: true })
 }

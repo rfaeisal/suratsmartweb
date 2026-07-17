@@ -263,9 +263,11 @@ model FcmToken {
   id        String   @id @default(cuid())
   userId    String
   user      AppUser  @relation(fields: [userId], references: [id])
-  token     String   @unique
+  deviceId  String?  @unique
+  token     String
   platform  String   @default("android")
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model AuditLog {
