@@ -186,6 +186,8 @@ export async function POST(req: NextRequest) {
       event: "DELEGATE_REQUESTED",
       targetUserId: delegateUser.id,
       data: {
+        leaveRequestId: leaveRequest.id,
+        requestNumber,
         requesterName: employee.fullName,
         leaveType: leaveType.name,
         startDate,

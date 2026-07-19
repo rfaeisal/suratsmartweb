@@ -34,7 +34,7 @@ export async function POST(req: NextRequest, { params }: Props) {
         leaveRequest: {
           include: {
             approvalSteps: { orderBy: { stepOrder: "asc" } },
-            requester: { select: { user: { select: { id: true } } } },
+            requester: { select: { fullName: true, user: { select: { id: true } } } },
           },
         },
       },
@@ -56,7 +56,9 @@ export async function POST(req: NextRequest, { params }: Props) {
     const allSteps = step.leaveRequest.approvalSteps
     const isLastStep = step.stepOrder === Math.max(...allSteps.map((s: { stepOrder: number }) => s.stepOrder))
     const leaveRequestId = step.leaveRequestId
+    const requestNumber = step.leaveRequest.requestNumber
     const requesterAppUserId = step.leaveRequest.requester.user?.id
+    const requesterName = step.leaveRequest.requester.fullName
 
     const isKepalaRuanganStep = step.leaveRequest.status === "PENDING_KEPALA_RUANGAN"
 
@@ -109,7 +111,7 @@ export async function POST(req: NextRequest, { params }: Props) {
         await sendNotification({
           event: "APPROVAL_REQUESTED",
           targetUserId: requesterAppUserId,
-          data: { leaveRequestId, message: "Kepala Ruangan telah menyetujui. Menunggu penetapan alur oleh Admin Kepegawaian." },
+          data: { leaveRequestId, requestNumber, requesterName, message: "Kepala Ruangan telah menyetujui. Menunggu penetapan alur oleh Admin Kepegawaian." },
         })
       }
     } else if (decision === "APPROVED" && !isLastStep) {
@@ -125,7 +127,7 @@ export async function POST(req: NextRequest, { params }: Props) {
           await sendNotification({
             event: "APPROVAL_REQUESTED",
             targetUserId: nextApproverUser.id,
-            data: { leaveRequestId },
+            data: { leaveRequestId, requestNumber, requesterName },
           })
         }
       }
@@ -139,7 +141,7 @@ export async function POST(req: NextRequest, { params }: Props) {
       await sendNotification({
         event: eventMap[decision],
         targetUserId: requesterAppUserId,
-        data: { leaveRequestId },
+        data: { leaveRequestId, requestNumber },
       })
     }
 
