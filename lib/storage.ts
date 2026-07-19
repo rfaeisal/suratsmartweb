@@ -116,6 +116,62 @@ export async function savePdf(buffer: Buffer, fileName: string): Promise<string>
   return filePath
 }
 
+// ── Avatar ───────────────────────────────────────────────────────────────────
+
+const AVATAR_ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png"]
+const AVATAR_ALLOWED_EXTS  = [".jpg", ".jpeg", ".png"]
+
+export function validateAvatar(file: File) {
+  if (file.size > MAX_SIZE) throw new Error("Ukuran foto melebihi batas 2MB")
+  const ext = path.extname(file.name).toLowerCase()
+  if (!AVATAR_ALLOWED_EXTS.includes(ext) && !AVATAR_ALLOWED_TYPES.includes(file.type)) {
+    throw new Error("Format foto tidak didukung. Gunakan JPG atau PNG")
+  }
+}
+
+export async function saveAvatar(userId: string, file: File, oldUrl?: string | null): Promise<string> {
+  validateAvatar(file)
+  const ext = path.extname(file.name).toLowerCase() || ".jpg"
+
+  if (IS_BLOB) {
+    const { put, del } = await import("@vercel/blob")
+    if (oldUrl) await del(oldUrl).catch(() => {})
+    const blob = await put(`avatars/${userId}-${Date.now()}${ext}`, file, {
+      access: "public",
+      addRandomSuffix: false,
+    })
+    return blob.url
+  }
+
+  // ── local ─────────────────────────────────────────────────────────────────
+  const { writeFile, mkdir, unlink } = await import("fs/promises")
+  const avatarDir = path.join(STORAGE_PATH, "avatars")
+  await mkdir(avatarDir, { recursive: true })
+  if (oldUrl) {
+    const oldPath = oldUrl.startsWith("/api/v1/profile/avatar/file?")
+      ? new URL(oldUrl, "http://x").searchParams.get("path") ?? ""
+      : ""
+    if (oldPath) await unlink(oldPath).catch(() => {})
+  }
+  const filePath = path.join(avatarDir, `${userId}${ext}`)
+  await writeFile(filePath, Buffer.from(await file.arrayBuffer()))
+  const base = process.env.NEXTAUTH_URL ?? ""
+  return `${base}/api/v1/profile/avatar/file?path=${encodeURIComponent(filePath)}`
+}
+
+export async function deleteAvatar(avatarUrl: string): Promise<void> {
+  if (IS_BLOB) {
+    const { del } = await import("@vercel/blob")
+    await del(avatarUrl).catch(() => {})
+    return
+  }
+  const filePath = new URL(avatarUrl, "http://x").searchParams.get("path") ?? ""
+  if (filePath) {
+    const { unlink } = await import("fs/promises")
+    await unlink(filePath).catch(() => {})
+  }
+}
+
 // ── Read file for download ───────────────────────────────────────────────────
 
 export function isRemoteUrl(fileKey: string): boolean {

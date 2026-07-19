@@ -29,5 +29,6 @@ export async function GET(req: NextRequest) {
     employeeType: appUser.employee.employeeType,
     roles: appUser.roles,
     unit: appUser.employee.unit ? { id: appUser.employee.unit.id, name: appUser.employee.unit.name } : null,
+    avatarUrl: appUser.employee.avatarUrl ?? null,
   })
 }

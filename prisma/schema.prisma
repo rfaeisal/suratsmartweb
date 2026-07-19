@@ -23,6 +23,7 @@ model Employee {
   position           Position? @relation(fields: [positionId], references: [id])
   directSupervisorId String?
   room               String?
+  avatarUrl          String?
   isActive           Boolean      @default(true)
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
