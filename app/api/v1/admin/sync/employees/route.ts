@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
   const existingNips = await prisma.employee.findMany({ select: { nip: true } })
   const nipSet = new Set(existingNips.map((e) => e.nip))
 
-  const newEmployees = legacyEmployees.filter((e) => !nipSet.has(e.nip))
+  const newEmployees = legacyEmployees.filter((e) => e.nip && e.nip.trim() !== "" && !nipSet.has(e.nip))
 
   return NextResponse.json({
     totalFromLegacy: legacyEmployees.length,
