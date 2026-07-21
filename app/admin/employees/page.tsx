@@ -32,7 +32,7 @@ interface EmployeeRow {
   position: PositionInfo | null
   directSupervisorId: string | null
   isActive: boolean
-  unit: { id: string; name: string }
+  unit: { id: string; name: string } | null
   supervisor: Supervisor | null
 }
 
@@ -269,12 +269,16 @@ export default function EmployeesPage() {
                           <p className="text-xs text-gray-400 mt-0.5">{emp.nip}</p>
                         </td>
                         <td className="px-4 py-3">
-                          <Link
-                            href={`/admin/units/${emp.unit.id}`}
-                            className="text-blue-600 hover:text-blue-800 hover:underline"
-                          >
-                            {emp.unit.name}
-                          </Link>
+                          {emp.unit ? (
+                            <Link
+                              href={`/admin/units/${emp.unit.id}`}
+                              className="text-blue-600 hover:text-blue-800 hover:underline"
+                            >
+                              {emp.unit.name}
+                            </Link>
+                          ) : (
+                            <span className="text-gray-300 italic">—</span>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           {jabatan ? (
@@ -315,7 +319,7 @@ export default function EmployeesPage() {
                             employeeId={emp.id}
                             initial={{
                               positionId: emp.positionId,
-                              unitId: emp.unit.id,
+                              unitId: emp.unit?.id ?? "",
                               directSupervisorId: emp.directSupervisorId,
                               employeeType: emp.employeeType,
                             }}
