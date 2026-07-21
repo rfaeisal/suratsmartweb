@@ -29,6 +29,7 @@ export default function SyncEmployeesForm() {
   const [importing, setImporting] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const [error, setError] = useState("")
+  const [search, setSearch] = useState("")
 
   async function handlePreview() {
     setPreviewing(true)
@@ -41,6 +42,7 @@ export default function SyncEmployeesForm() {
       const data = await res.json()
       if (!res.ok) { setError(data.error?.message ?? "Gagal mengambil data"); return }
       setPreview(data)
+      setSearch("")
       setSelected(new Set(data.employees.map((e: PreviewEmployee) => e.legacyId)))
     } catch {
       setError("Koneksi gagal")
@@ -51,10 +53,18 @@ export default function SyncEmployeesForm() {
 
   function toggleAll() {
     if (!preview) return
-    if (selected.size === preview.employees.length) {
-      setSelected(new Set())
+    if (allSelected) {
+      setSelected((prev) => {
+        const next = new Set(prev)
+        filtered.forEach((e) => next.delete(e.legacyId))
+        return next
+      })
     } else {
-      setSelected(new Set(preview.employees.map((e) => e.legacyId)))
+      setSelected((prev) => {
+        const next = new Set(prev)
+        filtered.forEach((e) => next.add(e.legacyId))
+        return next
+      })
     }
   }
 
@@ -89,8 +99,15 @@ export default function SyncEmployeesForm() {
     }
   }
 
-  const allSelected = preview ? selected.size === preview.employees.length : false
-  const someSelected = selected.size > 0 && !allSelected
+  const filtered = preview
+    ? preview.employees.filter((e) => {
+        const q = search.toLowerCase().trim()
+        return !q || e.fullName.toLowerCase().includes(q) || e.nip.includes(q)
+      })
+    : []
+
+  const allSelected = filtered.length > 0 && filtered.every((e) => selected.has(e.legacyId))
+  const someSelected = filtered.some((e) => selected.has(e.legacyId)) && !allSelected
 
   return (
     <div className="space-y-6">
@@ -191,44 +208,75 @@ export default function SyncEmployeesForm() {
               Semua pegawai dari sistem lama sudah ada di CutiSmart.
             </div>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="px-4 py-3 w-10">
-                    <input
-                      type="checkbox"
-                      checked={allSelected}
-                      ref={(el) => { if (el) el.indeterminate = someSelected }}
-                      onChange={toggleAll}
-                      className="rounded"
-                    />
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">NIP</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nama Pegawai</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {preview.employees.map((emp) => (
-                  <tr
-                    key={emp.legacyId}
-                    className="hover:bg-gray-50 cursor-pointer transition-colors"
-                    onClick={() => toggleOne(emp.legacyId)}
-                  >
-                    <td className="px-4 py-3">
+            <>
+              <div className="px-4 py-3 border-b border-gray-100">
+                <div className="relative">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  </svg>
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Cari nama atau NIP…"
+                    className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  {search && (
+                    <button
+                      onClick={() => setSearch("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50">
+                    <th className="px-4 py-3 w-10">
                       <input
                         type="checkbox"
-                        checked={selected.has(emp.legacyId)}
-                        onChange={() => toggleOne(emp.legacyId)}
-                        onClick={(e) => e.stopPropagation()}
+                        checked={allSelected}
+                        ref={(el) => { if (el) el.indeterminate = someSelected }}
+                        onChange={toggleAll}
                         className="rounded"
                       />
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-600">{emp.nip}</td>
-                    <td className="px-4 py-3 font-medium text-gray-900">{emp.fullName}</td>
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">NIP</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nama Pegawai</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="px-4 py-8 text-center text-sm text-gray-400">
+                        Tidak ada pegawai yang cocok dengan pencarian.
+                      </td>
+                    </tr>
+                  ) : filtered.map((emp) => (
+                    <tr
+                      key={emp.legacyId}
+                      className="hover:bg-gray-50 cursor-pointer transition-colors"
+                      onClick={() => toggleOne(emp.legacyId)}
+                    >
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={selected.has(emp.legacyId)}
+                          onChange={() => toggleOne(emp.legacyId)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded"
+                        />
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-gray-600">{emp.nip}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">{emp.fullName}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
 
           {preview.newCount > 0 && (
