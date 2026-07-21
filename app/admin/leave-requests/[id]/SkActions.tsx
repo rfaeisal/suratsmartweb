@@ -13,14 +13,10 @@ interface Props {
 export default function SkActions({ leaveRequestId, currentStatus, hasSkDocument, skNumber }: Props) {
   const router = useRouter()
   const [loadingGenerate, setLoadingGenerate] = useState(false)
-  const [loadingSend, setLoadingSend] = useState(false)
   const [error, setError] = useState("")
   const [message, setMessage] = useState("")
 
-  const canGenerate = currentStatus === "APPROVED" || (hasSkDocument && currentStatus !== "SENT_TO_LEGACY")
-  const canSend =
-    hasSkDocument &&
-    (currentStatus === "APPROVED" || currentStatus === "SEND_FAILED")
+  const canGenerate = currentStatus === "APPROVED" || hasSkDocument
 
   async function handleGenerateSk() {
     setError("")
@@ -41,26 +37,7 @@ export default function SkActions({ leaveRequestId, currentStatus, hasSkDocument
     }
   }
 
-  async function handleSendToLegacy() {
-    setError("")
-    setMessage("")
-    setLoadingSend(true)
-    try {
-      const res = await fetch(`/api/v1/admin/leave-requests/${leaveRequestId}/send-to-legacy`, {
-        method: "POST",
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error?.message ?? "Gagal kirim ke EHOS")
-      setMessage(`Berhasil dikirim ke EHOS. Status: ${data.status}`)
-      router.refresh()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Terjadi kesalahan")
-    } finally {
-      setLoadingSend(false)
-    }
-  }
-
-  return (
+return (
     <div className="space-y-3">
       {error && (
         <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
@@ -97,30 +74,6 @@ export default function SkActions({ leaveRequestId, currentStatus, hasSkDocument
           </a>
         )}
 
-        {/* Kirim ke Sistem Lama */}
-        {canSend && (
-          <button
-            onClick={handleSendToLegacy}
-            disabled={loadingSend}
-            className={`px-4 py-2 text-sm font-medium rounded-lg disabled:opacity-50 transition-colors ${
-              currentStatus === "SEND_FAILED"
-                ? "bg-orange-600 hover:bg-orange-700 text-white"
-                : "bg-green-600 hover:bg-green-700 text-white"
-            }`}
-          >
-            {loadingSend
-              ? "Mengirim..."
-              : currentStatus === "SEND_FAILED"
-              ? "Kirim Ulang ke Sistem Lama"
-              : "Kirim ke EHOS"}
-          </button>
-        )}
-
-        {currentStatus === "SENT_TO_LEGACY" && (
-          <span className="px-4 py-2 bg-gray-100 text-gray-500 text-sm rounded-lg">
-            Sudah dikirim ke EHOS
-          </span>
-        )}
       </div>
 
       {hasSkDocument && skNumber && (
