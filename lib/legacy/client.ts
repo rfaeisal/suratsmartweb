@@ -23,10 +23,12 @@ export interface SSOInvalidResult {
 }
 export type SSOResult = SSOValidateResult | SSOInvalidResult
 
-// ── Akun mock untuk development ─────────────────────────────────────────────
+// ── Akun lokal (bypass SSO) ───────────────────────────────────────────────────
+// Password dibaca dari env agar bisa diganti tanpa redeploy.
+// Fallback hanya untuk development lokal.
 const MOCK_ACCOUNTS: Record<string, { password: string; employee: LegacyEmployee }> = {
   superadmin: {
-    password: "superadmin123",
+    password: process.env.LOCAL_SUPERADMIN_PASSWORD ?? "superadmin123",
     employee: {
       legacyId: "9998",
       nip: "000000000000000001",
@@ -39,7 +41,7 @@ const MOCK_ACCOUNTS: Record<string, { password: string; employee: LegacyEmployee
     },
   },
   admin: {
-    password: "admin123",
+    password: process.env.LOCAL_ADMIN_PASSWORD ?? "admin123",
     employee: {
       legacyId: "9999",
       nip: "000000000000000000",
