@@ -1,8 +1,10 @@
 allowBuilds:
+  '@firebase/util': set this to true or false
   '@prisma/engines': true
   core-js: set this to true or false
   esbuild: true
   prisma: true
+  protobufjs: set this to true or false
   sharp: true
   unrs-resolver: true
 ignoredBuiltDependencies:
