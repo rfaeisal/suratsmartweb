@@ -10,7 +10,7 @@ interface Setting {
 
 const SETTING_DESCRIPTIONS: Record<string, string> = {
   enforce_single_session:
-    "Jika aktif, login dari perangkat baru akan otomatis mencabut sesi perangkat lama. Jika nonaktif, pegawai bisa login dari banyak perangkat sekaligus (berguna saat testing).",
+    "Jika aktif, login dari perangkat baru akan diblokir selama masih ada sesi aktif — admin atau superadmin harus mencabut sesi lama terlebih dahulu. Jika nonaktif, pegawai bisa login dari banyak perangkat sekaligus (berguna saat testing). Berlaku untuk aplikasi mobile saja.",
 }
 
 export default function SettingsPage() {

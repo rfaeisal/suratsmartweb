@@ -65,16 +65,16 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  // 4. Cek sesi aktif — revoke sesi lama hanya jika enforce_single_session aktif
+  // 4. Cek sesi aktif — blokir login baru jika enforce_single_session aktif
   if (await isEnforceSingleSession()) {
     const activeSession = await prisma.userSession.findFirst({
       where: { userId: appUser.id, status: "ACTIVE" },
     })
     if (activeSession) {
-      await prisma.userSession.update({
-        where: { id: activeSession.id },
-        data: { status: "REVOKED", revokedAt: new Date(), revokedBy: "SELF" },
-      })
+      return NextResponse.json(
+        { error: "Akun ini sudah login di perangkat lain. Hubungi admin untuk mencabut sesi aktif terlebih dahulu." },
+        { status: 409 }
+      )
     }
   }
 
