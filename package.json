@@ -24,6 +24,7 @@
     "@vercel/blob": "^2.6.1",
     "bcryptjs": "^3.0.3",
     "firebase-admin": "^14.2.0",
+    "geist": "^1.7.2",
     "jose": "^6.2.3",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
