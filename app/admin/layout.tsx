@@ -47,6 +47,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         { href: "/admin/users", label: "Manajemen Pengguna" },
         { href: "/admin/sessions", label: "Manajemen Sesi" },
         { href: "/admin/audit-logs", label: "Audit Log" },
+        { href: "/admin/settings", label: "Pengaturan Sistem" },
       ],
     }] : []),
   ]

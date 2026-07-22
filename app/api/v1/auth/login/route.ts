@@ -11,6 +11,7 @@ import {
 import { writeAuditLog } from "@/lib/audit"
 import { Errors } from "@/lib/errors"
 import { rateLimit } from "@/lib/rate-limiter"
+import { isEnforceSingleSession } from "@/lib/settings"
 
 
 const loginSchema = z.object({
@@ -64,18 +65,17 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  // 4. Cek sesi aktif — revoke otomatis jika login dari device berbeda
-  // TODO (production): kembalikan ke reject jika deviceId berbeda, atau tampilkan
-  // dialog konfirmasi "Akun Anda aktif di perangkat lain. Keluarkan perangkat itu?"
-  const activeSession = await prisma.userSession.findFirst({
-    where: { userId: appUser.id, status: "ACTIVE" },
-  })
-
-  if (activeSession) {
-    await prisma.userSession.update({
-      where: { id: activeSession.id },
-      data: { status: "REVOKED", revokedAt: new Date(), revokedBy: "SELF" },
+  // 4. Cek sesi aktif — revoke sesi lama hanya jika enforce_single_session aktif
+  if (await isEnforceSingleSession()) {
+    const activeSession = await prisma.userSession.findFirst({
+      where: { userId: appUser.id, status: "ACTIVE" },
     })
+    if (activeSession) {
+      await prisma.userSession.update({
+        where: { id: activeSession.id },
+        data: { status: "REVOKED", revokedAt: new Date(), revokedBy: "SELF" },
+      })
+    }
   }
 
   // 5. Buat sesi baru
