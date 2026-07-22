@@ -71,9 +71,9 @@ export async function POST(req: NextRequest) {
       where: { userId: appUser.id, status: "ACTIVE" },
     })
     if (activeSession) {
-      return NextResponse.json(
-        { error: "Akun ini sudah login di perangkat lain. Hubungi admin untuk mencabut sesi aktif terlebih dahulu." },
-        { status: 409 }
+      return Errors.sessionAlreadyActive(
+        activeSession.deviceLabel ?? undefined,
+        activeSession.createdAt,
       )
     }
   }
