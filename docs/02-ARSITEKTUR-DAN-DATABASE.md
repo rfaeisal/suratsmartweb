@@ -57,6 +57,7 @@ model Employee {
   position           Position?    @relation(fields: [positionId], references: [id])
   directSupervisorId String?                  // legacyId atasan langsung, diisi admin
   room               String?                  // ruangan / lokasi kerja (opsional)
+  avatarUrl          String?                  // URL foto profil pegawai
   isActive           Boolean      @default(true)
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
@@ -66,6 +67,7 @@ model Employee {
   delegatedRequests LeaveRequest[] @relation("Delegate")
   approvalSteps     ApprovalStep[]
   leaveQuotas       LeaveQuota[]
+  unitAsKepala      WorkUnit[]     @relation("KepalaRuangan")
 }
 
 enum EmployeeType {
@@ -87,14 +89,16 @@ model Position {
 }
 
 model WorkUnit {
-  id        String     @id @default(cuid())
-  name      String
-  parentId  String?
-  parent    WorkUnit?  @relation("UnitHierarchy", fields: [parentId], references: [id])
-  children  WorkUnit[] @relation("UnitHierarchy")
-  employees Employee[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id              String     @id @default(cuid())
+  name            String
+  parentId        String?
+  parent          WorkUnit?  @relation("UnitHierarchy", fields: [parentId], references: [id])
+  children        WorkUnit[] @relation("UnitHierarchy")
+  kepalaRuanganId String?                   // FK ke Employee — kepala ruangan unit ini (opsional)
+  kepalaRuangan   Employee?  @relation("KepalaRuangan", fields: [kepalaRuanganId], references: [id])
+  employees       Employee[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 }
 ```
 
@@ -144,6 +148,7 @@ model LeaveRequest {
   totalDays                  Int
   reason                     String
   addressDuringLeave         String?                    // alamat tinggal selama cuti (opsional)
+  emergencyPhone             String?                    // nomor HP darurat selama cuti (opsional)
   delegateId                 String?
   delegate                   Employee?                  @relation("Delegate", fields: [delegateId], references: [id])
   status                     LeaveRequestStatus         @default(SUBMITTED)
@@ -161,15 +166,16 @@ model LeaveRequest {
 }
 
 enum LeaveRequestStatus {
-  SUBMITTED             // baru diajukan, menunggu konfirmasi pegawai pengganti (delegasi)
-  DELEGATE_DECLINED     // delegasi menolak jadi pengganti — pegawai harus pilih ulang & submit ulang
-  PENDING_ADMIN_REVIEW  // delegasi sudah konfirmasi, menunggu admin kepegawaian menetapkan alur approval
-  IN_APPROVAL           // alur approval sedang berjalan
-  RETURNED              // dikembalikan ke pegawai untuk revisi
+  SUBMITTED               // baru diajukan, menunggu konfirmasi pegawai pengganti (delegasi)
+  DELEGATE_DECLINED       // delegasi menolak jadi pengganti — pegawai harus pilih ulang & submit ulang
+  PENDING_KEPALA_RUANGAN  // delegasi dikonfirmasi & unit punya kepala ruangan — menunggu approval kepala ruangan
+  PENDING_ADMIN_REVIEW    // lolos tahap kepala ruangan (atau tidak ada kepala ruangan), menunggu admin menetapkan alur approval
+  IN_APPROVAL             // alur approval berjenjang sedang berjalan
+  RETURNED                // dikembalikan ke pegawai untuk revisi
   REJECTED
-  APPROVED              // seluruh tahap approval selesai, SK diterbitkan
-  SENT_TO_LEGACY        // berhasil dikirim ke sistem lama
-  SEND_FAILED           // gagal kirim ke sistem lama, perlu retry (admin bisa kirim ulang manual)
+  APPROVED                // seluruh tahap approval selesai, SK diterbitkan
+  SENT_TO_LEGACY          // berhasil dikirim ke sistem lama
+  SEND_FAILED             // gagal kirim ke sistem lama, perlu retry (admin bisa kirim ulang manual)
 }
 
 enum DelegateConfirmationStatus {
@@ -281,12 +287,14 @@ enum SessionStatus {
 }
 
 model FcmToken {
-  id        String  @id @default(cuid())
+  id        String   @id @default(cuid())
   userId    String
-  user      AppUser @relation(fields: [userId], references: [id])
-  token     String  @unique
-  platform  String  @default("android")
+  user      AppUser  @relation(fields: [userId], references: [id])
+  deviceId  String?  @unique    // device ID terkait token; null = fallback (web session)
+  token     String
+  platform  String   @default("android")
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model AuditLog {
@@ -299,6 +307,18 @@ model AuditLog {
   createdAt  DateTime @default(now())
 }
 ```
+
+### 3.7 Pengaturan Sistem
+```prisma
+model AppSetting {
+  key       String   @id       // mis. "enforce_single_session", "sk_number_format"
+  value     String
+  label     String   @default("")   // label deskriptif untuk ditampilkan di admin panel
+  updatedAt DateTime @updatedAt
+}
+```
+> Konfigurasi aplikasi disimpan sebagai key-value. Dibaca via `lib/settings.ts` dengan cache 30 detik. Contoh kunci: `enforce_single_session` (boolean string "true"/"false") — menentukan apakah login baru ditolak saat sesi lain masih aktif (bisa diubah dari admin panel > Settings).
+
 > **Kebijakan sesi**: satu `AppUser` hanya boleh punya **satu `UserSession` berstatus `ACTIVE`** dalam satu waktu. Percobaan login baru saat sesi lain masih `ACTIVE` akan ditolak (bukan otomatis mencabut sesi lama) — pegawai harus minta admin kepegawaian mencabut (revoke) sesi lama, atau logout dulu dari device lama. Sesi tidak punya masa kedaluwarsa otomatis (tidak ada batas waktu) — hanya berakhir jika di-*revoke* (oleh pegawai sendiri lewat tombol logout, atau oleh admin kepegawaian).
 
 ## 4. Catatan Desain Penting

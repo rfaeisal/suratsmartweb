@@ -9,8 +9,8 @@ Ini adalah project **backend + admin panel + web UI pengajuan/approval** dari si
 5. `05-ALUR-KERJA-APPROVAL-DAN-CUTI.md` — detail business logic approval berjenjang & aturan cuti
 
 ## Stack Teknis (ikuti kecuali ada kendala teknis nyata)
-- Next.js 15 (App Router) + TypeScript
-- PostgreSQL + Prisma ORM
+- Next.js 16 (App Router) + TypeScript
+- PostgreSQL + Prisma 7 (dengan `@prisma/adapter-pg`)
 - NextAuth.js (Credentials Provider custom → validasi ke SSO sistem lama)
 - Tailwind CSS + shadcn/ui
 - Zod untuk validasi input
@@ -28,14 +28,14 @@ Ini adalah project **backend + admin panel + web UI pengajuan/approval** dari si
 - Setiap aksi penting (submit, konfirmasi delegasi, approval, kirim ke legacy) wajib tercatat di `AuditLog`.
 - Autentikasi selalu lewat SSO sistem lama — jangan buat tabel password sendiri.
 
-## Rencana Fase Pengembangan (saran urutan kerja)
-1. **Fase 0 — Setup**: init Next.js project, setup Prisma + PostgreSQL, docker-compose dasar, struktur folder.
-2. **Fase 1 — Auth & Master Data**: implementasi SSO login (mock dulu jika endpoint sistem lama belum siap), manajemen `UserSession` (single active session, refresh token, endpoint force-revoke untuk admin), CRUD master data (unit, jenis cuti, kuota) di admin panel.
-3. **Fase 2 — Pengajuan Cuti & Konfirmasi Delegasi**: form pengajuan, upload lampiran, validasi kuota, alur konfirmasi/tolak delegasi sebagai gerbang wajib sebelum ke admin.
-4. **Fase 3 — Approval Berjenjang**: penetapan alur oleh admin (hanya untuk pengajuan `PENDING_ADMIN_REVIEW`), inbox approval, aksi approve/reject/return, notifikasi FCM.
-5. **Fase 4 — SK & Integrasi Legacy**: generate PDF SK (+ fitur cetak ulang), kirim ke sistem lama, retry mechanism, integration log viewer & tombol kirim ulang di admin panel.
-6. **Fase 5 — Monitoring & Reporting**: dashboard admin, fitur rekap cuti periode tertentu (filter unit/kategori pegawai/jenis cuti), audit log viewer.
-7. **Fase 6 — Hardening**: rate limiting, penanganan error, HTTPS/reverse proxy config, backup strategy dokumentasi.
+## Status Fase Pengembangan
+1. ✅ **Fase 0 — Setup**: init Next.js project, setup Prisma + PostgreSQL, docker-compose dasar, struktur folder.
+2. ✅ **Fase 1 — Auth & Master Data**: implementasi SSO login (mock → real legacy aktif), manajemen `UserSession` (single active session, refresh token, endpoint force-revoke untuk admin), CRUD master data (unit, jabatan, jenis cuti, kuota), manajemen user & role.
+3. ✅ **Fase 2 — Pengajuan Cuti & Konfirmasi Delegasi**: form pengajuan, upload lampiran (2-step flow), validasi kuota, konfirmasi delegasi, alur kepala ruangan (`PENDING_KEPALA_RUANGAN`).
+4. ✅ **Fase 3 — Approval Berjenjang**: penetapan alur oleh admin (hanya untuk pengajuan `PENDING_ADMIN_REVIEW`), inbox approval, aksi approve/reject/return, notifikasi FCM.
+5. ✅ **Fase 4 — SK & Integrasi Legacy**: generate PDF SK (+ fitur cetak ulang/download), kirim ke sistem lama dengan HMAC signing, IntegrationLog.
+6. ✅ **Fase 5 — Monitoring & Reporting**: dashboard admin, rekap cuti & export, audit log viewer, session management panel, settings panel, sinkronisasi pegawai.
+7. ⚠️ **Fase 6 — Hardening**: rate limiter sudah ada (in-memory, single-instance). Sisanya (HTTPS/reverse proxy config, backup strategy) perlu dikonfirmasi.
 
 ## Environment Variables (draft, sesuaikan saat implementasi)
 ```
@@ -49,11 +49,11 @@ FIREBASE_SERVICE_ACCOUNT_JSON=
 FILE_STORAGE_PATH=
 ```
 
-## Cara Menjalankan (target, isi setelah Fase 0 selesai)
+## Cara Menjalankan
 ```bash
-npm install
-npx prisma migrate dev
-npm run dev
+pnpm install
+pnpm prisma migrate dev
+pnpm dev
 ```
 
 ## Catatan untuk Claude Code

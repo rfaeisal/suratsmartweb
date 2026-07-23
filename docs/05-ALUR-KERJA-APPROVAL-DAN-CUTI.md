@@ -3,15 +3,22 @@
 ## 1. Alur Pengajuan → Penetapan (End-to-End)
 
 ```
-1. Pegawai submit pengajuan cuti (+ pilih delegasi, opsional lampiran)
+1. Pegawai submit pengajuan cuti (+ pilih delegasi, opsional lampiran, opsional emergencyPhone)
         ↓  status: SUBMITTED
 2. Pegawai pengganti (delegasi) konfirmasi kesediaan
-        - CONFIRMED → status: PENDING_ADMIN_REVIEW, masuk antrean admin kepegawaian
         - DECLINED  → status: DELEGATE_DECLINED (pegawai pilih pengganti lain & submit ulang)
-        ↓ (lanjut hanya jika CONFIRMED)
+        - CONFIRMED + unit punya kepalaRuanganId → status: PENDING_KEPALA_RUANGAN
+                                                    (step approval kepala ruangan dibuat otomatis)
+        - CONFIRMED + unit TIDAK punya kepalaRuanganId → status: PENDING_ADMIN_REVIEW
+        ↓ (lanjut dari CONFIRMED)
+2a. [Opsional — jika ada Kepala Ruangan] Kepala Ruangan memutuskan
+        - APPROVED  → status: PENDING_ADMIN_REVIEW, masuk antrean admin kepegawaian
+        - REJECTED/RETURNED → status berubah sesuai, notifikasi ke pegawai
+        ↓ (lanjut hanya jika PENDING_ADMIN_REVIEW)
 3. Admin Kepegawaian menetapkan/menyesuaikan alur approval
    (default template: Atasan Langsung → Kepala Bagian/Bidang → Wakil Direktur,
-    admin bisa ubah jumlah tahap & siapa approvernya)
+    admin bisa ubah jumlah tahap & siapa approvernya;
+    stepOrder dihitung otomatis di belakang step kepala ruangan jika ada)
         ↓  status: IN_APPROVAL, notifikasi ke approver tahap 1
 4. Approver tahap 1 memutuskan: APPROVED / REJECTED / RETURNED
         - APPROVED  → lanjut ke tahap 2, notifikasi approver tahap 2
@@ -28,16 +35,19 @@
 ```
 
 ## 2. Penetapan Alur Approval oleh Admin Kepegawaian
-- Setiap pengajuan baru (`SUBMITTED`) muncul di antrean admin kepegawaian.
-- Admin dapat memakai **template default** (3 tahap sesuai struktur organisasi pegawai tsb, otomatis disarankan sistem berdasarkan unit & hierarki jabatan pegawai) atau menyusun manual (tambah/kurangi tahap, ganti approver individual — misal saat atasan langsung sedang cuti juga).
+- Pengajuan masuk ke antrean admin saat berstatus `PENDING_ADMIN_REVIEW` (setelah delegasi dikonfirmasi dan — jika unit punya kepala ruangan — setelah kepala ruangan menyetujui).
+- Admin dapat memakai **template default** (3 tahap sesuai struktur organisasi pegawai tsb) atau menyusun manual (tambah/kurangi tahap, ganti approver individual — misal saat atasan langsung sedang cuti juga).
+- Request body cukup berisi `steps: [{ employeeId, roleLabel }]` — `stepOrder` dihitung otomatis oleh server, dilanjutkan dari step kepala ruangan yang sudah `APPROVED` (jika ada).
 - Setelah admin menekan "Tetapkan/Mulai Approval", alur terkunci berjalan (perubahan approver di tengah jalan tetap dimungkinkan oleh admin dalam kondisi darurat, dicatat di audit log).
 
 ## 3. Delegasi/Pengganti
 - Dipilih pegawai sendiri saat pengajuan (dari daftar pegawai di unit yang sama, status aktif).
-- **Wajib dikonfirmasi oleh pegawai pengganti** sebelum pengajuan bisa diproses admin kepegawaian. Setelah pegawai submit, sistem mengirim notifikasi ke calon pengganti untuk menyetujui atau menolak.
-  - Jika **dikonfirmasi**: status pengajuan berubah dari `SUBMITTED` → `PENDING_ADMIN_REVIEW`, baru muncul di antrean admin kepegawaian untuk ditetapkan alur approvalnya.
-  - Jika **ditolak**: status menjadi `DELEGATE_DECLINED`, pegawai pengaju perlu memilih pengganti lain dan submit ulang. Pengajuan **tidak** diteruskan ke admin selama belum ada delegasi yang terkonfirmasi.
-- Konfirmasi delegasi ini terpisah dari alur approval berjenjang (bukan salah satu `ApprovalStep`), tetapi menjadi **gerbang wajib** sebelum alur approval bisa dimulai.
+- **Wajib dikonfirmasi oleh pegawai pengganti** sebelum pengajuan bisa diproses. Setelah pegawai submit, sistem mengirim notifikasi ke calon pengganti untuk menyetujui atau menolak.
+  - Jika **ditolak**: status menjadi `DELEGATE_DECLINED`, pegawai pengaju perlu memilih pengganti lain dan submit ulang.
+  - Jika **dikonfirmasi + unit punya `kepalaRuanganId`**: status → `PENDING_KEPALA_RUANGAN`, step approval kepala ruangan dibuat otomatis, notifikasi ke kepala ruangan. Kepala ruangan harus menyetujui dulu sebelum masuk ke antrean admin.
+  - Jika **dikonfirmasi + unit TIDAK punya `kepalaRuanganId`**: status langsung → `PENDING_ADMIN_REVIEW`, muncul di antrean admin kepegawaian.
+- Konfirmasi delegasi terpisah dari alur approval berjenjang (bukan `ApprovalStep`) dan menjadi **gerbang wajib** sebelum alur approval bisa dimulai.
+- Kepala ruangan adalah satu-satunya `ApprovalStep` yang dibuat otomatis oleh sistem — step lainnya selalu ditetapkan manual oleh admin kepegawaian.
 - Field `delegateId` beserta status konfirmasinya disimpan & ikut dikirim ke SK serta ke sistem lama (`delegateEmployeeLegacyId`).
 
 ## 4. Aturan Jenis & Kuota Cuti per Kategori Pegawai

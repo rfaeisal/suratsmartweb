@@ -16,12 +16,13 @@ Hanya endpoint berikut yang perlu diimplementasikan di sisi Flutter:
 
 | Kelompok | Endpoint |
 |---|---|
-| Auth | `POST /auth/login`, `POST /auth/refresh`, `GET /auth/me`, `POST /auth/logout`, `POST /auth/fcm-token` |
-| Master data | `GET /leave-types`, `GET /units/:unitId/employees` |
-| Pengajuan | `POST /attachments`, `POST /leave-requests`, `GET /leave-requests`, `GET /leave-requests/:id` |
+| Auth | `POST /auth/login`, `POST /auth/refresh`, `GET /auth/me`, `POST /auth/logout` |
+| FCM & device | `POST /devices/register-token`, `DELETE /devices/register-token` |
+| Master data | `GET /leave-types`, `GET /units/:unitId/employees`, `GET /employees/search` |
+| Pengajuan | `POST /attachments`, `POST /leave-requests`, `GET /leave-requests`, `GET /leave-requests/:id` (termasuk skDocument) |
 | Konfirmasi delegasi | `GET /delegate-confirmations/inbox`, `POST /delegate-confirmations/:id/decision` |
 | Approval | `GET /approvals/inbox`, `POST /approvals/:stepId/decision` |
-| SK | `GET /leave-requests/:id/sk` |
+| Profil | `POST /profile/avatar`, `DELETE /profile/avatar` |
 
 Semua endpoint admin (`/admin/*`) dan manajemen sesi/role adalah **web-only** dan tidak perlu diintegrasikan di Flutter.
 
@@ -91,8 +92,8 @@ Field `unit` bisa `null` jika admin belum menetapkan unit kerja. Jika sesi tidak
 ### `POST /api/v1/auth/logout` `[Mobile]`
 Revoke `UserSession` device yang sedang login (`revokedBy: "SELF"`) dan hapus FCM token device tersebut.
 
-### `POST /api/v1/auth/fcm-token` `[Mobile]`
-Body: `{ "token": "fcm_device_token" }` — daftarkan token FCM device untuk push notification.
+### `POST /api/v1/auth/fcm-token` `[Mobile]` *(deprecated)*
+Body: `{ "token": "fcm_device_token" }` — daftarkan token FCM device. **Gunakan `/devices/register-token` untuk client baru** — endpoint ini dipertahankan untuk kompatibilitas mundur.
 
 > Kebijakan satu sesi aktif berlaku **khusus mobile**. Web admin panel memakai sesi browser via NextAuth secara terpisah — pegawai bisa login web dan mobile bersamaan tanpa saling memblokir.
 
@@ -119,8 +120,8 @@ Daftar pegawai satu unit (untuk dropdown pilih pegawai pengganti/delegasi saat m
 ## 3. Pengajuan Cuti `[Mobile]`
 
 ### `POST /api/v1/attachments` (multipart/form-data) `[Mobile]`
-Upload lampiran sebelum submit pengajuan. Mengembalikan `{ "fileId": "..." }` yang direferensikan di `attachmentFileIds` saat POST leave-request.
-File yang diizinkan: PDF, JPG, PNG. Maks 5 MB per file.
+Upload lampiran sebelum submit pengajuan (step 1 dari 2-step flow). Mengembalikan `{ "fileId": "..." }` yang direferensikan di `attachmentFileIds` saat POST leave-request. File dipindahkan ke lokasi final saat pengajuan dibuat.
+File yang diizinkan: PDF, JPG, PNG. **Maks 2 MB per file.**
 
 ### `POST /api/v1/leave-requests` `[Mobile]`
 ```json
@@ -130,6 +131,7 @@ File yang diizinkan: PDF, JPG, PNG. Maks 5 MB per file.
   "endDate": "2026-08-05",
   "reason": "string (min. 5 karakter)",
   "addressDuringLeave": "string (opsional, min. 5 karakter) — alamat tinggal selama cuti",
+  "emergencyPhone": "string (opsional, maks. 20 karakter) — nomor HP darurat selama cuti",
   "delegateEmployeeId": "...",
   "attachmentFileIds": ["fileId-1", "fileId-2"]
 }
@@ -148,7 +150,7 @@ Query params: `status` (opsional), `mine=true` (default untuk pegawai biasa).
 List pengajuan milik user yang login, diurutkan terbaru.
 
 ### `GET /api/v1/leave-requests/:id` `[Mobile]`
-Detail lengkap pengajuan: data pengaju, jenis cuti, tanggal, alasan, `addressDuringLeave`, pegawai pengganti, status konfirmasi delegasi, `approvalSteps[]` (beserta status tiap tahap), dan referensi SK jika sudah terbit.
+Detail lengkap pengajuan: data pengaju, jenis cuti, tanggal, alasan, `addressDuringLeave`, `emergencyPhone`, pegawai pengganti, status konfirmasi delegasi, `approvalSteps[]` (beserta status tiap tahap), dan `skDocument` (nomor SK, filePath, generatedAt) jika sudah terbit. **Info SK sudah termasuk di response ini — tidak ada endpoint `/sk` terpisah untuk mobile.**
 
 ---
 
@@ -191,10 +193,29 @@ Efek:
 
 ---
 
-## 6. Dokumen SK `[Mobile]`
+---
 
-### `GET /api/v1/leave-requests/:id/sk` `[Mobile]`
-Mengembalikan metadata SK + URL unduh PDF setelah pengajuan berstatus `APPROVED` atau `SENT_TO_LEGACY`.
+## 6. Manajemen Device & Profil `[Mobile]`
+
+### `POST /api/v1/devices/register-token` `[Mobile]`
+Daftarkan atau perbarui token FCM untuk device tertentu. Dipanggil setelah login atau saat token FCM berubah.
+Body: `{ "fcmToken": "string", "deviceId": "string" }`
+Response: `{ "message": "Token registered" }`
+
+### `DELETE /api/v1/devices/register-token` `[Mobile]`
+Hapus token FCM device. Dipanggil saat logout manual.
+Body: `{ "deviceId": "string" }`
+
+### `POST /api/v1/profile/avatar` (multipart/form-data) `[Mobile]`
+Upload atau ganti foto profil pegawai. File: JPG/PNG, maks 2 MB.
+Response: `{ "avatarUrl": "string" }`
+
+### `DELETE /api/v1/profile/avatar` `[Mobile]`
+Hapus foto profil.
+
+### `GET /api/v1/profile/avatar/file` `[Mobile]`
+Mengunduh file avatar langsung (digunakan untuk local storage mode, bukan Vercel Blob).
+Query param: `path` — path file yang di-encode.
 
 ---
 
@@ -203,26 +224,29 @@ Mengembalikan metadata SK + URL unduh PDF setelah pengajuan berstatus `APPROVED`
 Seluruh endpoint di bawah ini adalah **web-only** dan tidak digunakan oleh Flutter.
 
 ### `POST /api/v1/admin/leave-requests/:id/approval-flow` `[Web]`
-Menetapkan atau menyusun ulang alur approval. **Hanya bisa dipanggil jika `delegateConfirmationStatus = CONFIRMED`** — jika belum, mengembalikan `INVALID_APPROVAL_STATE`.
+Menetapkan atau menyusun ulang alur approval. **Hanya bisa dipanggil saat status `PENDING_ADMIN_REVIEW`** (delegasi sudah konfirmasi, dan kepala ruangan sudah approve jika ada) — jika tidak, mengembalikan `INVALID_APPROVAL_STATE`.
 ```json
 {
   "steps": [
-    { "stepOrder": 1, "approverEmployeeId": "...", "roleLabel": "Atasan Langsung (opsional)" },
-    { "stepOrder": 2, "approverEmployeeId": "...", "roleLabel": "Kepala Bagian TU (opsional)" },
-    { "stepOrder": 3, "approverEmployeeId": "..." }
+    { "employeeId": "...", "roleLabel": "Atasan Langsung" },
+    { "employeeId": "...", "roleLabel": "Kepala Bagian TU" },
+    { "employeeId": "..." }
   ]
 }
 ```
-Setelah dipanggil, status pengajuan berubah ke `IN_APPROVAL` dan notifikasi dikirim ke approver tahap 1.
+`stepOrder` tidak perlu disertakan — dihitung otomatis oleh server mulai setelah step yang sudah `APPROVED` (mis. step kepala ruangan). Setelah dipanggil, status pengajuan berubah ke `IN_APPROVAL` dan notifikasi dikirim ke approver tahap pertama.
 
 ### `GET /api/v1/admin/leave-requests` `[Web]`
 List semua pengajuan dengan filter: `status`, `unitId`, `leaveTypeId`, rentang tanggal.
 
-### `GET /api/v1/admin/leave-requests/:id/sk/print` `[Web]`
-Mengembalikan file PDF SK untuk dicetak langsung dari admin panel.
+### `GET /api/v1/admin/leave-requests/:id/sk/download` `[Web]`
+Download atau cetak ulang file PDF SK dari admin panel. Tersedia selama SK sudah digenerate (status `APPROVED` ke atas).
 
-### `POST /api/v1/admin/integration-logs/:id/retry` `[Web]`
-Kirim ulang manual data cuti ke sistem lama untuk log berstatus `FAILED` (dipakai saat status pengajuan `SEND_FAILED`).
+### `POST /api/v1/admin/leave-requests/:id/generate-sk` `[Web]`
+Generate ulang SK PDF secara manual (misalnya jika file sebelumnya rusak atau format berubah).
+
+### `POST /api/v1/admin/leave-requests/:id/send-to-legacy` `[Web]`
+Kirim ulang manual data cuti ke sistem lama. Digunakan saat status pengajuan `SEND_FAILED`. Membuat `IntegrationLog` baru dan update status ke `SENT_TO_LEGACY` jika berhasil.
 
 ### `GET /api/v1/admin/reports/leave-recap` `[Web]`
 Rekapan cuti untuk periode tertentu.
@@ -240,9 +264,20 @@ Query params: `startDate`, `endDate`, `unitId` (opsional), `employeeType` (opsio
 ```
 
 ### CRUD Master Data `[Web]`
-- `GET/POST/PUT /api/v1/admin/leave-types`
-- `GET/POST/PUT /api/v1/admin/leave-quotas`
-- `GET/POST/PUT /api/v1/admin/units`
+- `GET/POST /api/v1/admin/leave-types`, `GET/PUT /api/v1/admin/leave-types/:id`
+- `GET/POST /api/v1/admin/leave-quotas`, `GET/PUT /api/v1/admin/leave-quotas/:id`
+- `GET/POST /api/v1/admin/units`, `GET/PUT/DELETE /api/v1/admin/units/:id`
+- `GET/POST /api/v1/admin/positions`, `PUT/DELETE /api/v1/admin/positions/:id`
+- `GET /api/v1/admin/employees`, `PUT /api/v1/admin/employees/:id`
+- `GET/POST /api/v1/admin/sync/employees` — sinkronisasi massal pegawai dari sistem lama
+- `GET/PUT /api/v1/admin/settings` — baca/tulis konfigurasi aplikasi (`AppSetting`)
+- `GET /api/v1/admin/reports/export` — export rekap cuti
+
+### Pencarian Pegawai `[Mobile/Web]`
+
+#### `GET /api/v1/employees/search`
+Pencarian pegawai by nama/NIP (dipakai dropdown pilih approver atau delegasi).
+Query param: `q` — keyword pencarian.
 
 ### Manajemen Pengguna `[Web]`
 
@@ -289,7 +324,7 @@ Kode error yang mungkin:
 |---|---|---|
 | `UNAUTHORIZED` | 401 | Token tidak disertakan atau tidak valid |
 | `SESSION_REVOKED` | 401 | Sesi telah dicabut oleh admin atau sign-out |
-| `SESSION_ALREADY_ACTIVE` | 409 | Login ditolak karena sesi di device lain masih aktif |
+| `SESSION_ALREADY_ACTIVE` | 409 | Login ditolak karena sesi di device lain masih aktif (berlaku hanya jika `enforce_single_session=true` di AppSetting) |
 | `FORBIDDEN` | 403 | Role tidak memiliki akses ke endpoint ini |
 | `NOT_FOUND` | 404 | Resource tidak ditemukan |
 | `VALIDATION_ERROR` | 422 | Input tidak valid (detail di `details`) |
