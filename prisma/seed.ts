@@ -60,7 +60,8 @@ async function main() {
     positionTitle: string
     directSupervisorId?: string
     username?: string
-    roles: Array<"PEGAWAI" | "APPROVER" | "ADMIN_KEPEGAWAIAN" | "SUPERADMIN">
+    roles: Array<"PEGAWAI" | "APPROVER" | "KEPALA_UNIT" | "ADMIN_UNIT" | "ADMIN_KEPEGAWAIAN" | "SUPERADMIN">
+    managedWorkUnitId?: string
   }
 
   const mockEmployees: MockEmployee[] = [
@@ -182,6 +183,28 @@ async function main() {
       username: "pegawai.baru2",
       roles: ["PEGAWAI"],
     },
+    {
+      legacyId: "9997",
+      nip: "000000000000000002",
+      fullName: "Kepala Unit Demo",
+      employeeType: "PNS",
+      unitId: "U01",
+      positionTitle: "Kepala Bagian Umum",
+      username: "kepala_unit",
+      roles: ["PEGAWAI", "KEPALA_UNIT"],
+      managedWorkUnitId: "U01",
+    },
+    {
+      legacyId: "9996",
+      nip: "000000000000000003",
+      fullName: "Admin Unit Demo",
+      employeeType: "PNS",
+      unitId: "U01",
+      positionTitle: "Staf Bagian Umum",
+      username: "admin_unit",
+      roles: ["PEGAWAI", "ADMIN_UNIT"],
+      managedWorkUnitId: "U01",
+    },
   ]
 
   for (const emp of mockEmployees) {
@@ -209,8 +232,17 @@ async function main() {
 
     const user = await prisma.appUser.upsert({
       where: { employeeId: employee.id },
-      create: { employeeId: employee.id, roles: emp.roles, username: emp.username ?? null },
-      update: { roles: emp.roles, ...(emp.username ? { username: emp.username } : {}) },
+      create: {
+        employeeId: employee.id,
+        roles: emp.roles,
+        username: emp.username ?? null,
+        managedWorkUnitId: emp.managedWorkUnitId ?? null,
+      },
+      update: {
+        roles: emp.roles,
+        ...(emp.username ? { username: emp.username } : {}),
+        ...(emp.managedWorkUnitId !== undefined ? { managedWorkUnitId: emp.managedWorkUnitId } : {}),
+      },
     })
 
     console.log(`✓ ${emp.fullName} (${emp.legacyId}) → ${user.roles.join(", ")}`)
@@ -275,6 +307,8 @@ async function main() {
   console.log("  │ pegawai.baru    │ baru123      │ PEGAWAI  — Analis Kepegawaian (PPPK)    │")
   console.log("  │ pegawai.baru2   │ baru123      │ PEGAWAI  — Pengelola Administrasi (BLUD)│")
   console.log("  │ staf_dir1       │ stafdir123   │ PEGAWAI  — Staf Sekretariat Direktur    │")
+  console.log("  │ kepala_unit     │ kepala123    │ KEPALA_UNIT — Kepala Bagian Umum (U01)  │")
+  console.log("  │ admin_unit      │ adminunit123 │ ADMIN_UNIT  — Staf Bagian Umum (U01)    │")
   console.log("  └─────────────────┴──────────────┴─────────────────────────────────────────┘")
 }
 

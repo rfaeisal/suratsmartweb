@@ -53,6 +53,32 @@ const MOCK_ACCOUNTS: Record<string, { password: string; employee: LegacyEmployee
       isActive: true,
     },
   },
+  kepala_unit: {
+    password: "kepala123",
+    employee: {
+      legacyId: "9997",
+      nip: "000000000000000002",
+      fullName: "Kepala Unit Demo",
+      employeeType: "PNS",
+      unit: { legacyId: "U01", name: "Bagian Umum" },
+      positionTitle: "Kepala Bagian Umum",
+      directSupervisorLegacyId: undefined,
+      isActive: true,
+    },
+  },
+  admin_unit: {
+    password: "adminunit123",
+    employee: {
+      legacyId: "9996",
+      nip: "000000000000000003",
+      fullName: "Admin Unit Demo",
+      employeeType: "PNS",
+      unit: { legacyId: "U01", name: "Bagian Umum" },
+      positionTitle: "Staf Bagian Umum",
+      directSupervisorLegacyId: undefined,
+      isActive: true,
+    },
+  },
 }
 
 function mockValidateSSO(username: string, password: string): SSOResult {
@@ -93,7 +119,7 @@ async function legacyFetch<T>(path: string, options?: RequestInit & { body?: str
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-const LOCAL_ACCOUNTS = new Set(["superadmin", "admin"])
+const LOCAL_ACCOUNTS = new Set(["superadmin", "admin", "kepala_unit", "admin_unit"])
 
 export async function validateSSOCredentials(
   username: string,
