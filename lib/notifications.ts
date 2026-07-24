@@ -9,6 +9,8 @@ export type NotifEvent =
   | "REQUEST_REJECTED"
   | "REQUEST_RETURNED"
   | "SEND_TO_LEGACY_FAILED"
+  | "LEAVE_STARTING_TOMORROW"
+  | "LEAVE_ENDING_TODAY"
 
 interface NotifPayload {
   event: NotifEvent
@@ -73,6 +75,20 @@ function buildFcmData(event: NotifEvent, data: Record<string, string>): Record<s
         newStatus: "SEND_FAILED",
         title: "Gagal Kirim ke EHOS",
         body: `Pengajuan ${data.requestNumber ?? ""} gagal dikirim ke EHOS`.trim(),
+      }
+    case "LEAVE_STARTING_TOMORROW":
+      return {
+        ...data,
+        type: "LEAVE_REMINDER",
+        title: "Pengingat: Cuti Dimulai Besok",
+        body: `Cuti ${data.leaveType ?? ""} Anda (${data.requestNumber ?? ""}) dimulai besok, ${data.startDate ?? ""}`.trim(),
+      }
+    case "LEAVE_ENDING_TODAY":
+      return {
+        ...data,
+        type: "LEAVE_REMINDER",
+        title: "Pengingat: Cuti Berakhir Hari Ini",
+        body: `Cuti ${data.leaveType ?? ""} Anda (${data.requestNumber ?? ""}) berakhir hari ini, ${data.endDate ?? ""}`.trim(),
       }
   }
 }
