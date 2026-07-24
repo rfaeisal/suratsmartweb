@@ -15,6 +15,8 @@ export type NotifEvent =
   | "SHIFT_SWAP_PENDING_APPROVAL"
   | "SHIFT_SWAP_APPROVED"
   | "SHIFT_SWAP_REJECTED"
+  | "ATTENDANCE_MISSING_CHECKIN"
+  | "ATTENDANCE_MISSING_CHECKOUT"
 
 interface NotifPayload {
   event: NotifEvent
@@ -127,6 +129,22 @@ function buildFcmData(event: NotifEvent, data: Record<string, string>): Record<s
         body: data.rejectedBy === "TARGET"
           ? "Pegawai tujuan menolak permintaan tukar shift"
           : "Permintaan tukar shift ditolak oleh Kepala Unit",
+      }
+    case "ATTENDANCE_MISSING_CHECKIN":
+      return {
+        ...data,
+        type: "ATTENDANCE_REMINDER",
+        reminderType: "CHECKIN",
+        title: "Pengingat: Belum Absen Masuk",
+        body: `Anda belum melakukan absen masuk untuk shift ${data.shiftName ?? ""} hari ini`.trim(),
+      }
+    case "ATTENDANCE_MISSING_CHECKOUT":
+      return {
+        ...data,
+        type: "ATTENDANCE_REMINDER",
+        reminderType: "CHECKOUT",
+        title: "Pengingat: Belum Absen Pulang",
+        body: `Anda belum melakukan absen pulang untuk shift ${data.shiftName ?? ""} hari ini`.trim(),
       }
   }
 }

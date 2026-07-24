@@ -12,6 +12,13 @@ export function shiftStartUtc(tanggalKerja: Date, startTime: string): Date {
   return new Date(tanggalKerja.getTime() + h * 3_600_000 + m * 60_000 - WIB_OFFSET_MS)
 }
 
+/** Mengembalikan UTC datetime dari jam selesai shift. Shift lintas tengah malam ditambah 24 jam. */
+export function shiftEndUtc(tanggalKerja: Date, endTime: string, crossesMidnight: boolean): Date {
+  const [h, m] = endTime.split(":").map(Number)
+  const base = tanggalKerja.getTime() + h * 3_600_000 + m * 60_000 - WIB_OFFSET_MS
+  return new Date(crossesMidnight ? base + 86_400_000 : base)
+}
+
 /**
  * Menghitung tanggal_kerja yang benar untuk sebuah event absen, dengan penanganan
  * shift yang melintas tengah malam (mis. 21:00–07:00).
