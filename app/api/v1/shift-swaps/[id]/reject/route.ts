@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth, AuthError } from "@/lib/auth/require-auth"
 import { Errors } from "@/lib/errors"
 import { writeAuditLog } from "@/lib/audit"
+import { sendNotification } from "@/lib/notifications"
 
 const bodySchema = z.object({
   alasan: z.string().max(500).optional(),
@@ -64,6 +65,26 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     entityId: id,
     metadata: { alasan: parsed.data.alasan },
   })
+
+  // Tentukan siapa yang perlu dinotifikasi berdasarkan siapa yang menolak
+  const notifEmployeeIds = isTarget
+    ? [swap.requesterId]                          // target tolak → beritahu requester
+    : [swap.requesterId, swap.targetId]           // kepala tolak → beritahu keduanya
+  const rejectedBy = isTarget ? "TARGET" : "KEPALA"
+
+  const usersToNotify = await prisma.appUser.findMany({
+    where: { employeeId: { in: notifEmployeeIds } },
+    select: { id: true },
+  })
+  await Promise.all(
+    usersToNotify.map((u) =>
+      sendNotification({
+        event: "SHIFT_SWAP_REJECTED",
+        targetUserId: u.id,
+        data: { shiftSwapId: id, rejectedBy },
+      })
+    )
+  )
 
   return NextResponse.json(updated)
 }

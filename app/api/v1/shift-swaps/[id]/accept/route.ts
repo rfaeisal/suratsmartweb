@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth, AuthError } from "@/lib/auth/require-auth"
 import { Errors } from "@/lib/errors"
 import { writeAuditLog } from "@/lib/audit"
+import { sendNotification } from "@/lib/notifications"
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -44,6 +45,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     entityId: id,
     metadata: { requesterId: swap.requesterId },
   })
+
+  // Notifikasi ke semua KEPALA_UNIT yang mengelola unit ini
+  const kepalaUsers = await prisma.appUser.findMany({
+    where: { managedWorkUnitId: swap.workUnitId, roles: { has: "KEPALA_UNIT" } },
+    select: { id: true },
+  })
+  const notifData = {
+    shiftSwapId: id,
+    requesterName: updated.requester.fullName,
+    targetName: updated.target.fullName,
+  }
+  await Promise.all(
+    kepalaUsers.map((u) =>
+      sendNotification({ event: "SHIFT_SWAP_PENDING_APPROVAL", targetUserId: u.id, data: notifData })
+    )
+  )
 
   return NextResponse.json(updated)
 }

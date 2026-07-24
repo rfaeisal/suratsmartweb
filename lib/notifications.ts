@@ -11,6 +11,10 @@ export type NotifEvent =
   | "SEND_TO_LEGACY_FAILED"
   | "LEAVE_STARTING_TOMORROW"
   | "LEAVE_ENDING_TODAY"
+  | "SHIFT_SWAP_REQUESTED"
+  | "SHIFT_SWAP_PENDING_APPROVAL"
+  | "SHIFT_SWAP_APPROVED"
+  | "SHIFT_SWAP_REJECTED"
 
 interface NotifPayload {
   event: NotifEvent
@@ -89,6 +93,40 @@ function buildFcmData(event: NotifEvent, data: Record<string, string>): Record<s
         type: "LEAVE_REMINDER",
         title: "Pengingat: Cuti Berakhir Hari Ini",
         body: `Cuti ${data.leaveType ?? ""} Anda (${data.requestNumber ?? ""}) berakhir hari ini, ${data.endDate ?? ""}`.trim(),
+      }
+    case "SHIFT_SWAP_REQUESTED":
+      return {
+        ...data,
+        type: "SHIFT_SWAP_ACTION",
+        action: "RESPOND",
+        title: "Permintaan Tukar Shift",
+        body: `${data.requesterName ?? "Rekan Anda"} meminta tukar shift dengan Anda (${data.requesterDate ?? ""})`,
+      }
+    case "SHIFT_SWAP_PENDING_APPROVAL":
+      return {
+        ...data,
+        type: "SHIFT_SWAP_ACTION",
+        action: "APPROVE",
+        title: "Tukar Shift Menunggu Persetujuan",
+        body: `${data.requesterName ?? "Pegawai"} dan ${data.targetName ?? "pengganti"} mengajukan tukar shift`,
+      }
+    case "SHIFT_SWAP_APPROVED":
+      return {
+        ...data,
+        type: "SHIFT_SWAP_RESULT",
+        result: "APPROVED",
+        title: "Tukar Shift Disetujui",
+        body: "Permintaan tukar shift Anda telah disetujui oleh Kepala Unit",
+      }
+    case "SHIFT_SWAP_REJECTED":
+      return {
+        ...data,
+        type: "SHIFT_SWAP_RESULT",
+        result: "REJECTED",
+        title: "Tukar Shift Ditolak",
+        body: data.rejectedBy === "TARGET"
+          ? "Pegawai tujuan menolak permintaan tukar shift"
+          : "Permintaan tukar shift ditolak oleh Kepala Unit",
       }
   }
 }

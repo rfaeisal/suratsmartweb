@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth, AuthError } from "@/lib/auth/require-auth"
 import { Errors } from "@/lib/errors"
 import { writeAuditLog } from "@/lib/audit"
+import { sendNotification } from "@/lib/notifications"
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -71,6 +72,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     entityId: id,
     metadata: { requesterId: swap.requesterId, targetId: swap.targetId },
   })
+
+  // Notifikasi ke requester dan target bahwa tukar shift disetujui
+  const usersToNotify = await prisma.appUser.findMany({
+    where: { employeeId: { in: [swap.requesterId, swap.targetId] } },
+    select: { id: true },
+  })
+  await Promise.all(
+    usersToNotify.map((u) =>
+      sendNotification({
+        event: "SHIFT_SWAP_APPROVED",
+        targetUserId: u.id,
+        data: { shiftSwapId: id },
+      })
+    )
+  )
 
   return NextResponse.json(result)
 }

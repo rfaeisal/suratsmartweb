@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth, AuthError } from "@/lib/auth/require-auth"
 import { Errors } from "@/lib/errors"
 import { writeAuditLog } from "@/lib/audit"
+import { sendNotification } from "@/lib/notifications"
 
 const createSchema = z.object({
   requester_roster_id: z.string().min(1),
@@ -118,6 +119,27 @@ export async function POST(req: NextRequest) {
     entityId: swap.id,
     metadata: { targetId: targetRoster.employeeId },
   })
+
+  const targetAppUser = await prisma.appUser.findUnique({
+    where: { employeeId: swap.target.id },
+    select: { id: true },
+  })
+  if (targetAppUser) {
+    const fmtDate = (d: Date) =>
+      d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" })
+    await sendNotification({
+      event: "SHIFT_SWAP_REQUESTED",
+      targetUserId: targetAppUser.id,
+      data: {
+        shiftSwapId: swap.id,
+        requesterName: swap.requester.fullName,
+        requesterShift: swap.requesterRoster.shift.nama,
+        requesterDate: fmtDate(swap.requesterRoster.tanggalKerja),
+        targetShift: swap.targetRoster.shift.nama,
+        targetDate: fmtDate(swap.targetRoster.tanggalKerja),
+      },
+    })
+  }
 
   return NextResponse.json(swap, { status: 201 })
 }
