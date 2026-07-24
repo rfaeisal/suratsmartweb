@@ -28,8 +28,12 @@ export default async function PegawaiLayout({ children }: { children: React.Reac
     }).then((steps) => steps.filter((s) => s.stepOrder === s.leaveRequest.currentStepOrder).length),
   ])
 
+  const pendingSwaps = await prisma.shiftSwapRequest.count({
+    where: { targetId: employeeId, status: "MENUNGGU_TARGET" },
+  })
+
   const navItems = [
-    { href: "/pegawai/dashboard", label: "Pengajuan Saya", badge: false },
+    { href: "/pegawai/dashboard",    label: "Pengajuan Saya", badge: false },
     {
       href: "/pegawai/delegate-inbox",
       label: `Konfirmasi Delegasi${pendingDelegations > 0 ? ` (${pendingDelegations})` : ""}`,
@@ -39,6 +43,12 @@ export default async function PegawaiLayout({ children }: { children: React.Reac
       href: "/pegawai/approvals",
       label: `Inbox Approval${pendingApprovals > 0 ? ` (${pendingApprovals})` : ""}`,
       badge: pendingApprovals > 0,
+    },
+    { href: "/pegawai/overtime",     label: "Lembur", badge: false },
+    {
+      href: "/pegawai/shift-swaps",
+      label: `Tukar Shift${pendingSwaps > 0 ? ` (${pendingSwaps})` : ""}`,
+      badge: pendingSwaps > 0,
     },
   ]
 

@@ -26,7 +26,7 @@ function rosterToJson(r: {
 export async function GET(req: NextRequest) {
   let authUser
   try {
-    authUser = await requireAuth(req, ["SUPERADMIN", "ADMIN_KEPEGAWAIAN", "KEPALA_UNIT", "ADMIN_UNIT"])
+    authUser = await requireAuth(req)
   } catch (e) {
     if (e instanceof AuthError) {
       if (e.code === "SESSION_REVOKED") return Errors.sessionRevoked()
@@ -35,31 +35,62 @@ export async function GET(req: NextRequest) {
     return Errors.internal()
   }
 
-  const periodId = new URL(req.url).searchParams.get("period_id")
-  if (!periodId) return Errors.validation("period_id wajib diisi")
+  const { searchParams } = new URL(req.url)
+  const periodId   = searchParams.get("period_id")
+  const employeeId = searchParams.get("employee_id")
+  const limitParam = searchParams.get("limit")
+  const limit      = limitParam ? Math.min(parseInt(limitParam), 500) : 200
 
-  const period = await prisma.rosterPeriod.findUnique({ where: { id: periodId } })
-  if (!period) return Errors.notFound("Periode roster")
+  // Mode 1: filter by period_id (admin/unit role)
+  if (periodId) {
+    const isUnitRole = authUser.roles.includes("KEPALA_UNIT") || authUser.roles.includes("ADMIN_UNIT")
+    const isAdmin    = authUser.roles.includes("ADMIN_KEPEGAWAIAN") || authUser.roles.includes("SUPERADMIN")
 
-  const isUnitRole =
-    authUser.roles.includes("KEPALA_UNIT") || authUser.roles.includes("ADMIN_UNIT")
-  const isAdmin =
-    authUser.roles.includes("ADMIN_KEPEGAWAIAN") || authUser.roles.includes("SUPERADMIN")
+    if (!isUnitRole && !isAdmin) return Errors.forbidden()
 
-  if (isUnitRole && !isAdmin && authUser.managedWorkUnitId !== period.workUnitId) {
-    return Errors.forbidden()
+    const period = await prisma.rosterPeriod.findUnique({ where: { id: periodId } })
+    if (!period) return Errors.notFound("Periode roster")
+
+    if (isUnitRole && !isAdmin && authUser.managedWorkUnitId !== period.workUnitId) {
+      return Errors.forbidden()
+    }
+
+    const rosters = await prisma.roster.findMany({
+      where: { periodId },
+      include: {
+        employee: { select: { nip: true, fullName: true } },
+        shift: { select: { nama: true, startTime: true, endTime: true, crossesMidnight: true } },
+      },
+      orderBy: [{ tanggalKerja: "asc" }, { employee: { fullName: "asc" } }],
+    })
+    return NextResponse.json({ data: rosters.map(rosterToJson) })
   }
 
-  const rosters = await prisma.roster.findMany({
-    where: { periodId },
-    include: {
-      employee: { select: { nip: true, fullName: true } },
-      shift: { select: { nama: true, startTime: true, endTime: true, crossesMidnight: true } },
-    },
-    orderBy: [{ tanggalKerja: "asc" }, { employee: { fullName: "asc" } }],
-  })
+  // Mode 2: filter by employee_id — boleh diakses pegawai untuk melihat roster rekan satu unit
+  if (employeeId) {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
 
-  return NextResponse.json({ data: rosters.map(rosterToJson) })
+    // Pastikan target employee satu unit dengan pemanggil (kecuali admin)
+    const isAdmin = authUser.roles.some((r) => ["ADMIN_KEPEGAWAIAN", "SUPERADMIN", "KEPALA_UNIT", "ADMIN_UNIT"].includes(r))
+    if (!isAdmin) {
+      const [caller, target] = await Promise.all([
+        prisma.employee.findUnique({ where: { id: authUser.employeeId }, select: { unitId: true } }),
+        prisma.employee.findUnique({ where: { id: employeeId }, select: { unitId: true } }),
+      ])
+      if (!caller || !target || caller.unitId !== target.unitId) return Errors.forbidden()
+    }
+
+    const rosters = await prisma.roster.findMany({
+      where: { employeeId, tanggalKerja: { gte: today } },
+      include: { shift: { select: { nama: true, startTime: true, endTime: true, crossesMidnight: true } } },
+      orderBy: { tanggalKerja: "asc" },
+      take: limit,
+    })
+    return NextResponse.json({ data: rosters.map(rosterToJson) })
+  }
+
+  return Errors.validation("period_id atau employee_id wajib diisi")
 }
 
 const createSchema = z.object({
