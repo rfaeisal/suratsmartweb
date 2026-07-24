@@ -112,9 +112,9 @@ export default function SyncEmployeesForm() {
   return (
     <div className="space-y-6">
       {/* Tombol cek */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h2 className="text-sm font-semibold text-gray-900 mb-3">Cari Pegawai Baru dari Sistem Lama</h2>
-        <p className="text-xs text-gray-500 mb-4">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-3">Cari Pegawai Baru dari Sistem Lama</h2>
+        <p className="text-xs text-gray-500 dark:text-slate-400 mb-4">
           Sistem akan memeriksa daftar pegawai di sistem kepegawaian lama dan menampilkan pegawai yang NIP-nya belum terdaftar di CutiSmart.
         </p>
         <button
@@ -127,26 +127,26 @@ export default function SyncEmployeesForm() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{error}</div>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700 dark:text-red-400">{error}</div>
       )}
 
       {/* Hasil import */}
       {importResult && (
         <div className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900">{importResult.total}</p>
-              <p className="text-xs text-gray-500 mt-0.5">Dipilih</p>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{importResult.total}</p>
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Dipilih</p>
             </div>
-            <div className="bg-white rounded-xl border border-green-200 p-4 text-center">
-              <p className="text-2xl font-bold text-green-700">{importResult.imported}</p>
-              <p className="text-xs text-gray-500 mt-0.5">Berhasil Diimpor</p>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-green-200 dark:border-green-800 p-4 text-center">
+              <p className="text-2xl font-bold text-green-700 dark:text-green-400">{importResult.imported}</p>
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Berhasil Diimpor</p>
             </div>
-            <div className={`bg-white rounded-xl border p-4 text-center ${importResult.failed > 0 ? "border-red-200" : "border-gray-200"}`}>
-              <p className={`text-2xl font-bold ${importResult.failed > 0 ? "text-red-600" : "text-gray-400"}`}>
+            <div className={`bg-white dark:bg-slate-800 rounded-xl border p-4 text-center ${importResult.failed > 0 ? "border-red-200 dark:border-red-800" : "border-gray-200 dark:border-slate-700"}`}>
+              <p className={`text-2xl font-bold ${importResult.failed > 0 ? "text-red-600 dark:text-red-400" : "text-gray-400 dark:text-slate-500"}`}>
                 {importResult.failed}
               </p>
-              <p className="text-xs text-gray-500 mt-0.5">Gagal</p>
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Gagal</p>
             </div>
           </div>
 
@@ -157,17 +157,17 @@ export default function SyncEmployeesForm() {
           )}
 
           {importResult.errors.length > 0 && (
-            <div className="bg-white rounded-xl border border-red-200 overflow-hidden">
-              <div className="px-4 py-3 border-b border-red-100 bg-red-50">
-                <p className="text-sm font-semibold text-red-700">{importResult.errors.length} gagal diimpor</p>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-red-200 dark:border-red-800 overflow-hidden">
+              <div className="px-4 py-3 border-b border-red-100 dark:border-red-900 bg-red-50 dark:bg-red-900/20">
+                <p className="text-sm font-semibold text-red-700 dark:text-red-400">{importResult.errors.length} gagal diimpor</p>
               </div>
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-100 dark:divide-slate-700">
                 {importResult.errors.map((e) => (
                   <div key={e.legacyId} className="px-4 py-3 flex items-start gap-3">
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">{e.fullName}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-slate-100">{e.fullName}</p>
                     </div>
-                    <p className="text-xs text-red-600 text-right max-w-xs">{e.error}</p>
+                    <p className="text-xs text-red-600 dark:text-red-400 text-right max-w-xs">{e.error}</p>
                   </div>
                 ))}
               </div>
@@ -179,15 +179,15 @@ export default function SyncEmployeesForm() {
 
       {/* Preview daftar pegawai baru */}
       {preview && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between gap-4">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700 flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold text-gray-900">
+              <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">
                 {preview.newCount === 0
                   ? "Tidak ada pegawai baru"
                   : `${preview.newCount} pegawai baru ditemukan`}
               </p>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
                 Total di sistem lama: {preview.totalFromLegacy} •{" "}
                 Sudah ada di CutiSmart: {preview.totalFromLegacy - preview.newCount}
               </p>
@@ -204,26 +204,26 @@ export default function SyncEmployeesForm() {
           </div>
 
           {preview.newCount === 0 ? (
-            <div className="px-4 py-10 text-center text-sm text-gray-400">
+            <div className="px-4 py-10 text-center text-sm text-gray-400 dark:text-slate-500">
               Semua pegawai dari sistem lama sudah ada di CutiSmart.
             </div>
           ) : (
             <>
-              <div className="px-4 py-3 border-b border-gray-100">
+              <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700">
                 <div className="relative">
-                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                   </svg>
                   <input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Cari nama atau NIP…"
-                    className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   {search && (
                     <button
                       onClick={() => setSearch("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -234,7 +234,7 @@ export default function SyncEmployeesForm() {
               </div>
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50">
+                  <tr className="border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900">
                     <th className="px-4 py-3 w-10">
                       <input
                         type="checkbox"
@@ -244,21 +244,21 @@ export default function SyncEmployeesForm() {
                         className="rounded"
                       />
                     </th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">NIP</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nama Pegawai</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">NIP</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Nama Pegawai</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                   {filtered.length === 0 ? (
                     <tr>
-                      <td colSpan={3} className="px-4 py-8 text-center text-sm text-gray-400">
+                      <td colSpan={3} className="px-4 py-8 text-center text-sm text-gray-400 dark:text-slate-500">
                         Tidak ada pegawai yang cocok dengan pencarian.
                       </td>
                     </tr>
                   ) : filtered.map((emp) => (
                     <tr
                       key={emp.legacyId}
-                      className="hover:bg-gray-50 cursor-pointer transition-colors"
+                      className="hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors"
                       onClick={() => toggleOne(emp.legacyId)}
                     >
                       <td className="px-4 py-3">
@@ -270,8 +270,8 @@ export default function SyncEmployeesForm() {
                           className="rounded"
                         />
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-gray-600">{emp.nip}</td>
-                      <td className="px-4 py-3 font-medium text-gray-900">{emp.fullName}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-gray-600 dark:text-slate-400">{emp.nip}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-slate-100">{emp.fullName}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -280,8 +280,8 @@ export default function SyncEmployeesForm() {
           )}
 
           {preview.newCount > 0 && (
-            <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
-              <span className="text-xs text-gray-400">
+            <div className="px-4 py-3 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
+              <span className="text-xs text-gray-400 dark:text-slate-500">
                 {selected.size} dari {preview.newCount} dipilih
               </span>
               <button

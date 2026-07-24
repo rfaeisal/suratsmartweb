@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Override dark: variant to use data-theme attribute instead of prefers-color-scheme */
+@variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -12,24 +15,31 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Pastikan input/select selalu punya warna teks & background yang jelas,
-   tidak terpengaruh CSS variable dark mode dari body */
+[data-theme="dark"] body {
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Input/select selalu punya warna teks & background yang jelas */
 input,
 select,
 textarea {
   color: #111827;
   background-color: #ffffff;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  color: #f1f5f9;
+  background-color: #1e293b;
+  border-color: #334155;
 }

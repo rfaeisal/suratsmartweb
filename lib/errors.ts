@@ -13,6 +13,13 @@ export type ErrorCode =
   | "CONFLICT"
   | "TOO_MANY_REQUESTS"
   | "INTERNAL_ERROR"
+  | "DEVICE_CONFLICT"
+  | "DEVICE_BINDING_REQUIRED"
+  | "BEACON_TIDAK_TERDETEKSI"
+  | "QR_INVALID"
+  | "QR_EXPIRED"
+  | "QR_REPLAYED"
+  | "NO_ROSTER"
 
 interface ApiError {
   code: ErrorCode
@@ -57,7 +64,34 @@ export const Errors = {
     apiError("INVALID_APPROVAL_STATE", message, 422),
 
   tooManyRequests: (message = "Terlalu banyak percobaan. Coba lagi nanti.") =>
-    apiError("TOO_MANY_REQUESTS" as ErrorCode, message, 429),
+    apiError("TOO_MANY_REQUESTS", message, 429),
+
+  deviceConflict: (deviceLabel?: string) =>
+    apiError("DEVICE_CONFLICT", "Akun sedang terikat ke perangkat lain. Hubungi admin untuk reset.", 409, {
+      deviceLabel,
+    }),
+
+  deviceBindingRequired: () =>
+    apiError("DEVICE_BINDING_REQUIRED", "device_id wajib diisi untuk pegawai", 403),
+
+  beaconTidakTerdeteksi: () =>
+    apiError(
+      "BEACON_TIDAK_TERDETEKSI",
+      "Beacon tidak terdeteksi. Aktifkan Bluetooth dan pastikan berada di lingkungan RS.",
+      422,
+    ),
+
+  qrInvalid: () =>
+    apiError("QR_INVALID", "Token QR tidak valid atau perangkat tidak dikenal", 422),
+
+  qrExpired: () =>
+    apiError("QR_EXPIRED", "Token QR sudah kedaluwarsa. Scan ulang QR terbaru.", 422),
+
+  qrReplayed: () =>
+    apiError("QR_REPLAYED", "Token QR sudah pernah digunakan", 422),
+
+  noRoster: () =>
+    apiError("NO_ROSTER", "Tidak ada jadwal kerja untuk tanggal ini", 422),
 
   internal: (message = "Terjadi kesalahan internal server") =>
     apiError("INTERNAL_ERROR", message, 500),

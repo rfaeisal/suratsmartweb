@@ -11,7 +11,7 @@ import {
 import { writeAuditLog } from "@/lib/audit"
 import { Errors } from "@/lib/errors"
 import { rateLimit } from "@/lib/rate-limiter"
-import { isEnforceSingleSession } from "@/lib/settings"
+import { isEnforceSingleSession, isDeviceBindingEnabled } from "@/lib/settings"
 
 
 const loginSchema = z.object({
@@ -65,8 +65,26 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  // 4. Cek sesi aktif — blokir login baru jika enforce_single_session aktif
-  if (await isEnforceSingleSession()) {
+  // 4a. Device binding — 1 perangkat per akun (untuk absensi)
+  if (await isDeviceBindingEnabled()) {
+    const activeSession = await prisma.userSession.findFirst({
+      where: { userId: appUser.id, status: "ACTIVE" },
+      select: { id: true, deviceId: true, deviceLabel: true },
+    })
+    if (activeSession) {
+      if (activeSession.deviceId === deviceId) {
+        // Re-login dari perangkat yang sama — revoke sesi lama, lanjut buat baru
+        await prisma.userSession.update({
+          where: { id: activeSession.id },
+          data: { status: "REVOKED", revokedAt: new Date(), revokedBy: "SELF" },
+        })
+      } else {
+        // Perangkat berbeda — tolak
+        return Errors.deviceConflict(activeSession.deviceLabel ?? undefined)
+      }
+    }
+  } else if (await isEnforceSingleSession()) {
+    // 4b. Fallback: blokir sesi ganda tanpa mempertimbangkan device
     const activeSession = await prisma.userSession.findFirst({
       where: { userId: appUser.id, status: "ACTIVE" },
     })

@@ -40,49 +40,49 @@ export default async function LeaveTypesPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Master Jenis Cuti</h2>
-          <p className="text-sm text-gray-500 mt-1">Kelola master data jenis cuti dan aturannya</p>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">Master Jenis Cuti</h2>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Kelola master data jenis cuti dan aturannya</p>
         </div>
       </div>
 
       {/* Form tambah jenis cuti */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
-        <h3 className="font-medium text-gray-900 mb-4">Tambah Jenis Cuti Baru</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 mb-6">
+        <h3 className="font-medium text-gray-900 dark:text-slate-100 mb-4">Tambah Jenis Cuti Baru</h3>
         <form action={createLeaveType} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                 Kode <span className="text-red-500">*</span>
               </label>
               <input
                 name="code"
                 required
                 placeholder="misal: CUTI_TAHUNAN"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700 placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                 Nama <span className="text-red-500">*</span>
               </label>
               <input
                 name="name"
                 required
                 placeholder="misal: Cuti Tahunan"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700 placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
               Berlaku untuk <span className="text-red-500">*</span>
             </label>
             <div className="flex gap-4">
               {employeeTypes.map((et) => (
                 <label key={et} className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" name="applicableTo" value={et} className="rounded" />
-                  <span className="text-sm text-gray-700">{et}</span>
+                  <span className="text-sm text-gray-700 dark:text-slate-300">{et}</span>
                 </label>
               ))}
             </div>
@@ -90,7 +90,7 @@ export default async function LeaveTypesPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                 Kuota Default (hari/tahun)
               </label>
               <input
@@ -98,13 +98,13 @@ export default async function LeaveTypesPage() {
                 type="number"
                 min="1"
                 placeholder="Kosongkan jika tidak berbasis kuota"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700 placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div className="flex items-end">
               <label className="flex items-center gap-2 cursor-pointer pb-2">
                 <input type="checkbox" name="requiresAttachment" className="rounded" />
-                <span className="text-sm text-gray-700">Wajib lampiran</span>
+                <span className="text-sm text-gray-700 dark:text-slate-300">Wajib lampiran</span>
               </label>
             </div>
           </div>

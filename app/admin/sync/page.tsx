@@ -11,8 +11,8 @@ export default async function SyncPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-1">Sinkronisasi Data Pegawai</h1>
-      <p className="text-sm text-gray-500 mb-6">
+      <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-1">Sinkronisasi Data Pegawai</h1>
+      <p className="text-sm text-gray-500 dark:text-slate-400 mb-6">
         Cek dan impor pegawai dari sistem kepegawaian lama yang belum terdaftar di CutiSmart.
         Pencocokan dilakukan berdasarkan NIP — pegawai yang NIP-nya sudah ada di CutiSmart akan diabaikan.
       </p>

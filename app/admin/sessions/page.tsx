@@ -41,8 +41,8 @@ export default async function SessionsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">Manajemen Sesi Login</h2>
-        <p className="text-sm text-gray-500 mt-1">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">Manajemen Sesi Login</h2>
+        <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
           Pantau dan kelola sesi login aktif pegawai. Gunakan untuk force sign-out jika pegawai
           kehilangan perangkat atau perlu pindah device.
         </p>

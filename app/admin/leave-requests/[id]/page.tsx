@@ -14,10 +14,10 @@ const stepStatusLabel: Record<string, string> = {
   RETURNED: "Dikembalikan",
 }
 const stepStatusColor: Record<string, string> = {
-  PENDING: "text-gray-400",
-  APPROVED: "text-green-600",
-  REJECTED: "text-red-600",
-  RETURNED: "text-orange-500",
+  PENDING: "text-gray-400 dark:text-slate-500",
+  APPROVED: "text-green-600 dark:text-green-400",
+  REJECTED: "text-red-600 dark:text-red-400",
+  RETURNED: "text-orange-500 dark:text-orange-400",
 }
 
 export default async function AdminLeaveRequestDetailPage({ params }: Props) {
@@ -86,18 +86,18 @@ export default async function AdminLeaveRequestDetailPage({ params }: Props) {
       </div>
 
       {/* Header card */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-mono text-gray-400">{req.requestNumber}</span>
+              <span className="text-xs font-mono text-gray-400 dark:text-slate-500">{req.requestNumber}</span>
               <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${statusColor(req.status)}`}>
                 {formatStatus(req.status)}
               </span>
             </div>
-            <h2 className="text-lg font-semibold text-gray-900">{req.leaveType.name}</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{req.leaveType.name}</h2>
           </div>
-          <span className="text-xs text-gray-400 shrink-0">
+          <span className="text-xs text-gray-400 dark:text-slate-500 shrink-0">
             {new Date(req.createdAt).toLocaleDateString("id-ID")}
           </span>
         </div>
@@ -128,8 +128,8 @@ export default async function AdminLeaveRequestDetailPage({ params }: Props) {
       })()}
 
       {/* Detail pengajuan */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
-        <h3 className="font-medium text-gray-900 text-sm">Detail Pengajuan</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 space-y-3">
+        <h3 className="font-medium text-gray-900 dark:text-slate-100 text-sm">Detail Pengajuan</h3>
         {[
           {
             label: "Pegawai",
@@ -165,21 +165,21 @@ export default async function AdminLeaveRequestDetailPage({ params }: Props) {
           },
         ].map(({ label, value }) => (
           <div key={label} className="flex gap-3 text-sm">
-            <span className="w-44 shrink-0 text-gray-500">{label}</span>
-            <span className="text-gray-900">{value}</span>
+            <span className="w-44 shrink-0 text-gray-500 dark:text-slate-400">{label}</span>
+            <span className="text-gray-900 dark:text-slate-100">{value}</span>
           </div>
         ))}
       </div>
 
       {/* Lampiran */}
       {req.attachments.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="font-medium text-gray-900 text-sm mb-3">Lampiran</h3>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
+          <h3 className="font-medium text-gray-900 dark:text-slate-100 text-sm mb-3">Lampiran</h3>
           <ul className="space-y-1">
             {req.attachments.map((a) => (
-              <li key={a.id} className="text-sm text-gray-700">
+              <li key={a.id} className="text-sm text-gray-700 dark:text-slate-300">
                 {a.fileName}
-                <span className="text-xs text-gray-400 ml-2">
+                <span className="text-xs text-gray-400 dark:text-slate-500 ml-2">
                   ({new Date(a.uploadedAt).toLocaleDateString("id-ID")})
                 </span>
               </li>
@@ -189,21 +189,21 @@ export default async function AdminLeaveRequestDetailPage({ params }: Props) {
       )}
 
       {/* Riwayat Approval */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h3 className="font-medium text-gray-900 text-sm mb-4">Riwayat Persetujuan</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
+        <h3 className="font-medium text-gray-900 dark:text-slate-100 text-sm mb-4">Riwayat Persetujuan</h3>
 
         <div className="relative mb-5">
-          <div className="absolute left-3 top-0 bottom-0 w-px bg-gray-100" />
+          <div className="absolute left-3 top-0 bottom-0 w-px bg-gray-100 dark:bg-slate-700" />
           <div className="space-y-5">
 
             {/* Pengajuan dikirim */}
             <div className="flex items-start gap-4 relative">
-              <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center shrink-0 z-10">
+              <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0 z-10">
                 <div className="w-2 h-2 rounded-full bg-blue-500" />
               </div>
               <div className="flex-1 pt-0.5">
-                <p className="text-sm font-medium text-gray-900">Pengajuan Dikirim</p>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-sm font-medium text-gray-900 dark:text-slate-100">Pengajuan Dikirim</p>
+                <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
                   {new Date(req.createdAt).toLocaleString("id-ID", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                 </p>
               </div>
@@ -213,8 +213,8 @@ export default async function AdminLeaveRequestDetailPage({ params }: Props) {
             {req.delegateId && (
               <div className="flex items-start gap-4 relative">
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 z-10 ${
-                  req.delegateConfirmationStatus === "CONFIRMED" ? "bg-green-100" :
-                  req.delegateConfirmationStatus === "DECLINED" ? "bg-red-100" : "bg-gray-100"
+                  req.delegateConfirmationStatus === "CONFIRMED" ? "bg-green-100 dark:bg-green-900/40" :
+                  req.delegateConfirmationStatus === "DECLINED" ? "bg-red-100 dark:bg-red-900/40" : "bg-gray-100 dark:bg-slate-700"
                 }`}>
                   <div className={`w-2 h-2 rounded-full ${
                     req.delegateConfirmationStatus === "CONFIRMED" ? "bg-green-500" :
@@ -222,16 +222,16 @@ export default async function AdminLeaveRequestDetailPage({ params }: Props) {
                   }`} />
                 </div>
                 <div className="flex-1 pt-0.5">
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-gray-900 dark:text-slate-100">
                     Konfirmasi Pegawai Pengganti
-                    {req.delegateConfirmationStatus === "CONFIRMED" && <span className="ml-2 text-xs font-normal text-green-600">Bersedia</span>}
-                    {req.delegateConfirmationStatus === "DECLINED" && <span className="ml-2 text-xs font-normal text-red-600">Menolak</span>}
-                    {req.delegateConfirmationStatus === "PENDING" && <span className="ml-2 text-xs font-normal text-gray-400">Menunggu</span>}
+                    {req.delegateConfirmationStatus === "CONFIRMED" && <span className="ml-2 text-xs font-normal text-green-600 dark:text-green-400">Bersedia</span>}
+                    {req.delegateConfirmationStatus === "DECLINED" && <span className="ml-2 text-xs font-normal text-red-600 dark:text-red-400">Menolak</span>}
+                    {req.delegateConfirmationStatus === "PENDING" && <span className="ml-2 text-xs font-normal text-gray-400 dark:text-slate-500">Menunggu</span>}
                   </p>
-                  <p className="text-xs text-gray-500 mt-0.5">{req.delegate?.fullName}</p>
-                  {req.delegateNote && <p className="text-xs text-gray-400 italic mt-0.5">"{req.delegateNote}"</p>}
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{req.delegate?.fullName}</p>
+                  {req.delegateNote && <p className="text-xs text-gray-400 dark:text-slate-500 italic mt-0.5">&quot;{req.delegateNote}&quot;</p>}
                   {req.delegateDecidedAt && (
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
                       {new Date(req.delegateDecidedAt).toLocaleString("id-ID", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </p>
                   )}
@@ -243,46 +243,46 @@ export default async function AdminLeaveRequestDetailPage({ params }: Props) {
             {req.approvalSteps.map((step) => (
               <div key={step.id} className="flex items-start gap-4 relative">
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 z-10 ${
-                  step.status === "APPROVED" ? "bg-green-100 text-green-700" :
-                  step.status === "REJECTED" ? "bg-red-100 text-red-700" :
-                  step.status === "RETURNED" ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-500"
+                  step.status === "APPROVED" ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300" :
+                  step.status === "REJECTED" ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300" :
+                  step.status === "RETURNED" ? "bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300" : "bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400"
                 }`}>
                   {step.stepOrder}
                 </div>
                 <div className="flex-1 pt-0.5">
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-gray-900 dark:text-slate-100">
                     {step.approver.fullName}
-                    <span className="ml-1 text-xs font-normal text-gray-400">({step.roleLabel})</span>
+                    <span className="ml-1 text-xs font-normal text-gray-400 dark:text-slate-500">({step.roleLabel})</span>
                     <span className={`ml-2 text-xs font-normal ${stepStatusColor[step.status]}`}>
                       {stepStatusLabel[step.status]}
                     </span>
                   </p>
-                  {step.approver.nip && <p className="text-xs text-gray-400">NIP {step.approver.nip}</p>}
-                  {step.note && <p className="text-xs text-gray-400 italic mt-0.5">"{step.note}"</p>}
+                  {step.approver.nip && <p className="text-xs text-gray-400 dark:text-slate-500">NIP {step.approver.nip}</p>}
+                  {step.note && <p className="text-xs text-gray-400 dark:text-slate-500 italic mt-0.5">&quot;{step.note}&quot;</p>}
                   {step.decidedAt ? (
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
                       {new Date(step.decidedAt).toLocaleString("id-ID", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </p>
                   ) : (
-                    <p className="text-xs text-gray-400 mt-0.5">Menunggu keputusan</p>
+                    <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Menunggu keputusan</p>
                   )}
                 </div>
               </div>
             ))}
 
             {req.approvalSteps.length === 0 && req.delegateConfirmationStatus === "CONFIRMED" && (
-              <p className="text-sm text-gray-400 pl-10">Belum ada alur approval ditetapkan.</p>
+              <p className="text-sm text-gray-400 dark:text-slate-500 pl-10">Belum ada alur approval ditetapkan.</p>
             )}
           </div>
         </div>
 
         {/* Form set approval flow */}
         {canSetFlow && (
-          <div className="border-t border-gray-100 pt-4">
-            <p className="text-xs font-medium text-gray-700 mb-3">
+          <div className="border-t border-gray-100 dark:border-slate-700 pt-4">
+            <p className="text-xs font-medium text-gray-700 dark:text-slate-300 mb-3">
               Tetapkan Alur Approval
               {req.approvalSteps.length > 0 && (
-                <span className="ml-2 text-amber-600">(akan menggantikan alur sebelumnya)</span>
+                <span className="ml-2 text-amber-600">（akan menggantikan alur sebelumnya）</span>
               )}
             </p>
             <SetApprovalFlowForm leaveRequestId={id} employees={employees} noChain={superiorChain.length === 0} />
@@ -299,8 +299,8 @@ export default async function AdminLeaveRequestDetailPage({ params }: Props) {
 
       {/* SK & Integrasi */}
       {(req.status === "APPROVED" || req.status === "SEND_FAILED" || req.status === "SENT_TO_LEGACY" || req.skDocument) && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="font-medium text-gray-900 text-sm mb-4">Surat Keputusan & Integrasi</h3>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
+          <h3 className="font-medium text-gray-900 dark:text-slate-100 text-sm mb-4">Surat Keputusan &amp; Integrasi</h3>
 
           {req.skDocument && (
             <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
@@ -324,23 +324,23 @@ export default async function AdminLeaveRequestDetailPage({ params }: Props) {
 
       {/* Integration Logs */}
       {req.integrationLogs.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="font-medium text-gray-900 text-sm mb-3">Log Integrasi ke Sistem Lama</h3>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
+          <h3 className="font-medium text-gray-900 dark:text-slate-100 text-sm mb-3">Log Integrasi ke Sistem Lama</h3>
           <div className="space-y-2">
             {req.integrationLogs.map((log) => (
               <div key={log.id} className="flex items-start gap-3 text-xs">
                 <span
                   className={`px-2 py-0.5 rounded font-medium shrink-0 ${
                     log.status === "SUCCESS"
-                      ? "bg-green-100 text-green-700"
+                      ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
                       : log.status === "FAILED"
-                      ? "bg-red-100 text-red-700"
-                      : "bg-gray-100 text-gray-500"
+                      ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                      : "bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400"
                   }`}
                 >
                   {log.status}
                 </span>
-                <span className="text-gray-400">
+                <span className="text-gray-400 dark:text-slate-500">
                   Percobaan ke-{log.attemptCount}
                   {log.lastAttemptAt && ` — ${new Date(log.lastAttemptAt).toLocaleString("id-ID")}`}
                 </span>

@@ -148,27 +148,27 @@ export default function EmployeesPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-5">Daftar Pegawai</h1>
+      <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-5">Daftar Pegawai</h1>
 
       {/* Filters */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4 mb-5 space-y-3">
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 mb-5 space-y-3">
         {/* Row 1: search + unit */}
         <div className="flex flex-col sm:flex-row gap-3">
           {/* Search */}
           <div className="relative flex-1">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
             <input
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1) }}
               placeholder="Cari nama, NIP, atau jabatan…"
-              className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             {search && (
               <button
                 onClick={() => { setSearch(""); setPage(1) }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -179,20 +179,20 @@ export default function EmployeesPage() {
 
           {/* Unit select */}
           <div className="relative sm:w-56">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
             </svg>
             <select
               value={filterUnitId}
               onChange={(e) => { setFilterUnitId(e.target.value); setPage(1) }}
-              className="w-full appearance-none pl-8 pr-8 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full appearance-none pl-8 pr-8 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Semua unit kerja</option>
               {[...workUnits].sort((a, b) => a.name.localeCompare(b.name)).map((u) => (
                 <option key={u.id} value={u.id}>{u.name}</option>
               ))}
             </select>
-            <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="6 9 12 15 18 9"/>
             </svg>
           </div>
@@ -200,7 +200,7 @@ export default function EmployeesPage() {
 
         {/* Row 2: tipe pegawai pills + reset */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-gray-400 font-medium shrink-0">Tipe:</span>
+          <span className="text-xs text-gray-400 dark:text-slate-500 font-medium shrink-0">Tipe:</span>
           {[{ value: "", label: "Semua" }, ...Object.entries(EMPLOYEE_TYPE_LABELS).map(([v, l]) => ({ value: v, label: l }))].map(({ value, label }) => (
             <button
               key={value}
@@ -208,7 +208,7 @@ export default function EmployeesPage() {
               className={`px-3 py-1 text-xs font-medium rounded-lg border transition-colors ${
                 employeeType === value
                   ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:text-gray-800"
+                  : "bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 hover:text-gray-800 dark:hover:text-slate-200"
               }`}
             >
               {label}
@@ -218,7 +218,7 @@ export default function EmployeesPage() {
           {activeFilterCount > 0 && (
             <button
               onClick={() => { setSearch(""); setFilterUnitId(""); setEmployeeType(""); setPage(1) }}
-              className="ml-auto flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg border border-red-100 transition-colors"
+              className="ml-auto flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 hover:bg-red-100 rounded-lg border border-red-100 transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -230,43 +230,43 @@ export default function EmployeesPage() {
       </div>
 
       {error && (
-        <div className="mb-4 px-4 py-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
+        <div className="mb-4 px-4 py-3 bg-red-50 text-red-700 dark:text-red-400 rounded-lg text-sm">{error}</div>
       )}
 
       {loading ? (
-        <div className="py-16 text-center text-sm text-gray-400">Memuat…</div>
+        <div className="py-16 text-center text-sm text-gray-400 dark:text-slate-500">Memuat…</div>
       ) : !data || data.data.length === 0 ? (
-        <div className="py-16 text-center text-sm text-gray-400">
+        <div className="py-16 text-center text-sm text-gray-400 dark:text-slate-500">
           {search || filterUnitId || employeeType ? "Tidak ada pegawai yang cocok dengan filter." : "Belum ada data pegawai. Lakukan sinkronisasi terlebih dahulu."}
         </div>
       ) : (
         <>
-          <div className="text-xs text-gray-500 mb-3">
+          <div className="text-xs text-gray-500 dark:text-slate-400 mb-3">
             Menampilkan {(data.page - 1) * data.perPage + 1}–{Math.min(data.page * data.perPage, data.total)} dari {data.total} pegawai
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nama / NIP</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Unit Kerja</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Jabatan</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Atasan Langsung</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tipe</th>
+                  <tr className="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900">
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Nama / NIP</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Unit Kerja</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Jabatan</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Atasan Langsung</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Tipe</th>
                     <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                   {data.data.map((emp) => {
                     const jabatan = emp.position?.name ?? emp.positionTitle
                     const jabatanLevel = emp.position?.level
                     return (
-                      <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
+                      <tr key={emp.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
                         <td className="px-4 py-3">
-                          <p className="font-medium text-gray-900">{emp.fullName}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">{emp.nip}</p>
+                          <p className="font-medium text-gray-900 dark:text-slate-100">{emp.fullName}</p>
+                          <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{emp.nip}</p>
                         </td>
                         <td className="px-4 py-3">
                           {emp.unit ? (
@@ -277,39 +277,39 @@ export default function EmployeesPage() {
                               {emp.unit.name}
                             </Link>
                           ) : (
-                            <span className="text-gray-300 italic">—</span>
+                            <span className="text-gray-300 dark:text-slate-600 italic">—</span>
                           )}
                         </td>
                         <td className="px-4 py-3">
                           {jabatan ? (
                             <div>
-                              <p className="text-gray-900">{jabatan}</p>
+                              <p className="text-gray-900 dark:text-slate-100">{jabatan}</p>
                               {jabatanLevel !== undefined && (
-                                <p className="text-xs text-gray-400 mt-0.5">Level {jabatanLevel}</p>
+                                <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Level {jabatanLevel}</p>
                               )}
                             </div>
                           ) : (
-                            <span className="text-gray-300 italic">—</span>
+                            <span className="text-gray-300 dark:text-slate-600 italic">—</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-gray-600">
+                        <td className="px-4 py-3 text-gray-600 dark:text-slate-400">
                           {emp.supervisor ? (
                             <div>
                               <p>{emp.supervisor.fullName}</p>
                               {emp.supervisor.positionTitle && (
-                                <p className="text-xs text-gray-400 mt-0.5">{emp.supervisor.positionTitle}</p>
+                                <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{emp.supervisor.positionTitle}</p>
                               )}
                             </div>
                           ) : (
-                            <span className="text-gray-300 italic">—</span>
+                            <span className="text-gray-300 dark:text-slate-600 italic">—</span>
                           )}
                         </td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                            emp.employeeType === "PNS" ? "bg-blue-50 text-blue-700" :
-                            emp.employeeType === "PPPK" ? "bg-green-50 text-green-700" :
-                            emp.employeeType === "PPPK_PARUH_WAKTU" ? "bg-teal-50 text-teal-700" :
-                            "bg-amber-50 text-amber-700"
+                            emp.employeeType === "PNS" ? "bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" :
+                            emp.employeeType === "PPPK" ? "bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300" :
+                            emp.employeeType === "PPPK_PARUH_WAKTU" ? "bg-teal-50 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300" :
+                            "bg-amber-50 text-amber-700 dark:bg-yellow-900/40 dark:text-yellow-300"
                           }`}>
                             {EMPLOYEE_TYPE_LABELS[emp.employeeType] ?? emp.employeeType}
                           </span>
@@ -342,17 +342,17 @@ export default function EmployeesPage() {
               <button
                 disabled={data.page <= 1}
                 onClick={() => setPage((p) => p - 1)}
-                className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50"
+                className="px-3 py-1.5 text-sm border border-gray-200 dark:border-slate-700 rounded-lg disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-slate-700/50 text-gray-700 dark:text-slate-300"
               >
                 ← Sebelumnya
               </button>
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-gray-500 dark:text-slate-400">
                 Halaman {data.page} / {data.totalPages}
               </span>
               <button
                 disabled={data.page >= data.totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50"
+                className="px-3 py-1.5 text-sm border border-gray-200 dark:border-slate-700 rounded-lg disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-slate-700/50 text-gray-700 dark:text-slate-300"
               >
                 Berikutnya →
               </button>
@@ -363,4 +363,3 @@ export default function EmployeesPage() {
     </div>
   )
 }
-

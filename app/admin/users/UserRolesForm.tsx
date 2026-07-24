@@ -2,6 +2,13 @@
 
 import { useState } from "react"
 
+const ROLE_LABELS: Record<string, string> = {
+  PEGAWAI: "Pegawai",
+  APPROVER: "Approver",
+  ADMIN_KEPEGAWAIAN: "Admin Kepegawaian",
+  SUPERADMIN: "Superadmin",
+}
+
 interface Props {
   userId: string
   currentRoles: string[]
@@ -61,14 +68,14 @@ export default function UserRolesForm({ userId, currentRoles, allRoles }: Props)
                 disabled={locked}
                 className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:cursor-default"
               />
-              <span className="text-xs text-gray-700">{role}</span>
+              <span className="text-xs text-gray-700 dark:text-slate-300">{ROLE_LABELS[role] ?? role}</span>
             </label>
           )
         })}
       </div>
       <div className="flex items-center gap-2">
         {msg && (
-          <span className={`text-xs ${msg.ok ? "text-green-600" : "text-red-600"}`}>
+          <span className={`text-xs ${msg.ok ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
             {msg.text}
           </span>
         )}

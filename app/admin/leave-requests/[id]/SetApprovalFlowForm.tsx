@@ -87,7 +87,7 @@ export default function SetApprovalFlowForm({ leaveRequestId, employees, noChain
   }
 
   const inputClass =
-    "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+    "w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -98,13 +98,13 @@ export default function SetApprovalFlowForm({ leaveRequestId, employees, noChain
       )}
 
       {error && (
-        <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
+        <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 dark:text-red-400 text-sm">{error}</div>
       )}
 
       <div className="space-y-3">
         {steps.map((step, idx) => (
           <div key={idx} className="flex items-start gap-3">
-            <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-700 shrink-0 mt-2">
+            <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-xs font-bold text-blue-700 dark:text-blue-300 shrink-0 mt-2">
               {idx + 1}
             </div>
             <div className="flex-1 grid grid-cols-2 gap-2">
@@ -136,7 +136,7 @@ export default function SetApprovalFlowForm({ leaveRequestId, employees, noChain
               <button
                 type="button"
                 onClick={() => removeStep(idx)}
-                className="mt-2 text-red-400 hover:text-red-600 text-sm"
+                className="mt-2 text-red-400 hover:text-red-600 dark:text-red-400 text-sm"
                 title="Hapus langkah"
               >
                 ✕
@@ -151,7 +151,7 @@ export default function SetApprovalFlowForm({ leaveRequestId, employees, noChain
           type="button"
           onClick={addStep}
           disabled={steps.length >= 10}
-          className="px-3 py-1.5 text-xs border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+          className="px-3 py-1.5 text-xs border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50"
         >
           + Tambah Langkah
         </button>

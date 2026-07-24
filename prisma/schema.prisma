@@ -34,6 +34,13 @@ model Employee {
   approvalSteps     ApprovalStep[]
   leaveQuotas       LeaveQuota[]
   unitAsKepala      WorkUnit[]     @relation("KepalaRuangan")
+  unitAsAdmin       WorkUnit[]     @relation("AdminUnit")
+  attendances       Attendance[]
+  rosters           Roster[]
+  overtimes         Overtime[]
+  alphaRecords      AlphaRecord[]
+  swapRequests      ShiftSwapRequest[] @relation("SwapRequester")
+  swapTargets       ShiftSwapRequest[] @relation("SwapTarget")
 }
 
 enum EmployeeType {
@@ -62,9 +69,20 @@ model WorkUnit {
   children        WorkUnit[] @relation("UnitHierarchy")
   kepalaRuanganId String?
   kepalaRuangan   Employee?  @relation("KepalaRuangan", fields: [kepalaRuanganId], references: [id])
+  adminUnitId     String?
+  adminUnit       Employee?  @relation("AdminUnit", fields: [adminUnitId], references: [id])
   employees       Employee[]
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
+
+  managedBy     AppUser?       @relation("ManagedUnit")
+  rooms         Room[]
+  shiftUnits    ShiftUnit[]
+  rosterPeriods RosterPeriod[]
+  rosters       Roster[]
+  attendances   Attendance[]
+  overtimes     Overtime[]
+  shiftSwaps    ShiftSwapRequest[]
 }
 
 // ============================================================
@@ -222,13 +240,15 @@ model IntegrationLog {
 // ============================================================
 
 model AppUser {
-  id         String    @id @default(cuid())
-  employeeId String    @unique
-  employee   Employee  @relation(fields: [employeeId], references: [id])
-  username   String?   @unique
-  roles      AppRole[]
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  employeeId        String    @unique
+  employee          Employee  @relation(fields: [employeeId], references: [id])
+  username          String?   @unique
+  roles             AppRole[]
+  managedWorkUnitId String?   @unique
+  managedWorkUnit   WorkUnit? @relation("ManagedUnit", fields: [managedWorkUnitId], references: [id])
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   fcmTokens FcmToken[]
   sessions  UserSession[]
@@ -237,6 +257,8 @@ model AppUser {
 enum AppRole {
   PEGAWAI
   APPROVER
+  KEPALA_UNIT
+  ADMIN_UNIT
   ADMIN_KEPEGAWAIAN
   SUPERADMIN
 }
@@ -290,4 +312,250 @@ model AppSetting {
   value     String
   label     String   @default("")
   updatedAt DateTime @updatedAt
+}
+
+// ============================================================
+// MODUL ABSENSI — RUANGAN & PERANGKAT ESP32
+// ============================================================
+
+model Room {
+  id         String   @id @default(cuid())
+  nama       String
+  kode       String   @unique
+  workUnitId String
+  workUnit   WorkUnit @relation(fields: [workUnitId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  devices     Device[]
+  attendances Attendance[]
+}
+
+model Device {
+  id           String       @id @default(cuid())
+  nama         String?
+  deviceId     String       @unique
+  secretHash   String       // AES-256-GCM encrypted; NEVER log
+  ibeaconUuid  String
+  ibeaconMajor Int
+  ibeaconMinor Int
+  roomId       String?
+  room         Room?        @relation(fields: [roomId], references: [id])
+  status       DeviceStatus @default(ACTIVE)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  attendances Attendance[]
+  qrUsages    QrUsage[]
+}
+
+enum DeviceStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model QrUsage {
+  id         String   @id @default(cuid())
+  deviceId   String
+  device     Device   @relation(fields: [deviceId], references: [id])
+  employeeId String
+  counter    BigInt
+  usedAt     DateTime @default(now())
+
+  @@unique([employeeId, deviceId, counter])
+}
+
+// ============================================================
+// MODUL ABSENSI — SHIFT & ROSTER
+// ============================================================
+
+model Shift {
+  id              String    @id @default(cuid())
+  nama            String
+  startTime       String    // "HH:MM"
+  endTime         String    // "HH:MM"
+  crossesMidnight Boolean   @default(false)
+  type            ShiftType @default(ROTASI)
+  workDays        Int[]     @default([])
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  shiftUnits ShiftUnit[]
+  rosters    Roster[]
+}
+
+enum ShiftType {
+  ROTASI
+  TETAP
+}
+
+model ShiftUnit {
+  id         String   @id @default(cuid())
+  shiftId    String
+  shift      Shift    @relation(fields: [shiftId], references: [id])
+  workUnitId String
+  workUnit   WorkUnit @relation(fields: [workUnitId], references: [id])
+
+  @@unique([shiftId, workUnitId])
+}
+
+model PublicHoliday {
+  id        String   @id @default(cuid())
+  date      DateTime @unique @db.Date
+  nama      String
+  createdAt DateTime @default(now())
+}
+
+model RosterPeriod {
+  id          String             @id @default(cuid())
+  workUnitId  String
+  workUnit    WorkUnit           @relation(fields: [workUnitId], references: [id])
+  year        Int
+  month       Int
+  status      RosterPeriodStatus @default(DRAFT)
+  publishedAt DateTime?
+  publishedBy String?            // AppUser.id
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  rosters Roster[]
+
+  @@unique([workUnitId, year, month])
+}
+
+enum RosterPeriodStatus {
+  DRAFT
+  PENDING_APPROVAL
+  PUBLISHED
+}
+
+model Roster {
+  id           String       @id @default(cuid())
+  employeeId   String
+  employee     Employee     @relation(fields: [employeeId], references: [id])
+  workUnitId   String
+  workUnit     WorkUnit     @relation(fields: [workUnitId], references: [id])
+  periodId     String
+  period       RosterPeriod @relation(fields: [periodId], references: [id])
+  shiftId      String
+  shift        Shift        @relation(fields: [shiftId], references: [id])
+  tanggalKerja DateTime     @db.Date
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  alphaRecord     AlphaRecord?
+  swapAsRequester ShiftSwapRequest[] @relation("SwapRequesterRoster")
+  swapAsTarget    ShiftSwapRequest[] @relation("SwapTargetRoster")
+
+  @@unique([employeeId, tanggalKerja])
+}
+
+// ============================================================
+// MODUL ABSENSI — CATATAN KEHADIRAN
+// ============================================================
+
+model Attendance {
+  id             String           @id @default(cuid())
+  employeeId     String
+  employee       Employee         @relation(fields: [employeeId], references: [id])
+  eventType      AttendanceEvent
+  recordedAt     DateTime         @default(now())
+  tanggalKerja   DateTime         @db.Date
+  deviceId       String
+  device         Device           @relation(fields: [deviceId], references: [id])
+  roomId         String?
+  room           Room?            @relation(fields: [roomId], references: [id])
+  workUnitId     String?
+  workUnit       WorkUnit?        @relation(fields: [workUnitId], references: [id])
+  counter        BigInt
+  beaconDetected Boolean
+  status         AttendanceStatus @default(VALID)
+  telat          Boolean          @default(false)
+  flags          Json             @default("[]")
+  createdAt      DateTime         @default(now())
+
+  @@unique([employeeId, deviceId, counter])
+}
+
+enum AttendanceEvent {
+  MASUK
+  PULANG
+  LEMBUR_MASUK
+  LEMBUR_PULANG
+}
+
+enum AttendanceStatus {
+  VALID
+  ALPHA
+}
+
+model AlphaRecord {
+  id           String   @id @default(cuid())
+  employeeId   String
+  employee     Employee @relation(fields: [employeeId], references: [id])
+  rosterId     String   @unique
+  roster       Roster   @relation(fields: [rosterId], references: [id])
+  tanggalKerja DateTime @db.Date
+  markedAt     DateTime @default(now())
+
+  @@unique([employeeId, tanggalKerja])
+}
+
+// ============================================================
+// MODUL ABSENSI — LEMBUR & TUKAR SHIFT
+// ============================================================
+
+model Overtime {
+  id             String         @id @default(cuid())
+  employeeId     String
+  employee       Employee       @relation(fields: [employeeId], references: [id])
+  workUnitId     String
+  workUnit       WorkUnit       @relation(fields: [workUnitId], references: [id])
+  tanggalKerja   DateTime       @db.Date
+  status         OvertimeStatus @default(DIAJUKAN)
+  approvedUnitBy String?
+  approvedUnitAt DateTime?
+  approvedHrBy   String?
+  approvedHrAt   DateTime?
+  rejectedBy     String?
+  rejectedAt     DateTime?
+  note           String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+enum OvertimeStatus {
+  DIAJUKAN
+  DISETUJUI_UNIT
+  SAH
+  DITOLAK
+}
+
+model ShiftSwapRequest {
+  id                String     @id @default(cuid())
+  requesterId       String
+  requester         Employee   @relation("SwapRequester", fields: [requesterId], references: [id])
+  targetId          String
+  target            Employee   @relation("SwapTarget", fields: [targetId], references: [id])
+  requesterRosterId String
+  requesterRoster   Roster     @relation("SwapRequesterRoster", fields: [requesterRosterId], references: [id])
+  targetRosterId    String
+  targetRoster      Roster     @relation("SwapTargetRoster", fields: [targetRosterId], references: [id])
+  workUnitId        String
+  workUnit          WorkUnit   @relation(fields: [workUnitId], references: [id])
+  status            SwapStatus @default(MENUNGGU_TARGET)
+  alasan            String?
+  rejectedBy        String?    // Employee.id
+  approvedByUnitAt  DateTime?
+  approvedByUnitId  String?    // AppUser.id
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+}
+
+enum SwapStatus {
+  MENUNGGU_TARGET
+  MENUNGGU_KEPALA
+  DISETUJUI
+  DITOLAK
 }

@@ -332,3 +332,205 @@ Kode error yang mungkin:
 | `INVALID_APPROVAL_STATE` | 422 | Operasi tidak valid untuk status pengajuan saat ini |
 | `INTEGRATION_ERROR` | 502 | Gagal mengirim data ke sistem lama |
 | `TOO_MANY_REQUESTS` | 429 | Rate limit — berlaku untuk login, refresh, dan upload |
+
+---
+
+## 9. Modul Absensi `[Mobile & Web]`
+
+> Semua endpoint absensi memerlukan JWT Bearer token. Mobile menggunakan token login yang sama dengan modul cuti.
+
+### Perangkat & Ruangan
+
+#### `GET /api/v1/rooms`
+Daftar ruangan. Query: `work_unit_id`.
+
+#### `POST /api/v1/rooms`
+Buat ruangan baru. Role: `ADMIN_KEPEGAWAIAN`, `SUPERADMIN`.
+```json
+{ "nama": "string", "work_unit_id": "string" }
+```
+
+#### `PATCH /api/v1/rooms/:id`
+Update ruangan.
+
+#### `GET /api/v1/devices`
+Daftar perangkat ESP32. Role: `ADMIN_KEPEGAWAIAN`, `SUPERADMIN`.
+
+#### `POST /api/v1/devices`
+Provisioning perangkat baru. Mengembalikan `device_id` dan `secret` **sekali** saja.
+```json
+{ "nama": "string", "room_id": "string?", "ibeacon_uuid": "string", "ibeacon_major": number, "ibeacon_minor": number }
+```
+Response:
+```json
+{ "id": "...", "device_id": "abc123...", "secret": "...", "status": "ACTIVE" }
+```
+
+#### `PATCH /api/v1/devices/:id`
+Update perangkat (status, room, label).
+
+### Shift & Roster
+
+#### `GET /api/v1/shifts`
+Daftar shift. Query: `work_unit_id`, `active`.
+
+#### `POST /api/v1/shifts`
+Buat shift baru. Role: `ADMIN_KEPEGAWAIAN`, `SUPERADMIN`.
+```json
+{ "nama": "string", "type": "ROTASI|TETAP", "start_time": "HH:MM", "end_time": "HH:MM", "work_days": [1,2,3,4,5] }
+```
+
+#### `PATCH /api/v1/shifts/:id`
+Update shift (nama, active). Role: `ADMIN_KEPEGAWAIAN`, `SUPERADMIN`.
+
+#### `DELETE /api/v1/shifts/:id`
+Hapus shift (diblokir jika dipakai di roster aktif).
+
+#### `GET /api/v1/shifts/:id/units`
+Unit kerja yang menggunakan shift ini.
+
+#### `POST /api/v1/shifts/:id/units`
+Tambah unit ke shift. Body: `{ "work_unit_id": "string" }`.
+
+#### `DELETE /api/v1/shifts/:id/units/:unitId`
+Hapus mapping unit dari shift.
+
+#### `GET /api/v1/public-holidays`
+Daftar libur nasional. Query: `year`.
+
+#### `POST /api/v1/public-holidays`
+Tambah libur nasional. Body: `{ "date": "YYYY-MM-DD", "nama": "string" }`.
+
+#### `DELETE /api/v1/public-holidays/:id`
+
+#### `GET /api/v1/roster-periods`
+Daftar periode roster. Query: `work_unit_id`, `year`, `month`.
+
+#### `POST /api/v1/roster-periods`
+Buat periode roster. Body: `{ "work_unit_id": "string", "year": number, "month": number }`.
+
+#### `POST /api/v1/roster-periods/:id/publish`
+Publikasikan roster (ubah DRAFT → PUBLISHED).
+
+#### `POST /api/v1/roster-periods/:id/unpublish`
+Kembalikan ke DRAFT.
+
+#### `GET /api/v1/rosters`
+Daftar entri roster. Query: `period_id`, `employee_id`, `work_unit_id`.
+
+#### `POST /api/v1/rosters`
+Tambah entri roster manual.
+```json
+{ "employee_id": "string", "period_id": "string", "shift_id": "string", "tanggal_kerja": "YYYY-MM-DD" }
+```
+
+#### `PATCH /api/v1/rosters/:id`
+Ubah shift untuk entri roster tertentu. Body: `{ "shift_id": "string" }`.
+
+#### `DELETE /api/v1/rosters/:id`
+
+#### `POST /api/v1/rosters/generate`
+Auto-generate roster dari shift tetap untuk periode. Body: `{ "period_id": "string" }`.
+
+### Absensi (Scan QR)
+
+#### `POST /api/v1/attendance` `[Mobile]`
+Rekam kehadiran via scan QR dari perangkat ESP32.
+```json
+{
+  "qr_token": "deviceId|counter|hmac",
+  "event_type": "masuk|pulang|lembur_masuk|lembur_pulang",
+  "beacon": { "detected": true, "uuid": "string?", "major": 0, "minor": 0 },
+  "client_time": "ISO string"
+}
+```
+Response 201:
+```json
+{
+  "attendance_id": "...",
+  "event_type": "masuk",
+  "recorded_at": "ISO",
+  "tanggal_kerja": "ISO",
+  "status": "VALID",
+  "telat": false,
+  "flags": []
+}
+```
+
+#### `GET /api/v1/attendance/me` `[Mobile]`
+Riwayat absensi pegawai sendiri. Query: `from`, `to` (YYYY-MM-DD).
+
+### Lembur
+
+#### `GET /api/v1/overtime`
+Daftar lembur. Query: `status`, `work_unit_id`.
+- `PEGAWAI` → hanya milik sendiri
+- `KEPALA_UNIT` → hanya unit yang dikelola
+- `ADMIN_KEPEGAWAIAN`/`SUPERADMIN` → semua (atau filter `work_unit_id`)
+
+#### `POST /api/v1/overtime` `[Mobile]`
+Ajukan lembur. Role: `PEGAWAI`.
+```json
+{ "tanggal_kerja": "YYYY-MM-DD", "note": "string?" }
+```
+
+#### `POST /api/v1/overtime/:id/approve-unit`
+Setujui lembur oleh kepala unit. Role: `KEPALA_UNIT`.
+Status: `DIAJUKAN` → `DISETUJUI_UNIT`.
+
+#### `POST /api/v1/overtime/:id/approve-hr`
+Sahkan lembur oleh HR. Role: `ADMIN_KEPEGAWAIAN`.
+Status: `DISETUJUI_UNIT` → `SAH`.
+
+#### `POST /api/v1/overtime/:id/reject`
+Tolak lembur. Role: `KEPALA_UNIT` atau `ADMIN_KEPEGAWAIAN`.
+
+### Tukar Shift
+
+#### `GET /api/v1/shift-swaps`
+Daftar permintaan tukar shift. Query: `status`, `work_unit_id`.
+
+#### `POST /api/v1/shift-swaps` `[Mobile]`
+Ajukan tukar shift. Role: `PEGAWAI`.
+```json
+{ "requester_roster_id": "string", "target_roster_id": "string", "alasan": "string?" }
+```
+Status awal: `MENUNGGU_TARGET`.
+
+#### `POST /api/v1/shift-swaps/:id/accept` `[Mobile]`
+Pegawai tujuan setuju. Role: pegawai target.
+Status: `MENUNGGU_TARGET` → `MENUNGGU_KEPALA`.
+
+#### `POST /api/v1/shift-swaps/:id/reject` `[Mobile/Web]`
+Pegawai tujuan atau kepala unit tolak.
+
+#### `POST /api/v1/shift-swaps/:id/approve`
+Kepala unit setujui → tukar shift di roster dieksekusi. Role: `KEPALA_UNIT`.
+Status: `MENUNGGU_KEPALA` → `DISETUJUI`.
+
+### Laporan Absensi
+
+#### `GET /api/v1/admin/attendance/reports`
+Rekap absensi. Role: `KEPALA_UNIT` (unit sendiri), `ADMIN_KEPEGAWAIAN`, `SUPERADMIN`.
+Query:
+| Parameter | Keterangan |
+|---|---|
+| `from` | YYYY-MM-DD (wajib) |
+| `to` | YYYY-MM-DD (wajib) |
+| `work_unit_id` | Filter unit (opsional; KEPALA_UNIT dikunci ke unitnya) |
+| `format` | `json` (default) / `xlsx` / `pdf` |
+
+Response JSON: `{ "title": "...", "total": 0, "data": [AttendanceRow] }`
+Response XLSX/PDF: file download.
+
+### Error Codes Tambahan (Absensi)
+
+| Kode | HTTP | Keterangan |
+|---|---|---|
+| `DEVICE_CONFLICT` | 409 | Login ditolak: akun sudah aktif di perangkat lain |
+| `DEVICE_BINDING_REQUIRED` | 422 | Device ID wajib disertakan di request login mobile |
+| `QR_INVALID` | 422 | Token QR tidak valid (format/HMAC salah) |
+| `QR_EXPIRED` | 422 | Token QR sudah kedaluwarsa (counter terlalu lama) |
+| `QR_REPLAYED` | 422 | Token QR sudah pernah dipakai (replay attack) |
+| `BEACON_TIDAK_TERDETEKSI` | 422 | BLE beacon tidak terdeteksi (pegawai tidak ada di lokasi) |
+| `NO_ROSTER` | 422 | Tidak ada roster aktif untuk pegawai di tanggal ini |

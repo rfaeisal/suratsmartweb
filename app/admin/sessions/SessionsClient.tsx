@@ -41,12 +41,12 @@ export default function SessionsClient({ sessions, adminUserId, revokeAction }: 
       })
 
   const inputClass =
-    "px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+    "px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between gap-4">
-        <span className="text-sm font-medium text-gray-700">
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700 flex items-center justify-between gap-4">
+        <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
           Sesi Aktif: {sessions.length}
         </span>
         {sessions.length > 0 && (
@@ -60,7 +60,7 @@ export default function SessionsClient({ sessions, adminUserId, revokeAction }: 
       </div>
 
       {filtered.length === 0 ? (
-        <div className="px-4 py-8 text-center text-gray-400 text-sm">
+        <div className="px-4 py-8 text-center text-gray-400 dark:text-slate-500 text-sm">
           {search
             ? `Tidak ada sesi yang cocok dengan "${search}".`
             : "Tidak ada sesi aktif saat ini."}
@@ -68,31 +68,31 @@ export default function SessionsClient({ sessions, adminUserId, revokeAction }: 
       ) : (
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-200">
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Pegawai</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Unit</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Perangkat</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Login Sejak</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Aktif Terakhir</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-700">Aksi</th>
+            <tr className="border-b border-gray-200 dark:border-slate-700">
+              <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-slate-300">Pegawai</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-slate-300">Unit</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-slate-300">Perangkat</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-slate-300">Login Sejak</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-slate-300">Aktif Terakhir</th>
+              <th className="text-right px-4 py-3 font-medium text-gray-700 dark:text-slate-300">Aksi</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
             {filtered.map((s) => (
-              <tr key={s.id} className="hover:bg-gray-50">
+              <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50">
                 <td className="px-4 py-3">
-                  <p className="font-medium text-gray-900">{s.user.employee.fullName}</p>
-                  <p className="text-xs text-gray-500">{s.user.employee.nip}</p>
+                  <p className="font-medium text-gray-900 dark:text-slate-100">{s.user.employee.fullName}</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">{s.user.employee.nip}</p>
                 </td>
-                <td className="px-4 py-3 text-gray-600">{s.user.employee.unit?.name ?? "—"}</td>
-                <td className="px-4 py-3 text-gray-600">
+                <td className="px-4 py-3 text-gray-600 dark:text-slate-400">{s.user.employee.unit?.name ?? "—"}</td>
+                <td className="px-4 py-3 text-gray-600 dark:text-slate-400">
                   <p>{s.deviceLabel ?? "–"}</p>
-                  <p className="text-xs text-gray-400 font-mono">{s.deviceId.slice(0, 12)}…</p>
+                  <p className="text-xs text-gray-400 dark:text-slate-500 font-mono">{s.deviceId.slice(0, 12)}…</p>
                 </td>
-                <td className="px-4 py-3 text-gray-600 text-xs">
+                <td className="px-4 py-3 text-gray-600 dark:text-slate-400 text-xs">
                   {new Date(s.createdAt).toLocaleString("id-ID")}
                 </td>
-                <td className="px-4 py-3 text-gray-600 text-xs">
+                <td className="px-4 py-3 text-gray-600 dark:text-slate-400 text-xs">
                   {new Date(s.lastActiveAt).toLocaleString("id-ID")}
                 </td>
                 <td className="px-4 py-3 text-right">

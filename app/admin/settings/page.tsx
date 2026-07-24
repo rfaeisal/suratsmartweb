@@ -53,32 +53,32 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-1">Pengaturan Sistem</h1>
-      <p className="text-sm text-gray-500 mb-6">Konfigurasi perilaku sistem CutiSmart.</p>
+      <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-1">Pengaturan Sistem</h1>
+      <p className="text-sm text-gray-500 dark:text-slate-400 mb-6">Konfigurasi perilaku sistem CutiSmart.</p>
 
       {error && (
-        <div className="mb-4 px-4 py-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
+        <div className="mb-4 px-4 py-3 bg-red-50 text-red-700 dark:text-red-400 rounded-lg text-sm">{error}</div>
       )}
 
       {loading ? (
-        <div className="py-16 text-center text-sm text-gray-400">Memuat…</div>
+        <div className="py-16 text-center text-sm text-gray-400 dark:text-slate-500">Memuat…</div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 divide-y divide-gray-100 dark:divide-slate-700">
           {settings.map((setting) => {
             const isOn = setting.value === "true"
             const isSaving = saving === setting.key
             return (
               <div key={setting.key} className="flex items-start gap-4 px-5 py-4">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{setting.label}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-slate-100">{setting.label}</p>
                   {SETTING_DESCRIPTIONS[setting.key] && (
-                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-1 leading-relaxed">
                       {SETTING_DESCRIPTIONS[setting.key]}
                     </p>
                   )}
                 </div>
                 <div className="flex items-center gap-3 shrink-0 pt-0.5">
-                  <span className={`text-xs font-medium ${isOn ? "text-green-600" : "text-gray-400"}`}>
+                  <span className={`text-xs font-medium ${isOn ? "text-green-600 dark:text-green-400" : "text-gray-400 dark:text-slate-500"}`}>
                     {isOn ? "Aktif" : "Nonaktif"}
                   </span>
                   <button
@@ -86,7 +86,7 @@ export default function SettingsPage() {
                     disabled={isSaving}
                     aria-pressed={isOn}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 ${
-                      isOn ? "bg-green-500" : "bg-gray-200"
+                      isOn ? "bg-green-500" : "bg-gray-200 dark:bg-slate-600"
                     }`}
                   >
                     <span

@@ -31,12 +31,12 @@ export default function LeaveTypesTable({ leaveTypes, toggleAction }: Props) {
       })
 
   const inputClass =
-    "px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+    "px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
       {leaveTypes.length > 0 && (
-        <div className="px-4 py-3 border-b border-gray-200">
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -49,20 +49,20 @@ export default function LeaveTypesTable({ leaveTypes, toggleAction }: Props) {
       <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="bg-gray-50 border-b border-gray-200">
-            <th className="text-left px-4 py-3 font-medium text-gray-700">Kode</th>
-            <th className="text-left px-4 py-3 font-medium text-gray-700">Nama</th>
-            <th className="text-left px-4 py-3 font-medium text-gray-700">Berlaku untuk</th>
-            <th className="text-left px-4 py-3 font-medium text-gray-700">Kuota (hari)</th>
-            <th className="text-left px-4 py-3 font-medium text-gray-700">Lampiran</th>
-            <th className="text-left px-4 py-3 font-medium text-gray-700">Status</th>
-            <th className="text-right px-4 py-3 font-medium text-gray-700">Aksi</th>
+          <tr className="bg-gray-50 dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700">
+            <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-slate-300">Kode</th>
+            <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-slate-300">Nama</th>
+            <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-slate-300">Berlaku untuk</th>
+            <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-slate-300">Kuota (hari)</th>
+            <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-slate-300">Lampiran</th>
+            <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-slate-300">Status</th>
+            <th className="text-right px-4 py-3 font-medium text-gray-700 dark:text-slate-300">Aksi</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
+        <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
           {filtered.length === 0 ? (
             <tr>
-              <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
+              <td colSpan={7} className="px-4 py-8 text-center text-gray-400 dark:text-slate-500">
                 {search
                   ? `Tidak ada jenis cuti yang cocok dengan "${search}".`
                   : "Belum ada jenis cuti. Tambahkan di atas."}
@@ -70,31 +70,31 @@ export default function LeaveTypesTable({ leaveTypes, toggleAction }: Props) {
             </tr>
           ) : (
             filtered.map((lt) => (
-              <tr key={lt.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 font-mono text-xs text-gray-600">{lt.code}</td>
-                <td className="px-4 py-3 text-gray-900">{lt.name}</td>
+              <tr key={lt.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                <td className="px-4 py-3 font-mono text-xs text-gray-600 dark:text-slate-400">{lt.code}</td>
+                <td className="px-4 py-3 text-gray-900 dark:text-slate-100">{lt.name}</td>
                 <td className="px-4 py-3">
                   <div className="flex gap-1 flex-wrap">
                     {lt.applicableTo.map((et) => (
                       <span
                         key={et}
-                        className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700"
+                        className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
                       >
                         {et}
                       </span>
                     ))}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-gray-600">
-                  {lt.defaultQuotaDays ?? <span className="text-gray-400">–</span>}
+                <td className="px-4 py-3 text-gray-600 dark:text-slate-400">
+                  {lt.defaultQuotaDays ?? <span className="text-gray-400 dark:text-slate-500">–</span>}
                 </td>
-                <td className="px-4 py-3 text-gray-600">
+                <td className="px-4 py-3 text-gray-600 dark:text-slate-400">
                   {lt.requiresAttachment ? "Wajib" : "Opsional"}
                 </td>
                 <td className="px-4 py-3">
                   <span
                     className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                      lt.isActive ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"
+                      lt.isActive ? "bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400"
                     }`}
                   >
                     {lt.isActive ? "Aktif" : "Nonaktif"}

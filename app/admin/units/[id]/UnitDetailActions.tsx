@@ -24,20 +24,23 @@ interface Props {
     parentId: string | null
     kepalaRuanganId: string | null
     kepalaRuangan: { id: string; fullName: string; positionTitle: string | null } | null
+    adminUnitId: string | null
+    adminUnit: { id: string; fullName: string; positionTitle: string | null } | null
     parent: { id: string; name: string } | null
+    employees: EmployeeOption[]
     _count: { employees: number; children: number }
   }
   allUnits: UnitOption[]
-  allEmployees: EmployeeOption[]
 }
 
-export default function UnitDetailActions({ unit, allUnits, allEmployees }: Props) {
+export default function UnitDetailActions({ unit, allUnits }: Props) {
   const router = useRouter()
 
   const [editOpen, setEditOpen] = useState(false)
   const [editName, setEditName] = useState(unit.name)
   const [editParentId, setEditParentId] = useState(unit.parentId ?? "")
   const [editKepalaId, setEditKepalaId] = useState(unit.kepalaRuanganId ?? "")
+  const [editAdminId, setEditAdminId] = useState(unit.adminUnitId ?? "")
   const [saving, setSaving] = useState(false)
   const [editError, setEditError] = useState("")
 
@@ -58,6 +61,7 @@ export default function UnitDetailActions({ unit, allUnits, allEmployees }: Prop
           name: editName.trim(),
           parentId: editParentId || null,
           kepalaRuanganId: editKepalaId || null,
+          adminUnitId: editAdminId || null,
         }),
       })
       if (!res.ok) {
@@ -101,7 +105,7 @@ export default function UnitDetailActions({ unit, allUnits, allEmployees }: Prop
     }
   }
 
-  const inputClass = "w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+  const inputClass = "w-full px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
 
   return (
     <>
@@ -109,7 +113,7 @@ export default function UnitDetailActions({ unit, allUnits, allEmployees }: Prop
       <div className="flex items-start gap-3">
         <Link
           href="/admin/units"
-          className="mt-0.5 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+          className="mt-0.5 p-1.5 rounded-lg text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6"/>
@@ -117,10 +121,10 @@ export default function UnitDetailActions({ unit, allUnits, allEmployees }: Prop
         </Link>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-gray-900">{unit.name}</h1>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{unit.name}</h1>
             <Tooltip label="Edit">
               <button
-                onClick={() => { setEditName(unit.name); setEditParentId(unit.parentId ?? ""); setEditKepalaId(unit.kepalaRuanganId ?? ""); setEditOpen(true) }}
+                onClick={() => { setEditName(unit.name); setEditParentId(unit.parentId ?? ""); setEditKepalaId(unit.kepalaRuanganId ?? ""); setEditAdminId(unit.adminUnitId ?? ""); setEditOpen(true) }}
                 className="p-1.5 rounded-lg text-blue-500 hover:text-blue-700 hover:bg-blue-50 transition-colors"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -140,8 +144,8 @@ export default function UnitDetailActions({ unit, allUnits, allEmployees }: Prop
               </button>
             </Tooltip>
           </div>
-          {deleteError && <p className="mt-1 text-xs text-red-600">{deleteError}</p>}
-          <p className="text-sm text-gray-500 mt-0.5">
+          {deleteError && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{deleteError}</p>}
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
             {unit.parent ? (
               <>Sub-unit dari <Link href={`/admin/units/${unit.parent.id}`} className="text-blue-600 hover:underline">{unit.parent.name}</Link></>
             ) : (
@@ -154,11 +158,11 @@ export default function UnitDetailActions({ unit, allUnits, allEmployees }: Prop
       {/* Modal Edit */}
       {editOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">Edit Unit Kerja</h3>
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-sm p-6">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-4">Edit Unit Kerja</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">
                   Nama Unit <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -169,7 +173,7 @@ export default function UnitDetailActions({ unit, allUnits, allEmployees }: Prop
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Unit Induk</label>
+                <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Unit Induk</label>
                 <SearchableSelect
                   options={parentOptions.map((u) => ({ value: u.id, label: u.name }))}
                   value={editParentId}
@@ -180,12 +184,12 @@ export default function UnitDetailActions({ unit, allUnits, allEmployees }: Prop
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Kepala Ruangan
-                  <span className="ml-1 text-gray-400 font-normal">(opsional)</span>
+                <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">
+                  Kepala Unit
+                  <span className="ml-1 text-gray-400 dark:text-slate-500 font-normal">(opsional)</span>
                 </label>
                 <SearchableSelect
-                  options={allEmployees.map((e) => ({ value: e.id, label: e.fullName, sub: e.positionTitle ?? "" }))}
+                  options={unit.employees.map((e) => ({ value: e.id, label: e.fullName, sub: e.positionTitle ?? "" }))}
                   value={editKepalaId}
                   onChange={setEditKepalaId}
                   placeholder="Cari nama kepala ruangan…"
@@ -193,12 +197,26 @@ export default function UnitDetailActions({ unit, allUnits, allEmployees }: Prop
                   emptyLabel="— Tidak ada —"
                 />
               </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">
+                  Admin Unit
+                  <span className="ml-1 text-gray-400 dark:text-slate-500 font-normal">(opsional)</span>
+                </label>
+                <SearchableSelect
+                  options={unit.employees.map((e) => ({ value: e.id, label: e.fullName, sub: e.positionTitle ?? "" }))}
+                  value={editAdminId}
+                  onChange={setEditAdminId}
+                  placeholder="Cari nama admin unit…"
+                  allowEmpty
+                  emptyLabel="— Tidak ada —"
+                />
+              </div>
             </div>
-            {editError && <p className="mt-2 text-xs text-red-600">{editError}</p>}
+            {editError && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{editError}</p>}
             <div className="flex gap-2 justify-end mt-5">
               <button
                 onClick={() => setEditOpen(false)}
-                className="px-4 py-1.5 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50"
+                className="px-4 py-1.5 text-sm border border-gray-200 dark:border-slate-600 rounded-lg text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700"
               >
                 Batal
               </button>

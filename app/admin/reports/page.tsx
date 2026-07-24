@@ -96,12 +96,12 @@ export default async function ReportsPage({ searchParams }: Props) {
   }
 
   const inputClass =
-    "px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+    "px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-slate-100 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-900">Rekap Cuti</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">Rekap Cuti</h2>
         {total > 0 && (
           <a
             href={`/api/v1/admin/reports/export?${new URLSearchParams({
@@ -111,7 +111,7 @@ export default async function ReportsPage({ searchParams }: Props) {
               ...(leaveTypeId ? { leaveTypeId } : {}),
               ...(employeeType ? { employeeType } : {}),
             }).toString()}`}
-            className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
           >
             Export CSV
           </a>
@@ -119,18 +119,18 @@ export default async function ReportsPage({ searchParams }: Props) {
       </div>
 
       {/* Filter */}
-      <form method="GET" className="bg-white rounded-xl border border-gray-200 p-5">
+      <form method="GET" className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Dari Tanggal</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Dari Tanggal</label>
             <input type="date" name="from" defaultValue={from ?? defaultFrom} className={inputClass} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Sampai Tanggal</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Sampai Tanggal</label>
             <input type="date" name="to" defaultValue={to ?? defaultTo} className={inputClass} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Unit Kerja</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Unit Kerja</label>
             <select name="unitId" defaultValue={unitId ?? ""} className={inputClass}>
               <option value="">Semua Unit</option>
               {units.map((u) => (
@@ -139,7 +139,7 @@ export default async function ReportsPage({ searchParams }: Props) {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Jenis Cuti</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Jenis Cuti</label>
             <select name="leaveTypeId" defaultValue={leaveTypeId ?? ""} className={inputClass}>
               <option value="">Semua Jenis</option>
               {leaveTypes.map((lt) => (
@@ -148,7 +148,7 @@ export default async function ReportsPage({ searchParams }: Props) {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Kategori Pegawai</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Kategori Pegawai</label>
             <select name="employeeType" defaultValue={employeeType ?? ""} className={inputClass}>
               <option value="">Semua Kategori</option>
               {EMPLOYEE_TYPES.map((t) => (
@@ -169,66 +169,66 @@ export default async function ReportsPage({ searchParams }: Props) {
 
       {/* Summary */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <p className="text-xs text-gray-500 mb-1">Total Pengajuan Disetujui</p>
-          <p className="text-2xl font-bold text-gray-900">{total}</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 text-center">
+          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Total Pengajuan Disetujui</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{total}</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <p className="text-xs text-gray-500 mb-1">Total Hari Cuti</p>
-          <p className="text-2xl font-bold text-gray-900">{totalDays}</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 text-center">
+          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Total Hari Cuti</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{totalDays}</p>
         </div>
       </div>
 
       {/* Tabel hasil */}
       {requests.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <p className="text-gray-400 text-sm">Tidak ada data cuti yang sesuai filter.</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-12 text-center">
+          <p className="text-gray-400 dark:text-slate-500 text-sm">Tidak ada data cuti yang sesuai filter.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-50 dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700">
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 whitespace-nowrap">No. Pengajuan</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Pegawai</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Jenis Cuti</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 whitespace-nowrap">Tanggal Mulai</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 whitespace-nowrap">Tanggal Selesai</th>
-                  <th className="text-right px-4 py-3 text-xs font-medium text-gray-500">Hari</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Nomor SK</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-slate-400 whitespace-nowrap">No. Pengajuan</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-slate-400">Pegawai</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-slate-400">Jenis Cuti</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-slate-400 whitespace-nowrap">Tanggal Mulai</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-slate-400 whitespace-nowrap">Tanggal Selesai</th>
+                  <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 dark:text-slate-400">Hari</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-slate-400">Nomor SK</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                 {requests.map((r) => (
-                  <tr key={r.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-mono text-xs text-gray-500 whitespace-nowrap">
+                  <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                    <td className="px-4 py-3 font-mono text-xs text-gray-500 dark:text-slate-400 whitespace-nowrap">
                       <Link href={`/admin/leave-requests/${r.id}`} className="hover:text-blue-600">
                         {r.requestNumber}
                       </Link>
                     </td>
                     <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900">{r.requester.fullName}</p>
-                      <p className="text-xs text-gray-400">{r.requester.unit?.name ?? "—"} · {r.requester.employeeType}</p>
+                      <p className="font-medium text-gray-900 dark:text-slate-100">{r.requester.fullName}</p>
+                      <p className="text-xs text-gray-400 dark:text-slate-500">{r.requester.unit?.name ?? "—"} · {r.requester.employeeType}</p>
                     </td>
-                    <td className="px-4 py-3 text-gray-700">{r.leaveType.name}</td>
-                    <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
+                    <td className="px-4 py-3 text-gray-700 dark:text-slate-300">{r.leaveType.name}</td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-slate-400 text-xs whitespace-nowrap">
                       {new Date(r.startDate).toLocaleDateString("id-ID")}
                     </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
+                    <td className="px-4 py-3 text-gray-500 dark:text-slate-400 text-xs whitespace-nowrap">
                       {new Date(r.endDate).toLocaleDateString("id-ID")}
                     </td>
-                    <td className="px-4 py-3 text-right font-semibold text-gray-900">{r.totalDays}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{r.skDocument?.skNumber ?? "—"}</td>
+                    <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-slate-100">{r.totalDays}</td>
+                    <td className="px-4 py-3 text-xs text-gray-500 dark:text-slate-400">{r.skDocument?.skNumber ?? "—"}</td>
                   </tr>
                 ))}
               </tbody>
-              <tfoot className="bg-gray-50 border-t border-gray-200">
+              <tfoot className="bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700">
                 <tr>
-                  <td colSpan={5} className="px-4 py-2 text-xs font-medium text-gray-500 text-right">
+                  <td colSpan={5} className="px-4 py-2 text-xs font-medium text-gray-500 dark:text-slate-400 text-right">
                     Total (halaman ini):
                   </td>
-                  <td className="px-4 py-2 text-right font-bold text-gray-900">
+                  <td className="px-4 py-2 text-right font-bold text-gray-900 dark:text-slate-100">
                     {requests.reduce((s, r) => s + r.totalDays, 0)}
                   </td>
                   <td />
@@ -243,15 +243,15 @@ export default async function ReportsPage({ searchParams }: Props) {
       {totalPages > 1 && (
         <div className="flex gap-2 justify-center">
           {page > 1 && (
-            <Link href={buildUrl({ page: String(page - 1) })} className="px-3 py-1.5 rounded-lg text-xs border border-gray-200 bg-white text-gray-600 hover:bg-gray-50">
+            <Link href={buildUrl({ page: String(page - 1) })} className="px-3 py-1.5 rounded-lg text-xs border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50">
               ← Sebelumnya
             </Link>
           )}
-          <span className="px-3 py-1.5 text-xs text-gray-500">
+          <span className="px-3 py-1.5 text-xs text-gray-500 dark:text-slate-400">
             Halaman {page} dari {totalPages}
           </span>
           {page < totalPages && (
-            <Link href={buildUrl({ page: String(page + 1) })} className="px-3 py-1.5 rounded-lg text-xs border border-gray-200 bg-white text-gray-600 hover:bg-gray-50">
+            <Link href={buildUrl({ page: String(page + 1) })} className="px-3 py-1.5 rounded-lg text-xs border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50">
               Berikutnya →
             </Link>
           )}

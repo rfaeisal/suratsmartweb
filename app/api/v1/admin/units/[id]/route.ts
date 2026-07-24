@@ -8,6 +8,7 @@ const updateSchema = z.object({
   name: z.string().min(1).optional(),
   parentId: z.string().nullable().optional(),
   kepalaRuanganId: z.string().nullable().optional(),
+  adminUnitId: z.string().nullable().optional(),
 })
 
 type RouteParams = { params: Promise<{ id: string }> }
@@ -83,6 +84,10 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     const kepala = await prisma.employee.findUnique({ where: { id: parsed.data.kepalaRuanganId } })
     if (!kepala || !kepala.isActive) return Errors.validation("Kepala ruangan tidak ditemukan atau tidak aktif")
   }
+  if (parsed.data.adminUnitId) {
+    const admin = await prisma.employee.findUnique({ where: { id: parsed.data.adminUnitId } })
+    if (!admin || !admin.isActive) return Errors.validation("Admin unit tidak ditemukan atau tidak aktif")
+  }
 
   const updated = await prisma.workUnit.update({
     where: { id },
@@ -90,10 +95,12 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       ...(parsed.data.name !== undefined ? { name: parsed.data.name } : {}),
       ...(parsed.data.parentId !== undefined ? { parentId: parsed.data.parentId } : {}),
       ...(parsed.data.kepalaRuanganId !== undefined ? { kepalaRuanganId: parsed.data.kepalaRuanganId } : {}),
+      ...(parsed.data.adminUnitId !== undefined ? { adminUnitId: parsed.data.adminUnitId } : {}),
     },
     include: {
       parent: { select: { id: true, name: true } },
       kepalaRuangan: { select: { id: true, fullName: true, positionTitle: true } },
+      adminUnit: { select: { id: true, fullName: true, positionTitle: true } },
       _count: { select: { employees: true } },
     },
   })

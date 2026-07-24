@@ -4,6 +4,7 @@ const REQUIRED_ALWAYS = [
   "DATABASE_URL",
   "NEXTAUTH_SECRET",
   "NEXTAUTH_URL",
+  "DEVICE_SECRET_KEY",
 ]
 
 // Hanya wajib jika tidak menggunakan mock SSO

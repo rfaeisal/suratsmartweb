@@ -9,6 +9,7 @@ export interface AuthUser {
   sessionId: string
   roles: AppRole[]
   employeeId: string
+  managedWorkUnitId: string | null
 }
 
 export class AuthError extends Error {
@@ -18,6 +19,32 @@ export class AuthError extends Error {
   ) {
     super(message)
   }
+}
+
+async function deriveRolesAndUnit(
+  userId: string,
+  employeeId: string,
+  storedRoles: AppRole[],
+): Promise<{ roles: AppRole[]; managedWorkUnitId: string | null }> {
+  let roles = [...storedRoles]
+  let managedWorkUnitId: string | null = null
+
+  // KEPALA_UNIT and ADMIN_UNIT are derived from WorkUnit master, not manually assigned
+  const [kepalaUnit, adminUnit] = await Promise.all([
+    prisma.workUnit.findFirst({ where: { kepalaRuanganId: employeeId }, select: { id: true } }),
+    prisma.workUnit.findFirst({ where: { adminUnitId: employeeId }, select: { id: true } }),
+  ])
+
+  if (kepalaUnit) {
+    if (!roles.includes("KEPALA_UNIT")) roles.push("KEPALA_UNIT")
+    managedWorkUnitId = kepalaUnit.id
+  }
+  if (adminUnit && !managedWorkUnitId) {
+    if (!roles.includes("ADMIN_UNIT")) roles.push("ADMIN_UNIT")
+    managedWorkUnitId = adminUnit.id
+  }
+
+  return { roles: roles as AppRole[], managedWorkUnitId }
 }
 
 export async function requireAuth(req: NextRequest, allowedRoles?: AppRole[]): Promise<AuthUser> {
@@ -47,11 +74,18 @@ export async function requireAuth(req: NextRequest, allowedRoles?: AppRole[]): P
       .update({ where: { id: payload.sessionId }, data: { lastActiveAt: new Date() } })
       .catch(() => {})
 
+    const { roles, managedWorkUnitId } = await deriveRolesAndUnit(
+      payload.userId,
+      payload.employeeId,
+      payload.roles as AppRole[],
+    )
+
     const user: AuthUser = {
       userId: payload.userId,
       sessionId: payload.sessionId,
-      roles: payload.roles as AppRole[],
+      roles,
       employeeId: payload.employeeId,
+      managedWorkUnitId,
     }
 
     if (allowedRoles && !user.roles.some((r) => allowedRoles.includes(r))) {
@@ -64,11 +98,18 @@ export async function requireAuth(req: NextRequest, allowedRoles?: AppRole[]): P
   // Path 2: NextAuth session cookie (web browser)
   const session = await auth()
   if (session?.user?.id && session.user.employeeId) {
+    const { roles, managedWorkUnitId } = await deriveRolesAndUnit(
+      session.user.id,
+      session.user.employeeId,
+      session.user.roles ?? ["PEGAWAI"],
+    )
+
     const user: AuthUser = {
       userId: session.user.id,
       sessionId: "web",
-      roles: session.user.roles ?? ["PEGAWAI"],
+      roles,
       employeeId: session.user.employeeId,
+      managedWorkUnitId,
     }
 
     if (allowedRoles && !user.roles.some((r) => allowedRoles.includes(r))) {

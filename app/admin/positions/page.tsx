@@ -8,8 +8,8 @@ export default async function PositionsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-5">Master Jabatan</h1>
-      <p className="text-sm text-gray-500 mb-6">
+      <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-5">Master Jabatan</h1>
+      <p className="text-sm text-gray-500 dark:text-slate-400 mb-6">
         Daftar jabatan yang digunakan sebagai referensi hierarki persetujuan.
         Level lebih besar berarti jabatan lebih tinggi dalam struktur organisasi.
       </p>

@@ -14,15 +14,15 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  SUBMITTED: "bg-gray-100 text-gray-700",
-  DELEGATE_DECLINED: "bg-red-50 text-red-700",
-  PENDING_ADMIN_REVIEW: "bg-amber-50 text-amber-700",
-  IN_APPROVAL: "bg-blue-50 text-blue-700",
-  RETURNED: "bg-orange-50 text-orange-700",
-  REJECTED: "bg-red-50 text-red-700",
-  APPROVED: "bg-green-50 text-green-700",
-  SENT_TO_LEGACY: "bg-green-100 text-green-800",
-  SEND_FAILED: "bg-red-100 text-red-800",
+  SUBMITTED: "bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300",
+  DELEGATE_DECLINED: "bg-red-50 text-red-700 dark:bg-red-900/40 dark:text-red-300",
+  PENDING_ADMIN_REVIEW: "bg-amber-50 text-amber-700 dark:bg-yellow-900/40 dark:text-yellow-300",
+  IN_APPROVAL: "bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  RETURNED: "bg-orange-50 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300",
+  REJECTED: "bg-red-50 text-red-700 dark:bg-red-900/40 dark:text-red-300",
+  APPROVED: "bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  SENT_TO_LEGACY: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
+  SEND_FAILED: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
 }
 
 export default async function DashboardPage() {
@@ -79,8 +79,8 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-gray-900">Dashboard</h2>
-        <p className="text-sm text-gray-500 mt-0.5">Ringkasan sistem CutiSmart — Tahun {currentYear}</p>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">Dashboard</h2>
+        <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">Ringkasan sistem CutiSmart — Tahun {currentYear}</p>
       </div>
 
       {/* Alert: butuh perhatian */}
@@ -116,9 +116,9 @@ export default async function DashboardPage() {
           { label: "Sesi Mobile Aktif", value: activeSessionCount, href: "/admin/sessions" },
         ].map((stat) => (
           <Link key={stat.label} href={stat.href}>
-            <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-5 hover:shadow-md transition-shadow">
-              <p className="text-xs text-gray-500 leading-tight">{stat.label}</p>
-              <p className="text-2xl md:text-3xl font-bold text-gray-900 mt-1">{stat.value}</p>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 md:p-5 hover:shadow-md transition-shadow">
+              <p className="text-xs text-gray-500 dark:text-slate-400 leading-tight">{stat.label}</p>
+              <p className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-slate-100 mt-1">{stat.value}</p>
             </div>
           </Link>
         ))}
@@ -126,10 +126,10 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Pengajuan per status */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="font-medium text-gray-900 text-sm mb-4">Distribusi Status Pengajuan</h3>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
+          <h3 className="font-medium text-gray-900 dark:text-slate-100 text-sm mb-4">Distribusi Status Pengajuan</h3>
           {statusGroups.length === 0 ? (
-            <p className="text-sm text-gray-400">Belum ada pengajuan tahun ini.</p>
+            <p className="text-sm text-gray-400 dark:text-slate-500">Belum ada pengajuan tahun ini.</p>
           ) : (
             <div className="space-y-2">
               {statusGroups
@@ -138,13 +138,13 @@ export default async function DashboardPage() {
                   <Link
                     key={g.status}
                     href={`/admin/leave-requests?status=${g.status}`}
-                    className="flex items-center gap-3 hover:bg-gray-50 rounded-lg px-2 py-1.5 -mx-2 transition-colors"
+                    className="flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 rounded-lg px-2 py-1.5 -mx-2 transition-colors"
                   >
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLOR[g.status] ?? "bg-gray-100 text-gray-600"}`}>
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLOR[g.status] ?? "bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-400"}`}>
                       {STATUS_LABELS[g.status] ?? g.status}
                     </span>
-                    <span className="ml-auto font-semibold text-gray-900 text-sm">{g._count._all}</span>
-                    <div className="w-12 md:w-20 bg-gray-100 rounded-full h-1.5 shrink-0">
+                    <span className="ml-auto font-semibold text-gray-900 dark:text-slate-100 text-sm">{g._count._all}</span>
+                    <div className="w-12 md:w-20 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5 shrink-0">
                       <div
                         className="bg-blue-500 h-1.5 rounded-full"
                         style={{ width: `${Math.round((g._count._all / totalThisYear) * 100)}%` }}
@@ -157,17 +157,17 @@ export default async function DashboardPage() {
         </div>
 
         {/* Top jenis cuti */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="font-medium text-gray-900 text-sm mb-4">Jenis Cuti Terbanyak Diajukan</h3>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
+          <h3 className="font-medium text-gray-900 dark:text-slate-100 text-sm mb-4">Jenis Cuti Terbanyak Diajukan</h3>
           {topLeaveTypes.length === 0 ? (
-            <p className="text-sm text-gray-400">Belum ada data.</p>
+            <p className="text-sm text-gray-400 dark:text-slate-500">Belum ada data.</p>
           ) : (
             <div className="space-y-3">
               {topLeaveTypes.map((g) => (
                 <div key={g.leaveTypeId} className="flex items-center gap-3">
-                  <span className="text-sm text-gray-700 flex-1">{ltNameMap[g.leaveTypeId] ?? "—"}</span>
-                  <span className="text-sm font-semibold text-gray-900">{g._count._all}</span>
-                  <div className="w-16 md:w-24 bg-gray-100 rounded-full h-1.5 shrink-0">
+                  <span className="text-sm text-gray-700 dark:text-slate-300 flex-1">{ltNameMap[g.leaveTypeId] ?? "—"}</span>
+                  <span className="text-sm font-semibold text-gray-900 dark:text-slate-100">{g._count._all}</span>
+                  <div className="w-16 md:w-24 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5 shrink-0">
                     <div
                       className="bg-green-500 h-1.5 rounded-full"
                       style={{ width: `${Math.round((g._count._all / totalThisYear) * 100)}%` }}
@@ -182,9 +182,9 @@ export default async function DashboardPage() {
 
       {/* Pengajuan yang butuh tindakan */}
       {recentRequests.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-medium text-gray-900 text-sm">Membutuhkan Tindakan</h3>
+            <h3 className="font-medium text-gray-900 dark:text-slate-100 text-sm">Membutuhkan Tindakan</h3>
             <Link href="/admin/leave-requests" className="text-xs text-blue-600 hover:underline">Lihat semua →</Link>
           </div>
           <div className="space-y-2">
@@ -192,11 +192,11 @@ export default async function DashboardPage() {
               <Link
                 key={r.id}
                 href={`/admin/leave-requests/${r.id}`}
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{r.requester.fullName}</p>
-                  <p className="text-xs text-gray-500">{r.leaveType.name} — {r.requester.unit?.name ?? "—"}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{r.requester.fullName}</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">{r.leaveType.name} — {r.requester.unit?.name ?? "—"}</p>
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded font-medium shrink-0 ${STATUS_COLOR[r.status] ?? ""}`}>
                   {STATUS_LABELS[r.status] ?? r.status}
@@ -208,8 +208,8 @@ export default async function DashboardPage() {
       )}
 
       {/* Menu cepat */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h3 className="font-medium text-gray-900 text-sm mb-3">Menu Cepat</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
+        <h3 className="font-medium text-gray-900 dark:text-slate-100 text-sm mb-3">Menu Cepat</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
             { label: "Pengajuan Masuk", href: "/admin/leave-requests?status=PENDING_ADMIN_REVIEW" },
@@ -220,7 +220,7 @@ export default async function DashboardPage() {
             <Link
               key={item.label}
               href={item.href}
-              className="flex items-center justify-center p-3 bg-gray-50 hover:bg-blue-50 hover:text-blue-700 rounded-lg text-sm text-gray-700 text-center transition-colors"
+              className="flex items-center justify-center p-3 bg-gray-50 dark:bg-slate-700 hover:bg-blue-50 dark:hover:bg-blue-900/40 hover:text-blue-700 dark:hover:text-blue-300 rounded-lg text-sm text-gray-700 dark:text-slate-300 text-center transition-colors"
             >
               {item.label}
             </Link>

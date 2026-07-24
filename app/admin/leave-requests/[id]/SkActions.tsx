@@ -40,7 +40,7 @@ export default function SkActions({ leaveRequestId, currentStatus, hasSkDocument
 return (
     <div className="space-y-3">
       {error && (
-        <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
+        <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 dark:text-red-400 text-sm">{error}</div>
       )}
       {message && (
         <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm">{message}</div>
@@ -68,7 +68,7 @@ return (
             href={`/api/v1/admin/leave-requests/${leaveRequestId}/sk/download`}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
           >
             Download SK PDF
           </a>
@@ -77,7 +77,7 @@ return (
       </div>
 
       {hasSkDocument && skNumber && (
-        <p className="text-xs text-gray-400">Nomor SK: {skNumber}</p>
+        <p className="text-xs text-gray-400 dark:text-slate-500">Nomor SK: {skNumber}</p>
       )}
     </div>
   )

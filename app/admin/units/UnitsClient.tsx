@@ -34,7 +34,7 @@ export default function UnitsClient({ initial }: Props) {
   const [deleteErrors, setDeleteErrors] = useState<Record<string, string>>({})
 
   const inputClass =
-    "px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+    "px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
@@ -108,11 +108,11 @@ export default function UnitsClient({ initial }: Props) {
   return (
     <div className="space-y-6">
       {/* Form tambah */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4">Tambah Unit Kerja Baru</h2>
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-4">Tambah Unit Kerja Baru</h2>
         <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3">
           <div className="flex-1 min-w-48">
-            <label className="block text-xs font-medium text-gray-700 mb-1">Nama Unit <span className="text-red-500">*</span></label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Nama Unit <span className="text-red-500">*</span></label>
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
@@ -121,7 +121,7 @@ export default function UnitsClient({ initial }: Props) {
             />
           </div>
           <div className="flex-1 min-w-48">
-            <label className="block text-xs font-medium text-gray-700 mb-1">Unit Induk <span className="text-gray-400 font-normal">(opsional)</span></label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Unit Induk <span className="text-gray-400 dark:text-slate-500 font-normal">(opsional)</span></label>
             <SearchableSelect
               options={units.map((u) => ({ value: u.id, label: u.name }))}
               value={newParentId}
@@ -138,14 +138,14 @@ export default function UnitsClient({ initial }: Props) {
           >
             {adding ? "Menyimpan…" : "Tambah"}
           </button>
-          {addError && <p className="text-xs text-red-600 w-full">{addError}</p>}
+          {addError && <p className="text-xs text-red-600 dark:text-red-400 w-full">{addError}</p>}
         </form>
       </div>
 
       {/* Tabel */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
         {units.length > 0 && (
-          <div className="px-4 py-3 border-b border-gray-200">
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700">
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -155,26 +155,26 @@ export default function UnitsClient({ initial }: Props) {
           </div>
         )}
         {units.length === 0 ? (
-          <p className="py-12 text-center text-sm text-gray-400">Belum ada unit kerja. Tambahkan di atas.</p>
+          <p className="py-12 text-center text-sm text-gray-400 dark:text-slate-500">Belum ada unit kerja. Tambahkan di atas.</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200 bg-gray-50">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nama Unit</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Unit Induk</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide w-28">Pegawai</th>
+              <tr className="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900">
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Nama Unit</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Unit Induk</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide w-28">Pegawai</th>
                 <th className="px-4 py-3 w-36"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
               {filteredUnits.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-sm text-gray-400">
+                  <td colSpan={4} className="px-4 py-8 text-center text-sm text-gray-400 dark:text-slate-500">
                     Tidak ada unit yang cocok dengan &ldquo;{search}&rdquo;.
                   </td>
                 </tr>
               ) : filteredUnits.map((unit) => (
-                <tr key={unit.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={unit.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
                   <td className="px-4 py-3">
                     {editId === unit.id ? (
                       <input
@@ -203,13 +203,13 @@ export default function UnitsClient({ initial }: Props) {
                         emptyLabel="— Tidak ada (root) —"
                       />
                     ) : (
-                      <span className="text-gray-500">
+                      <span className="text-gray-500 dark:text-slate-400">
                         {unit.parent ? (
-                          <Link href={`/admin/units/${unit.parent.id}`} className="text-gray-600 hover:text-blue-600">
+                          <Link href={`/admin/units/${unit.parent.id}`} className="text-gray-600 dark:text-slate-400 hover:text-blue-600">
                             {unit.parent.name}
                           </Link>
                         ) : (
-                          <span className="italic text-gray-400">Root</span>
+                          <span className="italic text-gray-400 dark:text-slate-500">Root</span>
                         )}
                       </span>
                     )}
@@ -217,16 +217,16 @@ export default function UnitsClient({ initial }: Props) {
                   <td className="px-4 py-3">
                     <Link
                       href={`/admin/units/${unit.id}`}
-                      className="inline-flex items-center gap-1 text-gray-700 hover:text-blue-600"
+                      className="inline-flex items-center gap-1 text-gray-700 dark:text-slate-300 hover:text-blue-600"
                     >
                       <span className="font-medium">{unit._count.employees}</span>
-                      <span className="text-xs text-gray-400">pegawai</span>
+                      <span className="text-xs text-gray-400 dark:text-slate-500">pegawai</span>
                     </Link>
                   </td>
                   <td className="px-4 py-3">
                     {editId === unit.id ? (
                       <div className="flex gap-2 items-center justify-end">
-                        {editError && <span className="text-xs text-red-600 mr-1">{editError}</span>}
+                        {editError && <span className="text-xs text-red-600 dark:text-red-400 mr-1">{editError}</span>}
                         <Tooltip label="Simpan">
                           <button
                             onClick={() => handleSave(unit.id)}
@@ -241,7 +241,7 @@ export default function UnitsClient({ initial }: Props) {
                         <Tooltip label="Batal">
                           <button
                             onClick={() => setEditId(null)}
-                            className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+                            className="p-1.5 rounded-lg text-gray-400 dark:text-slate-500 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -252,7 +252,7 @@ export default function UnitsClient({ initial }: Props) {
                     ) : (
                       <div className="flex gap-1 justify-end items-center">
                         {deleteErrors[unit.id] && (
-                          <span className="text-xs text-red-600 mr-1">{deleteErrors[unit.id]}</span>
+                          <span className="text-xs text-red-600 dark:text-red-400 mr-1">{deleteErrors[unit.id]}</span>
                         )}
                         <Tooltip label="Edit">
                           <button

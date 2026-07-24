@@ -50,8 +50,8 @@ export default async function AdminLeaveRequestsPage({ searchParams }: Props) {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">Pengajuan Cuti</h2>
-        <span className="text-sm text-gray-500">{total} pengajuan</span>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">Pengajuan Cuti</h2>
+        <span className="text-sm text-gray-500 dark:text-slate-400">{total} pengajuan</span>
       </div>
 
       {/* Filter status */}
@@ -63,7 +63,7 @@ export default async function AdminLeaveRequestsPage({ searchParams }: Props) {
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               status === f.value
                 ? "bg-blue-600 text-white"
-                : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+                : "bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50"
             }`}
           >
             {f.label}
@@ -72,48 +72,48 @@ export default async function AdminLeaveRequestsPage({ searchParams }: Props) {
       </div>
 
       {requests.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <p className="text-gray-400 text-sm">Tidak ada pengajuan cuti.</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-12 text-center">
+          <p className="text-gray-400 dark:text-slate-500 text-sm">Tidak ada pengajuan cuti.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
           <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-50 dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700">
               <tr>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">No. Pengajuan</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Pegawai</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Jenis Cuti</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Tanggal</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Status</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Aksi</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-slate-400">No. Pengajuan</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-slate-400">Pegawai</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-slate-400">Jenis Cuti</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-slate-400">Tanggal</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-slate-400">Status</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-slate-400">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
               {requests.map((r) => (
-                <tr key={r.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-500">{r.requestNumber}</td>
+                <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                  <td className="px-4 py-3 font-mono text-xs text-gray-500 dark:text-slate-400">{r.requestNumber}</td>
                   <td className="px-4 py-3">
-                    <p className="font-medium text-gray-900">{r.requester.fullName}</p>
-                    <p className="text-xs text-gray-400">{r.requester.unit?.name ?? "—"}</p>
+                    <p className="font-medium text-gray-900 dark:text-slate-100">{r.requester.fullName}</p>
+                    <p className="text-xs text-gray-400 dark:text-slate-500">{r.requester.unit?.name ?? "—"}</p>
                   </td>
-                  <td className="px-4 py-3 text-gray-700">{r.leaveType.name}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
+                  <td className="px-4 py-3 text-gray-700 dark:text-slate-300">{r.leaveType.name}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-slate-400 text-xs whitespace-nowrap">
                     {new Date(r.startDate).toLocaleDateString("id-ID")} —{" "}
                     {new Date(r.endDate).toLocaleDateString("id-ID")}
-                    <span className="block text-gray-400">{r.totalDays} hari</span>
+                    <span className="block text-gray-400 dark:text-slate-500">{r.totalDays} hari</span>
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${statusColor(r.status)}`}>
                       {formatStatus(r.status)}
                     </span>
                     {r.approvalSteps[0] && (
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
                         {(r.status === "IN_APPROVAL") && (
                           <span>Langkah {r.approvalSteps[0].stepOrder}/{r._count.approvalSteps} — </span>
                         )}
                         {r.approvalSteps[0].approver.fullName}
-                        <span className="text-gray-300"> ({r.approvalSteps[0].roleLabel})</span>
+                        <span className="text-gray-300 dark:text-slate-600"> ({r.approvalSteps[0].roleLabel})</span>
                       </p>
                     )}
                   </td>
@@ -145,7 +145,7 @@ export default async function AdminLeaveRequestsPage({ searchParams }: Props) {
               key={p}
               href={`/admin/leave-requests?status=${status}&page=${p}`}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                p === page ? "bg-blue-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+                p === page ? "bg-blue-600 text-white" : "bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50"
               }`}
             >
               {p}

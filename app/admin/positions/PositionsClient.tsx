@@ -30,7 +30,7 @@ export default function PositionsClient({ initial }: Props) {
   const [editError, setEditError] = useState("")
 
   const inputClass =
-    "px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+    "px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
@@ -104,11 +104,11 @@ export default function PositionsClient({ initial }: Props) {
   return (
     <div className="space-y-6">
       {/* Form tambah */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4">Tambah Jabatan Baru</h2>
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-4">Tambah Jabatan Baru</h2>
         <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Nama Jabatan</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Nama Jabatan</label>
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
@@ -117,8 +117,8 @@ export default function PositionsClient({ initial }: Props) {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Level <span className="text-gray-400 font-normal">(angka lebih besar = lebih tinggi)</span>
+            <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">
+              Level <span className="text-gray-400 dark:text-slate-500 font-normal">(angka lebih besar = lebih tinggi)</span>
             </label>
             <input
               type="number"
@@ -137,14 +137,14 @@ export default function PositionsClient({ initial }: Props) {
           >
             {adding ? "Menyimpan…" : "Tambah"}
           </button>
-          {addError && <p className="text-xs text-red-600 w-full">{addError}</p>}
+          {addError && <p className="text-xs text-red-600 dark:text-red-400 w-full">{addError}</p>}
         </form>
       </div>
 
       {/* Tabel */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
         {positions.length > 0 && (
-          <div className="px-4 py-3 border-b border-gray-200">
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700">
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -154,26 +154,26 @@ export default function PositionsClient({ initial }: Props) {
           </div>
         )}
         {positions.length === 0 ? (
-          <p className="py-12 text-center text-sm text-gray-400">Belum ada jabatan. Tambahkan di atas.</p>
+          <p className="py-12 text-center text-sm text-gray-400 dark:text-slate-500">Belum ada jabatan. Tambahkan di atas.</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200 bg-gray-50">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nama Jabatan</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Level</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Status</th>
+              <tr className="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900">
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Nama Jabatan</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide w-24">Level</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide w-24">Status</th>
                 <th className="px-4 py-3 w-40"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
               {filteredPositions.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-sm text-gray-400">
+                  <td colSpan={4} className="px-4 py-8 text-center text-sm text-gray-400 dark:text-slate-500">
                     Tidak ada jabatan yang cocok dengan &ldquo;{search}&rdquo;.
                   </td>
                 </tr>
               ) : filteredPositions.map((pos) => (
-                <tr key={pos.id} className={`hover:bg-gray-50 transition-colors ${!pos.isActive ? "opacity-50" : ""}`}>
+                <tr key={pos.id} className={`hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${!pos.isActive ? "opacity-50" : ""}`}>
                   <td className="px-4 py-3">
                     {editId === pos.id ? (
                       <input
@@ -183,7 +183,7 @@ export default function PositionsClient({ initial }: Props) {
                         autoFocus
                       />
                     ) : (
-                      <span className="font-medium text-gray-900">{pos.name}</span>
+                      <span className="font-medium text-gray-900 dark:text-slate-100">{pos.name}</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -197,20 +197,20 @@ export default function PositionsClient({ initial }: Props) {
                         className={`${inputClass} w-20`}
                       />
                     ) : (
-                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 text-blue-700 text-xs font-bold">
+                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 text-xs font-bold">
                         {pos.level}
                       </span>
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${pos.isActive ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                    <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${pos.isActive ? "bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400"}`}>
                       {pos.isActive ? "Aktif" : "Nonaktif"}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
                     {editId === pos.id ? (
                       <div className="flex gap-2 justify-end items-center">
-                        {editError && <span className="text-xs text-red-600 mr-1">{editError}</span>}
+                        {editError && <span className="text-xs text-red-600 dark:text-red-400 mr-1">{editError}</span>}
                         <Tooltip label="Simpan">
                           <button
                             onClick={() => handleSave(pos.id)}
@@ -225,7 +225,7 @@ export default function PositionsClient({ initial }: Props) {
                         <Tooltip label="Batal">
                           <button
                             onClick={() => setEditId(null)}
-                            className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+                            className="p-1.5 rounded-lg text-gray-400 dark:text-slate-500 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
