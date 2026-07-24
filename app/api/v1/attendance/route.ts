@@ -28,6 +28,74 @@ const EVENT_TYPE_MAP = {
   lembur_pulang: "LEMBUR_PULANG",
 } as const
 
+export async function GET(req: NextRequest) {
+  let auth
+  try {
+    auth = await requireAuth(req, ["ADMIN_KEPEGAWAIAN", "SUPERADMIN", "KEPALA_UNIT", "ADMIN_UNIT"])
+  } catch (e) {
+    if (e instanceof AuthError) {
+      if (e.code === "SESSION_REVOKED") return Errors.sessionRevoked()
+      return e.code === "FORBIDDEN" ? Errors.forbidden() : Errors.unauthorized(e.message)
+    }
+    return Errors.internal()
+  }
+
+  const { searchParams } = new URL(req.url)
+  const workUnitId = searchParams.get("work_unit_id")
+  const from       = searchParams.get("from")
+  const to         = searchParams.get("to")
+  const employeeId = searchParams.get("employee_id")
+  const status     = searchParams.get("status") // "VALID" | "INVALID"
+
+  const isUnitRole = auth.roles.includes("KEPALA_UNIT") || auth.roles.includes("ADMIN_UNIT")
+  const isAdmin    = auth.roles.includes("ADMIN_KEPEGAWAIAN") || auth.roles.includes("SUPERADMIN")
+
+  // Unit role hanya bisa lihat unitnya sendiri
+  const effectiveUnitId = isUnitRole && !isAdmin
+    ? (auth.managedWorkUnitId ?? "__none__")
+    : (workUnitId ?? undefined)
+
+  const where: Record<string, unknown> = {}
+  if (effectiveUnitId) where.workUnitId = effectiveUnitId
+  if (employeeId)      where.employeeId = employeeId
+  if (status)          where.status = status
+  if (from || to) {
+    where.tanggalKerja = {
+      ...(from ? { gte: new Date(from + "T00:00:00.000Z") } : {}),
+      ...(to   ? { lte: new Date(to   + "T23:59:59.999Z") } : {}),
+    }
+  }
+
+  const records = await prisma.attendance.findMany({
+    where,
+    include: {
+      employee: { select: { nip: true, fullName: true } },
+      shift:    { select: { nama: true } },
+      room:     { select: { nama: true } },
+    },
+    orderBy: [{ tanggalKerja: "desc" }, { recordedAt: "desc" }],
+    take: 500,
+  })
+
+  return NextResponse.json({
+    data: records.map((r) => ({
+      id:             r.id,
+      employee_id:    r.employeeId,
+      nip:            r.employee.nip,
+      nama:           r.employee.fullName,
+      work_unit_id:   r.workUnitId,
+      shift:          r.shift?.nama ?? null,
+      room:           r.room?.nama ?? null,
+      event_type:     r.eventType,
+      recorded_at:    r.recordedAt.toISOString(),
+      tanggal_kerja:  r.tanggalKerja.toISOString().slice(0, 10),
+      status:         r.status,
+      telat:          r.telat,
+      beacon_detected: r.beaconDetected,
+    })),
+  })
+}
+
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for") ?? "unknown"
   if (!rateLimit(`attendance:${ip}`, 20, 60_000)) {
