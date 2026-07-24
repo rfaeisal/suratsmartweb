@@ -50,11 +50,18 @@ export default async function RosterPage() {
     units = unit ? [unit] : []
   }
 
-  const shifts = await prisma.shift.findMany({
+  const rawShifts = await prisma.shift.findMany({
     where: { active: true },
     orderBy: { nama: "asc" },
-    select: { id: true, nama: true, type: true, startTime: true, endTime: true },
+    select: {
+      id: true, nama: true, type: true, startTime: true, endTime: true,
+      shiftUnits: { select: { workUnitId: true } },
+    },
   })
+  const shifts = rawShifts.map((s) => ({
+    id: s.id, nama: s.nama, type: s.type, startTime: s.startTime, endTime: s.endTime,
+    workUnitIds: s.shiftUnits.map((su) => su.workUnitId),
+  }))
 
   return <RosterClient units={units} shifts={shifts} lockedUnitId={lockedUnitId} userRole={userRole} />
 }

@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react"
 
 interface WorkUnit { id: string; name: string }
-interface ShiftInfo { id: string; nama: string; type: string; startTime: string; endTime: string }
+interface ShiftInfo { id: string; nama: string; type: string; startTime: string; endTime: string; workUnitIds: string[] }
 interface Employee { id: string; fullName: string; nip: string }
 interface RosterPeriod { id: string; year: number; month: number; status: string; work_unit_id: string }
 interface RosterEntry { id: string; employee_id: string; shift_id: string; tanggal_kerja: string }
@@ -69,6 +69,11 @@ export default function RosterClient({ units, shifts, lockedUnitId, userRole }: 
     if (status === "PENDING_APPROVAL" && isAdminUnit) return false
     return true
   }
+
+  // Hanya tampilkan shift yang terdaftar untuk unit yang sedang dipilih
+  const paletteShifts = selectedUnit
+    ? shifts.filter((s) => s.workUnitIds.includes(selectedUnit))
+    : shifts
 
   const shiftColorMap = useCallback((shiftId: string) => {
     const idx = shifts.findIndex((s) => s.id === shiftId)
@@ -304,7 +309,7 @@ export default function RosterClient({ units, shifts, lockedUnitId, userRole }: 
                 — Libur
               </button>
             )}
-            {shifts.map((s, i) => (
+            {paletteShifts.map((s, i) => (
               <button
                 key={s.id}
                 onClick={() => cellEditable && setSelectedShiftId(selectedShiftId === s.id ? null : s.id)}
