@@ -243,11 +243,12 @@ async function main() {
     console.log("✓ Jenis cuti:", lt.code)
   }
 
-  // AppSetting — kunci absensi
+  // AppSetting — semua kunci sistem
   const attendanceSettings = [
-    { key: "device_binding_enabled", value: "true", label: "Aktifkan binding perangkat (anti titip absen). Set 'false' untuk menonaktifkan." },
-    { key: "toleransi_telat_menit", value: "15", label: "Toleransi keterlambatan dalam menit sebelum dianggap terlambat." },
-    { key: "interval_rotasi_detik", value: "30", label: "Interval rotasi token QR perangkat absensi (detik)." },
+    { key: "enforce_single_session",  value: "true", label: "Satu sesi aktif per akun mobile" },
+    { key: "device_binding_enabled",  value: "true", label: "Aktifkan binding perangkat (anti titip absen). Set 'false' untuk menonaktifkan." },
+    { key: "toleransi_telat_menit",   value: "15",   label: "Toleransi keterlambatan dalam menit sebelum dianggap terlambat." },
+    { key: "interval_rotasi_detik",   value: "30",   label: "Interval rotasi token QR perangkat absensi (detik)." },
   ]
   for (const s of attendanceSettings) {
     await prisma.appSetting.upsert({
