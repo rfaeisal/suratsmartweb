@@ -3,22 +3,33 @@
 import { useState } from "react"
 
 const ROLE_LABELS: Record<string, string> = {
-  PEGAWAI: "Pegawai",
-  APPROVER: "Approver",
+  PEGAWAI:           "Pegawai",
+  APPROVER:          "Approver",
+  KEPALA_UNIT:       "Kepala Unit",
+  ADMIN_UNIT:        "Admin Unit",
   ADMIN_KEPEGAWAIAN: "Admin Kepegawaian",
-  SUPERADMIN: "Superadmin",
+  SUPERADMIN:        "Superadmin",
 }
+
+interface WorkUnit { id: string; name: string }
 
 interface Props {
   userId: string
   currentRoles: string[]
+  currentManagedUnitId: string | null
   allRoles: readonly string[]
+  workUnits: WorkUnit[]
 }
 
-export default function UserRolesForm({ userId, currentRoles, allRoles }: Props) {
+const UNIT_ROLES = ["KEPALA_UNIT", "ADMIN_UNIT"]
+
+export default function UserRolesForm({ userId, currentRoles, currentManagedUnitId, allRoles, workUnits }: Props) {
   const [selected, setSelected] = useState<string[]>(currentRoles)
+  const [managedUnitId, setManagedUnitId] = useState<string>(currentManagedUnitId ?? "")
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+
+  const needsUnit = selected.some((r) => UNIT_ROLES.includes(r))
 
   function toggle(role: string) {
     if (role === "PEGAWAI") return
@@ -33,17 +44,24 @@ export default function UserRolesForm({ userId, currentRoles, allRoles }: Props)
       setMsg({ ok: false, text: "Minimal 1 role harus dipilih" })
       return
     }
+    if (needsUnit && !managedUnitId) {
+      setMsg({ ok: false, text: "Pilih unit yang dikelola" })
+      return
+    }
     setSaving(true)
     setMsg(null)
     try {
       const res = await fetch(`/api/v1/admin/users/${userId}/roles`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roles: selected }),
+        body: JSON.stringify({
+          roles: selected,
+          managed_work_unit_id: needsUnit ? managedUnitId : null,
+        }),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        setMsg({ ok: false, text: data.message ?? "Gagal menyimpan" })
+        setMsg({ ok: false, text: data.error?.message ?? data.message ?? "Gagal menyimpan" })
       } else {
         setMsg({ ok: true, text: "Tersimpan" })
       }
@@ -73,6 +91,20 @@ export default function UserRolesForm({ userId, currentRoles, allRoles }: Props)
           )
         })}
       </div>
+
+      {needsUnit && (
+        <select
+          value={managedUnitId}
+          onChange={(e) => { setManagedUnitId(e.target.value); setMsg(null) }}
+          className="w-48 px-2 py-1 text-xs border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">— pilih unit —</option>
+          {workUnits.map((u) => (
+            <option key={u.id} value={u.id}>{u.name}</option>
+          ))}
+        </select>
+      )}
+
       <div className="flex items-center gap-2">
         {msg && (
           <span className={`text-xs ${msg.ok ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>

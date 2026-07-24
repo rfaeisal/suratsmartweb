@@ -4,7 +4,7 @@ import { useState, useMemo } from "react"
 import UserRolesForm from "./UserRolesForm"
 import { exportToExcel, exportToPdf, type ExportRow } from "@/lib/export/never-logged-in"
 
-const ALL_ROLES = ["PEGAWAI", "APPROVER", "ADMIN_KEPEGAWAIAN", "SUPERADMIN"] as const
+const ALL_ROLES = ["PEGAWAI", "APPROVER", "KEPALA_UNIT", "ADMIN_UNIT", "ADMIN_KEPEGAWAIAN", "SUPERADMIN"] as const
 
 const ROLE_LABELS: Record<string, string> = {
   PEGAWAI: "Pegawai",
@@ -26,6 +26,7 @@ interface User {
   id: string
   roles: string[]
   username: string | null
+  managedWorkUnitId: string | null
   employee: {
     fullName: string
     nip: string
@@ -33,6 +34,8 @@ interface User {
     unit: { name: string } | null
   }
 }
+
+interface WorkUnit { id: string; name: string }
 
 interface NeverLoggedIn {
   id: string
@@ -47,9 +50,10 @@ interface Props {
   users: User[]
   neverLoggedIn: NeverLoggedIn[]
   isSuperadmin: boolean
+  workUnits: WorkUnit[]
 }
 
-export default function UsersClient({ users, neverLoggedIn, isSuperadmin }: Props) {
+export default function UsersClient({ users, neverLoggedIn, isSuperadmin, workUnits }: Props) {
   const [tab, setTab] = useState<"registered" | "never">("registered")
   const [query, setQuery] = useState("")
   const [filterRole, setFilterRole] = useState("ALL")
@@ -163,7 +167,7 @@ export default function UsersClient({ users, neverLoggedIn, isSuperadmin }: Prop
               )}
             </div>
             <div className="flex items-center gap-1.5 flex-wrap">
-              {["ALL", ...ALL_ROLES].map((role) => (
+              {(["ALL", ...ALL_ROLES] as string[]).map((role) => (
                 <button
                   key={role}
                   onClick={() => setFilterRole(role)}
@@ -221,7 +225,9 @@ export default function UsersClient({ users, neverLoggedIn, isSuperadmin }: Prop
                       <UserRolesForm
                         userId={user.id}
                         currentRoles={user.roles}
+                        currentManagedUnitId={user.managedWorkUnitId}
                         allRoles={isSuperadmin ? ALL_ROLES : ALL_ROLES.filter((r) => r !== "SUPERADMIN")}
+                        workUnits={workUnits}
                       />
                     ) : (
                       <span className="text-xs text-gray-400 dark:text-slate-500 mt-1">Hanya SUPERADMIN yang bisa mengubah</span>

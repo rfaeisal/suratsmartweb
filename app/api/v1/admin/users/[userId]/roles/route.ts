@@ -8,8 +8,9 @@ import type { AppRole } from "@prisma/client"
 
 const updateRolesSchema = z.object({
   roles: z
-    .array(z.enum(["PEGAWAI", "APPROVER", "ADMIN_KEPEGAWAIAN", "SUPERADMIN"]))
+    .array(z.enum(["PEGAWAI", "APPROVER", "KEPALA_UNIT", "ADMIN_UNIT", "ADMIN_KEPEGAWAIAN", "SUPERADMIN"]))
     .min(1, "Minimal 1 role harus dipilih"),
+  managed_work_unit_id: z.string().nullable().optional(),
 })
 
 type Props = { params: Promise<{ userId: string }> }
@@ -28,6 +29,7 @@ export async function GET(_req: NextRequest, { params }: Props) {
     select: {
       id: true,
       roles: true,
+      managedWorkUnitId: true,
       employee: { select: { fullName: true, nip: true } },
     },
   })
@@ -67,7 +69,6 @@ export async function PUT(req: NextRequest, { params }: Props) {
   if (isSuperadminTarget && !actorIsSuperadmin) {
     return Errors.forbidden()
   }
-  // Jika akan memberi role SUPERADMIN, harus SUPERADMIN
   if (parsed.data.roles.includes("SUPERADMIN") && !actorIsSuperadmin) {
     return Errors.forbidden()
   }
@@ -77,12 +78,36 @@ export async function PUT(req: NextRequest, { params }: Props) {
     ? parsed.data.roles
     : (["PEGAWAI", ...parsed.data.roles] as AppRole[])
 
+  // managedWorkUnitId: wajib diisi jika KEPALA_UNIT atau ADMIN_UNIT, null jika tidak
+  const needsUnit = finalRoles.includes("KEPALA_UNIT") || finalRoles.includes("ADMIN_UNIT")
+  const newManagedUnitId = parsed.data.managed_work_unit_id ?? null
+
+  if (needsUnit && !newManagedUnitId) {
+    return Errors.validation("Unit yang dikelola wajib dipilih untuk role Kepala Unit / Admin Unit")
+  }
+
+  // Cek konflik: managedWorkUnitId harus UNIQUE — pastikan tidak ada user lain yang sudah memegang unit ini
+  // kecuali user yang sedang diedit
+  if (newManagedUnitId) {
+    const conflict = await prisma.appUser.findFirst({
+      where: { managedWorkUnitId: newManagedUnitId, id: { not: id } },
+      select: { id: true },
+    })
+    if (conflict) {
+      return Errors.conflict("Unit tersebut sudah dipegang oleh pengguna lain")
+    }
+  }
+
   const updatedUser = await prisma.appUser.update({
     where: { id },
-    data: { roles: finalRoles as AppRole[] },
+    data: {
+      roles: finalRoles as AppRole[],
+      managedWorkUnitId: needsUnit ? newManagedUnitId : null,
+    },
     select: {
       id: true,
       roles: true,
+      managedWorkUnitId: true,
       employee: { select: { fullName: true, nip: true } },
     },
   })
@@ -92,7 +117,11 @@ export async function PUT(req: NextRequest, { params }: Props) {
     action: "UPDATE_USER_ROLES",
     entityType: "AppUser",
     entityId: id,
-    metadata: { oldRoles: targetUser.roles, newRoles: parsed.data.roles },
+    metadata: {
+      oldRoles: targetUser.roles,
+      newRoles: finalRoles,
+      managedWorkUnitId: newManagedUnitId,
+    },
   })
 
   return NextResponse.json(updatedUser)

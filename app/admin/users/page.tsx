@@ -12,12 +12,13 @@ export default async function AdminUsersPage() {
 
   const isSuperadmin = session.user.roles.includes("SUPERADMIN")
 
-  const [users, neverLoggedIn] = await Promise.all([
+  const [users, neverLoggedIn, workUnits] = await Promise.all([
     prisma.appUser.findMany({
       select: {
         id: true,
         roles: true,
         username: true,
+        managedWorkUnitId: true,
         employee: { select: { fullName: true, nip: true, positionTitle: true, unit: { select: { name: true } } } },
       },
       orderBy: { employee: { fullName: "asc" } },
@@ -36,6 +37,10 @@ export default async function AdminUsersPage() {
     }).then((rows) =>
       rows.map((e) => ({ ...e, employeeType: e.employeeType as string }))
     ),
+    prisma.workUnit.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
   ])
 
   return (
@@ -44,7 +49,7 @@ export default async function AdminUsersPage() {
       <p className="text-sm text-gray-500 dark:text-slate-400 mb-6">
         Kelola role pengguna dan pantau pegawai yang belum pernah login.
       </p>
-      <UsersClient users={users} neverLoggedIn={neverLoggedIn} isSuperadmin={isSuperadmin} />
+      <UsersClient users={users} neverLoggedIn={neverLoggedIn} isSuperadmin={isSuperadmin} workUnits={workUnits} />
     </div>
   )
 }
