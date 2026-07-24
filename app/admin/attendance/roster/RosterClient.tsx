@@ -70,9 +70,10 @@ export default function RosterClient({ units, shifts, lockedUnitId, userRole }: 
     return true
   }
 
-  // Hanya tampilkan shift yang terdaftar untuk unit yang sedang dipilih
+  // Shift tanpa assignment unit (workUnitIds kosong) = berlaku untuk semua unit
+  // Shift dengan assignment unit = hanya tampil untuk unit yang terdaftar
   const paletteShifts = selectedUnit
-    ? shifts.filter((s) => s.workUnitIds.includes(selectedUnit))
+    ? shifts.filter((s) => s.workUnitIds.length === 0 || s.workUnitIds.includes(selectedUnit))
     : shifts
 
   const shiftColorMap = useCallback((shiftId: string) => {
