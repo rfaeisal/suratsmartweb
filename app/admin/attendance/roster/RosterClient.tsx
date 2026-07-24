@@ -238,7 +238,7 @@ export default function RosterClient({ units, shifts, lockedUnitId, userRole }: 
 
       {/* ── Filter ── */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 px-5 py-4 flex flex-wrap items-end gap-3">
-        <div className="flex flex-col gap-1 min-w-[200px] flex-1">
+        <div className="flex flex-col gap-1 w-56">
           <label className="text-xs font-medium text-gray-700 dark:text-slate-300">Unit Kerja</label>
           {lockedUnitId ? (
             <div className={`${inputClass} bg-gray-50 dark:bg-slate-900 text-gray-500 dark:text-slate-400`}>
