@@ -209,16 +209,18 @@ export default function RosterClient({ units, shifts, lockedUnitId, userRole }: 
     finally { setClearingEmp(null) }
   }
 
-  const days = period ? getDaysInMonth(period.year, period.month) : 0
+  const pYear = period?.year ?? year
+  const pMonth = period?.month ?? month
+  const days = period ? getDaysInMonth(pYear, pMonth) : 0
   const dayList = Array.from({ length: days }, (_, i) => i + 1)
 
   function getRosterForCell(empId: string, day: number) {
-    const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+    const dateStr = `${pYear}-${String(pMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`
     return rosters.find((r) => r.employee_id === empId && r.tanggal_kerja.startsWith(dateStr))
   }
 
   function getDayOfWeek(day: number) {
-    return new Date(year, month - 1, day).getDay()
+    return new Date(pYear, pMonth - 1, day).getDay()
   }
 
   const cellEditable = period ? canEditCell(period.status) : false
@@ -254,7 +256,7 @@ export default function RosterClient({ units, shifts, lockedUnitId, userRole }: 
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-gray-700 dark:text-slate-300">Tahun</label>
           <select value={year} onChange={(e) => setYear(Number(e.target.value))} className={inputClass}>
-            {[-1, 0, 1].map((d) => <option key={d} value={now.getFullYear() + d}>{now.getFullYear() + d}</option>)}
+            {Array.from({ length: 2030 - now.getFullYear() + 1 }, (_, i) => now.getFullYear() + i).map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
         <div className="flex flex-col gap-1">
@@ -475,7 +477,7 @@ export default function RosterClient({ units, shifts, lockedUnitId, userRole }: 
                       </div>
                     </td>
                     {dayList.map((d) => {
-                      const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`
+                      const dateStr = `${pYear}-${String(pMonth).padStart(2, "0")}-${String(d).padStart(2, "0")}`
                       const roster = getRosterForCell(emp.id, d)
                       const cellKey = `${emp.id}|${dateStr}`
                       const isSaving = savingCell === cellKey
