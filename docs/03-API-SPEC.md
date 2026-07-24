@@ -3,8 +3,8 @@
 Base path: `/api/v1`
 
 API ini dikonsumsi oleh dua klien:
-- **Flutter (mobile)** — via REST + Bearer token. Scope terbatas: pengajuan cuti, konfirmasi delegasi, approval, dan melihat progress pengajuan.
-- **Web admin panel** — via fetch internal (NextAuth session cookie). Scope penuh: seluruh fitur admin kepegawaian.
+- **Flutter (mobile)** — via REST + Bearer token. Scope: pengajuan cuti, konfirmasi delegasi, approval, absensi (scan QR), riwayat absensi, permintaan tukar shift, dan approval tukar shift (untuk KEPALA_UNIT).
+- **Web admin panel** — via fetch internal (NextAuth session cookie). Scope penuh: seluruh fitur admin kepegawaian, manajemen roster, lembur, laporan, dan semua fitur KEPALA_UNIT/ADMIN_UNIT.
 
 Setiap endpoint di bawah diberi label **`[Mobile]`** atau **`[Web]`** untuk memperjelas klien mana yang menggunakannya. Endpoint berlabel **`[Mobile]`** juga bisa dipanggil dari web (shared endpoint), sedangkan **`[Web]`** adalah eksklusif admin panel.
 
@@ -26,9 +26,9 @@ Hanya endpoint berikut yang perlu diimplementasikan di sisi Flutter:
 | Absensi | `POST /attendance` (scan QR), `GET /attendance/me` |
 | Roster | `GET /rosters?employee_id=` (lihat roster sendiri/rekan) |
 | Lembur | `GET /overtime`, `POST /overtime` |
-| Tukar shift | `GET /shift-swaps`, `POST /shift-swaps`, `POST /shift-swaps/:id/accept`, `POST /shift-swaps/:id/reject` |
+| Tukar shift | `GET /shift-swaps`, `POST /shift-swaps`, `POST /shift-swaps/:id/accept`, `POST /shift-swaps/:id/reject`, `POST /shift-swaps/:id/approve` *(KEPALA_UNIT)* |
 
-Semua endpoint admin (`/admin/*`) dan manajemen sesi/role adalah **web-only** dan tidak perlu diintegrasikan di Flutter.
+Semua endpoint admin (`/admin/*`), lembur, manajemen roster, dan manajemen sesi/role adalah **web-only** dan tidak perlu diintegrasikan di Flutter.
 
 ---
 
@@ -457,8 +457,21 @@ Generate token QR untuk pengujian absensi tanpa perangkat ESP32 fisik. Hanya ter
 
 ### Job Terjadwal
 
+> Semua job endpoint hanya bisa dipanggil dengan role `SUPERADMIN`. Dimaksudkan untuk dipanggil oleh cron job server, bukan dari Flutter.
+
 #### `POST /api/v1/jobs/mark-alpha`
-Tandai pegawai yang tidak absen sebagai Alpha (tidak hadir tanpa keterangan) untuk tanggal kemarin. Role: `SUPERADMIN`. Biasanya dipanggil oleh cron job harian setelah tengah malam. Response: `{ "marked": number, "date": "YYYY-MM-DD" }`.
+Tandai pegawai yang tidak absen sebagai Alpha untuk tanggal kemarin. Dipanggil cron harian setelah tengah malam.
+Body: `{ "days_back": 1 }` (opsional). Response: `{ "marked": number, "skipped": number }`.
+
+#### `POST /api/v1/jobs/leave-reminders`
+Kirim push notif pengingat cuti ke pegawai yang cuti-nya dimulai besok atau berakhir hari ini (status `APPROVED`).
+Dipanggil cron harian, disarankan pagi hari (mis. 06.00 WIB).
+Response: `{ "startingTomorrow": number, "endingToday": number }`.
+
+#### `POST /api/v1/jobs/attendance-reminders`
+Kirim push notif pengingat absen ke pegawai yang belum absen masuk atau belum absen pulang sesuai jadwal shift.
+Body: `{ "grace_minutes": 30 }` (opsional, default 30). Dipanggil cron setiap jam.
+Response: `{ "checkinNotified": number, "checkoutNotified": number }`.
 
 ### Absensi (Scan QR)
 
@@ -536,7 +549,7 @@ Status: `MENUNGGU_TARGET` → `MENUNGGU_KEPALA`.
 #### `POST /api/v1/shift-swaps/:id/reject` `[Mobile/Web]`
 Pegawai tujuan atau kepala unit tolak.
 
-#### `POST /api/v1/shift-swaps/:id/approve`
+#### `POST /api/v1/shift-swaps/:id/approve` `[Mobile]`
 Kepala unit setujui → tukar shift di roster dieksekusi. Role: `KEPALA_UNIT`.
 Status: `MENUNGGU_KEPALA` → `DISETUJUI`.
 
@@ -566,3 +579,151 @@ Response XLSX/PDF: file download.
 | `QR_REPLAYED` | 422 | Token QR sudah pernah dipakai (replay attack) |
 | `BEACON_TIDAK_TERDETEKSI` | 422 | BLE beacon tidak terdeteksi (pegawai tidak ada di lokasi) |
 | `NO_ROSTER` | 422 | Tidak ada roster aktif untuk pegawai di tanggal ini |
+
+---
+
+## 10. Push Notification (FCM) `[Mobile]`
+
+Semua notifikasi dikirim sebagai **FCM data-only message** (bukan notification message). Flutter bertanggung jawab menampilkan notifikasi dan melakukan routing berdasarkan field `type`.
+
+Token FCM didaftarkan via `POST /api/v1/devices/register-token` setelah login.
+
+### Struktur Umum
+
+Setiap pesan FCM memiliki field `type` sebagai discriminator utama, ditambah field spesifik per tipe.
+
+---
+
+### Tipe: `STATUS_CHANGE` — Perubahan status pengajuan cuti
+
+Dikirim ke **pegawai pengaju**.
+
+| Field | Nilai | Keterangan |
+|---|---|---|
+| `type` | `"STATUS_CHANGE"` | |
+| `newStatus` | `"APPROVED"` / `"REJECTED"` / `"RETURNED"` / `"DELEGATE_DECLINED"` / `"SEND_FAILED"` | |
+| `title` | string | Judul notifikasi |
+| `body` | string | Isi notifikasi |
+| `leaveRequestId` | string | ID pengajuan cuti |
+| `requestNumber` | string | Nomor pengajuan (mis. `CU/2026/001`) |
+
+**Skenario pengiriman:**
+- `APPROVED` — semua approver telah menyetujui (final)
+- `REJECTED` — salah satu approver menolak
+- `RETURNED` — pengajuan dikembalikan untuk revisi
+- `DELEGATE_DECLINED` — pegawai pengganti menolak konfirmasi delegasi
+
+---
+
+### Tipe: `DELEGATE_REQUEST` — Permintaan konfirmasi delegasi
+
+Dikirim ke **pegawai yang ditunjuk sebagai pengganti**.
+
+| Field | Nilai | Keterangan |
+|---|---|---|
+| `type` | `"DELEGATE_REQUEST"` | |
+| `title` | string | |
+| `body` | string | |
+| `leaveRequestId` | string | |
+| `requestNumber` | string | |
+| `requesterName` | string | Nama pegawai pengaju |
+| `leaveType` | string | Nama jenis cuti |
+| `startDate` | string | Tanggal mulai cuti |
+| `endDate` | string | Tanggal selesai cuti |
+
+**Aksi mobile:** tampilkan form konfirmasi → `POST /delegate-confirmations/:id/decision`
+
+---
+
+### Tipe: `APPROVAL_NEEDED` — Pengajuan cuti menunggu persetujuan
+
+Dikirim ke **approver** yang mendapat giliran menyetujui.
+
+| Field | Nilai | Keterangan |
+|---|---|---|
+| `type` | `"APPROVAL_NEEDED"` | |
+| `title` | string | |
+| `body` | string | |
+| `leaveRequestId` | string | |
+| `requestNumber` | string | |
+| `requesterName` | string | |
+
+**Aksi mobile:** buka inbox approval → `GET /approvals/inbox`
+
+---
+
+### Tipe: `LEAVE_REMINDER` — Pengingat cuti
+
+Dikirim ke **pegawai pengaju** oleh job terjadwal harian.
+
+| Field | Nilai | Keterangan |
+|---|---|---|
+| `type` | `"LEAVE_REMINDER"` | |
+| `reminderType` | `"STARTING_TOMORROW"` / `"ENDING_TODAY"` | |
+| `title` | string | |
+| `body` | string | |
+| `leaveRequestId` | string | |
+| `requestNumber` | string | |
+| `leaveType` | string | |
+| `startDate` | string | Tanggal mulai (format lokal id-ID) |
+| `endDate` | string | Tanggal selesai (format lokal id-ID) |
+
+**Aksi mobile:** notifikasi info saja, navigasi ke detail pengajuan.
+
+---
+
+### Tipe: `SHIFT_SWAP_ACTION` — Tukar shift memerlukan aksi
+
+Dikirim ke **pegawai tujuan** atau **Kepala Unit**.
+
+| Field | Nilai | Keterangan |
+|---|---|---|
+| `type` | `"SHIFT_SWAP_ACTION"` | |
+| `action` | `"RESPOND"` / `"APPROVE"` | `RESPOND` = untuk pegawai tujuan; `APPROVE` = untuk Kepala Unit |
+| `title` | string | |
+| `body` | string | |
+| `shiftSwapId` | string | ID permintaan tukar shift |
+| `requesterName` | string | Nama pemohon |
+| `targetName` | string | Nama tujuan *(hanya saat `action: APPROVE`)* |
+| `requesterShift` | string | Nama shift pemohon *(hanya saat `action: RESPOND`)* |
+| `requesterDate` | string | Tanggal kerja pemohon *(hanya saat `action: RESPOND`)* |
+| `targetShift` | string | Nama shift tujuan *(hanya saat `action: RESPOND`)* |
+| `targetDate` | string | Tanggal kerja tujuan *(hanya saat `action: RESPOND`)* |
+
+**Aksi mobile:**
+- `RESPOND` → tampilkan form terima/tolak → `POST /shift-swaps/:id/accept` atau `POST /shift-swaps/:id/reject`
+- `APPROVE` → tampilkan form setujui/tolak (Kepala Unit) → `POST /shift-swaps/:id/approve` atau `POST /shift-swaps/:id/reject`
+
+---
+
+### Tipe: `SHIFT_SWAP_RESULT` — Hasil tukar shift
+
+Dikirim ke **pemohon dan pegawai tujuan**.
+
+| Field | Nilai | Keterangan |
+|---|---|---|
+| `type` | `"SHIFT_SWAP_RESULT"` | |
+| `result` | `"APPROVED"` / `"REJECTED"` | |
+| `title` | string | |
+| `body` | string | |
+| `shiftSwapId` | string | |
+| `rejectedBy` | `"TARGET"` / `"KEPALA"` | Hanya ada saat `result: REJECTED` |
+
+**Aksi mobile:** notifikasi info saja, navigasi ke detail tukar shift.
+
+---
+
+### Tipe: `ATTENDANCE_REMINDER` — Pengingat absensi
+
+Dikirim ke **pegawai** oleh job terjadwal per jam.
+
+| Field | Nilai | Keterangan |
+|---|---|---|
+| `type` | `"ATTENDANCE_REMINDER"` | |
+| `reminderType` | `"CHECKIN"` / `"CHECKOUT"` | |
+| `title` | string | |
+| `body` | string | |
+| `shiftName` | string | Nama shift (mis. `"Pagi"`, `"Siang"`, `"Malam"`) |
+| `tanggalKerja` | string | Tanggal kerja (format lokal id-ID) |
+
+**Aksi mobile:** buka layar absen → `POST /attendance`.
