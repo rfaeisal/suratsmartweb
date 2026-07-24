@@ -9,6 +9,7 @@ export interface NavItem {
   href: string
   label: string
   iconName: string
+  badge?: number
 }
 
 export interface NavGroup {
@@ -57,8 +58,8 @@ const ICONS: Record<string, React.ReactNode> = {
   settings:   <Svg><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></Svg>,
 }
 
-function NavLink({ href, label, iconName, active, collapsed }: {
-  href: string; label: string; iconName: string; active: boolean; collapsed: boolean
+function NavLink({ href, label, iconName, badge, active, collapsed }: {
+  href: string; label: string; iconName: string; badge?: number; active: boolean; collapsed: boolean
 }) {
   const ref = useRef<HTMLAnchorElement>(null)
   const [tooltipTop, setTooltipTop] = useState<number | null>(null)
@@ -83,8 +84,18 @@ function NavLink({ href, label, iconName, active, collapsed }: {
             : "text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100"
         }`}
       >
-        <span className={active ? "text-blue-600 dark:text-blue-400" : ""}>{ICONS[iconName]}</span>
-        {!collapsed && <span className="text-sm overflow-hidden truncate">{label}</span>}
+        <span className={`relative ${active ? "text-blue-600 dark:text-blue-400" : ""}`}>
+          {ICONS[iconName]}
+          {collapsed && badge ? (
+            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500" />
+          ) : null}
+        </span>
+        {!collapsed && <span className="text-sm overflow-hidden truncate flex-1">{label}</span>}
+        {!collapsed && badge ? (
+          <span className="ml-auto shrink-0 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold bg-red-500 text-white">
+            {badge > 99 ? "99+" : badge}
+          </span>
+        ) : null}
       </Link>
       {collapsed && tooltipTop !== null && (
         <span
@@ -164,6 +175,7 @@ export function AdminSidebar({ navGroups, userName, userNip, userInitial, signOu
                   href={item.href}
                   label={item.label}
                   iconName={item.iconName}
+                  badge={item.badge}
                   active={isActive(item.href)}
                   collapsed={collapsed}
                 />
