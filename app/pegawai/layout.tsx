@@ -44,6 +44,7 @@ export default async function PegawaiLayout({ children }: { children: React.Reac
       label: `Inbox Approval${pendingApprovals > 0 ? ` (${pendingApprovals})` : ""}`,
       badge: pendingApprovals > 0,
     },
+    { href: "/pegawai/attendance",   label: "Kehadiran Saya", badge: false },
     { href: "/pegawai/overtime",     label: "Lembur", badge: false },
     {
       href: "/pegawai/shift-swaps",
