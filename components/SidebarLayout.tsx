@@ -57,10 +57,12 @@ export function SidebarLayout({
           <span className="font-semibold text-gray-900 dark:text-slate-100 text-sm">{title}</span>
         </div>
 
-        {/* Routes listed here skip the max-w-7xl wrapper and get a full-page flex container */}
+        {/* Roster page: full width (no max-w) with standard padding */}
         {pathname.startsWith("/admin/attendance/roster") ? (
-          <main className="flex-1 overflow-hidden flex flex-col min-h-0">
-            {children}
+          <main className="flex-1 overflow-auto">
+            <div className="px-4 md:px-6 py-4 md:py-6">
+              {children}
+            </div>
           </main>
         ) : (
           <main className="flex-1 overflow-auto">

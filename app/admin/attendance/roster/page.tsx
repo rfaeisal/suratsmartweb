@@ -56,7 +56,5 @@ export default async function RosterPage() {
     select: { id: true, nama: true, type: true, startTime: true, endTime: true },
   })
 
-  return (
-    <RosterClient units={units} shifts={shifts} lockedUnitId={lockedUnitId} userRole={userRole} />
-  )
+  return <RosterClient units={units} shifts={shifts} lockedUnitId={lockedUnitId} userRole={userRole} />
 }

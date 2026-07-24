@@ -59,3 +59,6 @@ pnpm dev
 ## Catatan untuk Claude Code
 - Jika ada ambiguitas requirement yang tidak terjawab di dokumen ini, tandai sebagai `// TODO: konfirmasi ke bagian kepegawaian` di kode, jangan menebak aturan bisnis (khususnya soal kuota/jenis cuti PNS/PPPK/BLUD — lihat catatan di `05-ALUR-KERJA-APPROVAL-DAN-CUTI.md` bagian 4).
 - Selalu jaga agar `03-API-SPEC.md` tetap jadi sumber kebenaran kontrak API — beri tahu pengguna bila perlu mengubahnya karena repo `cutismart-mobile` bergantung padanya.
+
+## Aturan Git — WAJIB DIPATUHI
+- **Jangan pernah `git push`** kecuali pengguna secara eksplisit memerintahkan. Commit lokal boleh dilakukan kapan saja atas perintah pengguna, tapi push ke remote hanya boleh dilakukan atas perintah langsung.

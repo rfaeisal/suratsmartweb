@@ -4,7 +4,10 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth, AuthError } from "@/lib/auth/require-auth"
 import { Errors } from "@/lib/errors"
 
-const bodySchema = z.object({ period_id: z.string().min(1) })
+const bodySchema = z.object({
+  period_id: z.string().min(1),
+  employee_id: z.string().optional(),
+})
 
 // Hari dalam seminggu JS: 0=Minggu, 1=Senin, …, 6=Sabtu
 // workDays: 1=Senin, …, 7=Minggu
@@ -47,7 +50,11 @@ export async function POST(req: NextRequest) {
   }
 
   const employees = await prisma.employee.findMany({
-    where: { unitId: period.workUnitId, isActive: true },
+    where: {
+      unitId: period.workUnitId,
+      isActive: true,
+      ...(parsed.data.employee_id ? { id: parsed.data.employee_id } : {}),
+    },
     select: { id: true },
   })
   if (employees.length === 0) {
