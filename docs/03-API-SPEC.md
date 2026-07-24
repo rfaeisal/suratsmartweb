@@ -19,10 +19,14 @@ Hanya endpoint berikut yang perlu diimplementasikan di sisi Flutter:
 | Auth | `POST /auth/login`, `POST /auth/refresh`, `GET /auth/me`, `POST /auth/logout` |
 | FCM & device | `POST /devices/register-token`, `DELETE /devices/register-token` |
 | Master data | `GET /leave-types`, `GET /units/:unitId/employees`, `GET /employees/search` |
-| Pengajuan | `POST /attachments`, `POST /leave-requests`, `GET /leave-requests`, `GET /leave-requests/:id` (termasuk skDocument) |
+| Pengajuan cuti | `POST /attachments`, `POST /leave-requests`, `GET /leave-requests`, `GET /leave-requests/:id` (termasuk skDocument) |
 | Konfirmasi delegasi | `GET /delegate-confirmations/inbox`, `POST /delegate-confirmations/:id/decision` |
 | Approval | `GET /approvals/inbox`, `POST /approvals/:stepId/decision` |
 | Profil | `POST /profile/avatar`, `DELETE /profile/avatar` |
+| Absensi | `POST /attendance` (scan QR), `GET /attendance/me` |
+| Roster | `GET /rosters?employee_id=` (lihat roster sendiri/rekan) |
+| Lembur | `GET /overtime`, `POST /overtime` |
+| Tukar shift | `GET /shift-swaps`, `POST /shift-swaps`, `POST /shift-swaps/:id/accept`, `POST /shift-swaps/:id/reject` |
 
 Semua endpoint admin (`/admin/*`) dan manajemen sesi/role adalah **web-only** dan tidak perlu diintegrasikan di Flutter.
 
@@ -66,7 +70,7 @@ Nilai yang valid untuk `employeeType`: `PNS`, `PPPK`, `PPPK_PARUH_WAKTU`, `BLUD`
 
 > **`unit` bisa `null`** — jika admin belum menetapkan unit kerja pegawai di CutiSmart. Flutter harus menangani nilai `null` pada field ini.
 
-> **`roles` adalah array** — satu user bisa punya lebih dari satu role (mis. `["PEGAWAI", "APPROVER"]`). Role `PEGAWAI` **selalu ada** di setiap akun — tidak bisa dihapus. Flutter harus menampilkan UI untuk **semua** role yang dimiliki secara bersamaan (mis. tab "Pengajuan Saya" dan tab "Inbox Approval" sekaligus).
+> **`roles` adalah array** — satu user bisa punya lebih dari satu role sekaligus. Role yang mungkin: `PEGAWAI`, `APPROVER`, `KEPALA_UNIT`, `ADMIN_UNIT`, `ADMIN_KEPEGAWAIAN`, `SUPERADMIN`. Role `PEGAWAI` **selalu ada** di setiap akun dan tidak bisa dihapus. Flutter harus menampilkan UI untuk **semua** role yang dimiliki (mis. tab "Pengajuan Saya" + tab "Inbox Approval" + tab "Lembur" sekaligus). Role `KEPALA_UNIT` dan `ADMIN_UNIT` mendapat akses ke fitur absensi unit yang dikelola.
 
 Response gagal — sesi lain masih aktif:
 ```json
@@ -409,14 +413,22 @@ Daftar periode roster. Query: `work_unit_id`, `year`, `month`.
 #### `POST /api/v1/roster-periods`
 Buat periode roster. Body: `{ "work_unit_id": "string", "year": number, "month": number }`.
 
+#### `POST /api/v1/roster-periods/:id/submit`
+`ADMIN_UNIT` mengajukan roster untuk disetujui kepala unit. Status: `DRAFT` → `PENDING_APPROVAL`.
+
+#### `POST /api/v1/roster-periods/:id/return`
+Kembalikan roster ke DRAFT (oleh `ADMIN_UNIT` untuk menarik pengajuan, atau `KEPALA_UNIT` untuk mengembalikan). Status: `PENDING_APPROVAL` → `DRAFT`.
+
 #### `POST /api/v1/roster-periods/:id/publish`
-Publikasikan roster (ubah DRAFT → PUBLISHED).
+Publikasikan roster. Role: `KEPALA_UNIT`, `ADMIN_KEPEGAWAIAN`, `SUPERADMIN`. Status: `DRAFT`/`PENDING_APPROVAL` → `PUBLISHED`.
 
 #### `POST /api/v1/roster-periods/:id/unpublish`
-Kembalikan ke DRAFT.
+Batalkan publikasi roster (kembalikan ke DRAFT). Role: `KEPALA_UNIT`, `ADMIN_KEPEGAWAIAN`, `SUPERADMIN`.
 
 #### `GET /api/v1/rosters`
-Daftar entri roster. Query: `period_id`, `employee_id`, `work_unit_id`.
+Daftar entri roster. Dua mode filter (salah satu wajib):
+- `period_id` — semua roster dalam periode (role: `KEPALA_UNIT`, `ADMIN_UNIT`, admin)
+- `employee_id` — roster mendatang milik pegawai tertentu; pemanggil harus satu unit dengan target (bisa dipakai pegawai biasa untuk lihat roster rekan saat ajukan tukar shift)
 
 #### `POST /api/v1/rosters`
 Tambah entri roster manual.
@@ -430,7 +442,23 @@ Ubah shift untuk entri roster tertentu. Body: `{ "shift_id": "string" }`.
 #### `DELETE /api/v1/rosters/:id`
 
 #### `POST /api/v1/rosters/generate`
-Auto-generate roster dari shift tetap untuk periode. Body: `{ "period_id": "string" }`.
+Auto-generate roster dari shift tetap untuk periode. Role: `KEPALA_UNIT`, `ADMIN_KEPEGAWAIAN`, `SUPERADMIN`.
+```json
+{ "period_id": "string", "employee_id": "string (opsional)" }
+```
+Jika `employee_id` disertakan, generate hanya untuk pegawai tersebut (jadwalnya harus kosong). Tanggal yang sudah terisi dilewati (`skipped`). Shift TETAP berlaku untuk semua unit tanpa perlu mapping.
+
+Response: `{ "created": number, "skipped": number, "period_id": "string" }`
+
+### Utility (Development)
+
+#### `GET /api/v1/dev/qr-token` *(dev-only, `LEGACY_SSO_MOCK=true`)*
+Generate token QR untuk pengujian absensi tanpa perangkat ESP32 fisik. Hanya tersedia saat environment variable `LEGACY_SSO_MOCK=true`. Response: `{ "token": "deviceId|counter|hmac", "device_id": "...", "expires_in": 30 }`.
+
+### Job Terjadwal
+
+#### `POST /api/v1/jobs/mark-alpha`
+Tandai pegawai yang tidak absen sebagai Alpha (tidak hadir tanpa keterangan) untuk tanggal kemarin. Role: `SUPERADMIN`. Biasanya dipanggil oleh cron job harian setelah tengah malam. Response: `{ "marked": number, "date": "YYYY-MM-DD" }`.
 
 ### Absensi (Scan QR)
 
@@ -458,7 +486,11 @@ Response 201:
 ```
 
 #### `GET /api/v1/attendance/me` `[Mobile]`
-Riwayat absensi pegawai sendiri. Query: `from`, `to` (YYYY-MM-DD).
+Riwayat absensi pegawai sendiri. Query: `from`, `to` (YYYY-MM-DD, wajib).
+Response: `{ "data": [AttendanceRecord], "summary": { "hadir": number, "alpha": number, "terlambat": number } }`
+
+#### `GET /api/v1/attendance` `[Web]`
+Daftar absensi semua pegawai (admin). Query: `work_unit_id`, `from`, `to`, `employee_id`, `status`.
 
 ### Lembur
 
