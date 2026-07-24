@@ -53,7 +53,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       items: [
         ...(isAdmin || isKepalaUnit || isAdminUnit ? [{ href: "/admin/attendance/reports", label: "Rekap Absensi",  iconName: "attendance" }] : []),
         ...(isAdmin || isKepalaUnit || isAdminUnit ? [{ href: "/admin/attendance/roster",  label: "Roster Pegawai", iconName: "roster" }] : []),
-        ...(isAdmin || isKepalaUnit               ? [{ href: "/admin/attendance/overtime", label: "Lembur Pegawai", iconName: "overtime" }] : []),
+        ...(isAdmin || isKepalaUnit               ? [{ href: "/admin/attendance/overtime",    label: "Lembur Pegawai", iconName: "overtime" }] : []),
+        ...(isAdmin || isKepalaUnit               ? [{ href: "/admin/attendance/shift-swaps", label: "Tukar Shift",    iconName: "swap"    }] : []),
       ],
     },
     ...(isSuperAdmin ? [{
