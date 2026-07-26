@@ -86,18 +86,6 @@ export async function PUT(req: NextRequest, { params }: Props) {
     return Errors.validation("Unit yang dikelola wajib dipilih untuk role Kepala Unit / Admin Unit")
   }
 
-  // Cek konflik: managedWorkUnitId harus UNIQUE — pastikan tidak ada user lain yang sudah memegang unit ini
-  // kecuali user yang sedang diedit
-  if (newManagedUnitId) {
-    const conflict = await prisma.appUser.findFirst({
-      where: { managedWorkUnitId: newManagedUnitId, id: { not: id } },
-      select: { id: true },
-    })
-    if (conflict) {
-      return Errors.conflict("Unit tersebut sudah dipegang oleh pengguna lain")
-    }
-  }
-
   const updatedUser = await prisma.appUser.update({
     where: { id },
     data: {

@@ -75,7 +75,7 @@ model WorkUnit {
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
-  managedBy     AppUser?       @relation("ManagedUnit")
+  managedBy     AppUser[]      @relation("ManagedUnit")
   rooms         Room[]
   shiftUnits    ShiftUnit[]
   rosterPeriods RosterPeriod[]
@@ -245,7 +245,7 @@ model AppUser {
   employee          Employee  @relation(fields: [employeeId], references: [id])
   username          String?   @unique
   roles             AppRole[]
-  managedWorkUnitId String?   @unique
+  managedWorkUnitId String?
   managedWorkUnit   WorkUnit? @relation("ManagedUnit", fields: [managedWorkUnitId], references: [id])
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
