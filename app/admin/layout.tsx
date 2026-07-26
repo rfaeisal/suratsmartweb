@@ -108,6 +108,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         { href: "/admin/settings",   label: "Pengaturan Sistem",  iconName: "settings" },
       ],
     }] : []),
+    ...(process.env.LEGACY_SSO_MOCK === "true" ? [{
+      group: "Dev Tools",
+      items: [
+        { href: "/dev/attendance-qr", label: "QR Absensi (Mock)", iconName: "device" },
+      ],
+    }] : []),
   ].filter((g) => g.items.length > 0)
 
   const sidebar = (

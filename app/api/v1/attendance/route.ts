@@ -134,8 +134,9 @@ export async function POST(req: NextRequest) {
     return Errors.qrInvalid()
   }
 
-  // Beacon wajib terdeteksi (anti-relay)
-  if (!beacon.detected) return Errors.beaconTidakTerdeteksi()
+  // Beacon wajib terdeteksi (anti-relay) — dilewati di dev mode
+  const devMode = process.env.LEGACY_SSO_MOCK === "true"
+  if (!beacon.detected && !devMode) return Errors.beaconTidakTerdeteksi()
 
   // Tentukan tanggal_kerja + lookup roster
   const now = new Date()

@@ -7,6 +7,7 @@
  */
 import { PrismaClient } from "@prisma/client"
 import { PrismaPg } from "@prisma/adapter-pg"
+import { encryptSecret, generateDeviceSecret } from "../lib/device-crypto"
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL!,
@@ -289,6 +290,39 @@ async function main() {
       update: {},
     })
     console.log("✓ AppSetting:", s.key)
+  }
+
+  // ─── Mock device untuk dev/testing (hanya jika DEVICE_SECRET_KEY tersedia) ──
+  if (process.env.DEVICE_SECRET_KEY) {
+    const mockRoom = await prisma.room.upsert({
+      where: { kode: "MOCK-R01" },
+      create: { id: "ROOM-MOCK-01", nama: "Ruang Mock Dev", kode: "MOCK-R01", workUnitId: "U01" },
+      update: { nama: "Ruang Mock Dev" },
+    })
+
+    const mockDeviceId = "DEV-MOCK-001"
+    const existingDevice = await prisma.device.findUnique({ where: { deviceId: mockDeviceId } })
+    const rawSecret = existingDevice
+      ? null  // jangan re-generate agar token tetap valid
+      : generateDeviceSecret()
+
+    await prisma.device.upsert({
+      where: { deviceId: mockDeviceId },
+      create: {
+        deviceId: mockDeviceId,
+        nama: "Perangkat Mock (Dev Only)",
+        secretHash: encryptSecret(rawSecret!),
+        ibeaconUuid: "00000000-0000-0000-0000-000000000000",
+        ibeaconMajor: 0,
+        ibeaconMinor: 1,
+        roomId: mockRoom.id,
+        status: "ACTIVE",
+      },
+      update: { roomId: mockRoom.id, status: "ACTIVE" },
+    })
+    console.log("✓ Mock device: DEV-MOCK-001 (Ruang Mock Dev, U01)")
+  } else {
+    console.log("⚠ DEVICE_SECRET_KEY tidak diset — mock device dilewati")
   }
 
   console.log("\n✅ Seed selesai!")
