@@ -302,16 +302,15 @@ async function main() {
 
     const mockDeviceId = "DEV-MOCK-001"
     const existingDevice = await prisma.device.findUnique({ where: { deviceId: mockDeviceId } })
-    const rawSecret = existingDevice
-      ? null  // jangan re-generate agar token tetap valid
-      : generateDeviceSecret()
+    // Selalu generate secret untuk block create; jika device sudah ada, block create tidak dijalankan
+    const rawSecret = generateDeviceSecret()
 
     await prisma.device.upsert({
       where: { deviceId: mockDeviceId },
       create: {
         deviceId: mockDeviceId,
         nama: "Perangkat Mock (Dev Only)",
-        secretHash: encryptSecret(rawSecret!),
+        secretHash: encryptSecret(rawSecret),
         ibeaconUuid: "00000000-0000-0000-0000-000000000000",
         ibeaconMajor: 0,
         ibeaconMinor: 1,
