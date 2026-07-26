@@ -53,9 +53,9 @@ async function main() {
         code === "messaging/invalid-registration-token" ||
         code === "messaging/registration-token-not-registered"
       ) {
-        console.log(`   ⚠ ${t.deviceId.slice(0, 16)}... → token tidak valid (sudah kedaluwarsa)`)
+        console.log(`   ⚠ ${(t.deviceId ?? "unknown").slice(0, 16)}... → token tidak valid (sudah kedaluwarsa)`)
       } else {
-        console.log(`   ❌ ${t.deviceId.slice(0, 16)}... → gagal:`, code ?? err)
+        console.log(`   ❌ ${(t.deviceId ?? "unknown").slice(0, 16)}... → gagal:`, code ?? err)
       }
     }
   }
