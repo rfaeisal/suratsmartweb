@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 
 type State = "loading" | "ready" | "refreshing" | "error"
 
@@ -11,9 +11,14 @@ export default function DevAttendanceQrPage() {
   const [state, setState]           = useState<State>("loading")
   const [imgSrc, setImgSrc]         = useState<string>("")
   const [deviceId, setDeviceId]     = useState("DEV-MOCK-001")
+  const [lastScanned, setLastScanned] = useState<string | null>(null)
   const timerRef                    = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const deviceIdRef                 = useRef(deviceId)
+  const lastAttendanceIdRef         = useRef<string | null>(null)
 
-  async function fetchQr(id = deviceId, isRefresh = false) {
+  useEffect(() => { deviceIdRef.current = deviceId }, [deviceId])
+
+  const fetchQr = useCallback(async (id: string, isRefresh = false) => {
     setState(isRefresh ? "refreshing" : "loading")
     try {
       const res = await fetch(`/api/v1/dev/qr-image?device_id=${encodeURIComponent(id)}`, { cache: "no-store" })
@@ -27,16 +32,40 @@ export default function DevAttendanceQrPage() {
       setExpiresIn(exp)
       setInterval_(itv)
       setState("ready")
-      // auto-refresh saat token expire
       if (timerRef.current) clearTimeout(timerRef.current)
-      timerRef.current = setTimeout(() => fetchQr(id, true), exp * 1000 + 200)
+      timerRef.current = setTimeout(() => fetchQr(deviceIdRef.current, true), exp * 1000 + 200)
     } catch {
       setState("error")
     }
-  }
+  }, [])
+
+  // Poll log absensi — refresh QR segera saat ada scan baru masuk
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const res = await fetch("/api/v1/dev/attendance-log?limit=1", { cache: "no-store" })
+        if (!res.ok) return
+        const json = await res.json()
+        const latest = json.data?.[0]
+        if (!latest) return
+        if (lastAttendanceIdRef.current === null) {
+          lastAttendanceIdRef.current = latest.id
+          return
+        }
+        if (latest.id !== lastAttendanceIdRef.current) {
+          lastAttendanceIdRef.current = latest.id
+          setLastScanned(`${latest.fullName} — ${latest.eventType} — ${new Date(latest.recordedAt).toLocaleTimeString("id-ID", { timeZone: "Asia/Jakarta" })}`)
+          if (timerRef.current) clearTimeout(timerRef.current)
+          fetchQr(deviceIdRef.current, true)
+        }
+      } catch { /* silent */ }
+    }
+    const id = setInterval(poll, 2000)
+    return () => clearInterval(id)
+  }, [fetchQr])
 
   useEffect(() => {
-    fetchQr()
+    fetchQr(deviceId)
     return () => { if (timerRef.current) clearTimeout(timerRef.current) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -117,6 +146,13 @@ export default function DevAttendanceQrPage() {
           </div>
         </div>
       ) : null}
+
+      {/* Notifikasi scan terakhir */}
+      {lastScanned && (
+        <div style={{ background: "#052e16", border: "1px solid #16a34a", borderRadius: "8px", padding: "0.6rem 1rem", maxWidth: "360px", width: "100%", fontSize: "0.75rem", color: "#4ade80" }}>
+          ✓ Scan berhasil: {lastScanned}
+        </div>
+      )}
 
       {/* Token text */}
       {token && (
