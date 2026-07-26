@@ -162,15 +162,15 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  if (!roster) return Errors.noRoster()
-  const tanggalKerja = roster.tanggalKerja
+  // Tidak ada roster tetap direkam — handle tukar shift yang belum disetujui
+  const tanggalKerja = roster?.tanggalKerja ?? calendarDateWib
 
-  // Hitung telat (hanya untuk event masuk)
   const settings = await getAttendanceSettings()
   let telat = false
   const flags: string[] = []
+  if (!roster) flags.push("no_roster")
 
-  if (event_type === "masuk") {
+  if (event_type === "masuk" && roster) {
     const shiftStart = shiftStartUtc(tanggalKerja, roster.shift.startTime)
     const threshold = new Date(shiftStart.getTime() + settings.toleransiTelatMenit * 60_000)
     if (now > threshold) {
@@ -180,6 +180,14 @@ export async function POST(req: NextRequest) {
   }
 
   const { device } = qrResult
+
+  // Di dev mode tanpa roster, fallback workUnitId dari data employee
+  let workUnitId = device.workUnitId
+  if (!workUnitId && !roster) {
+    const emp = await prisma.employee.findUnique({ where: { id: employeeId }, select: { unitId: true } })
+    workUnitId = emp?.unitId ?? null
+  }
+
   const attendance = await prisma.$transaction(async (tx) => {
     await tx.qrUsage.create({
       data: { deviceId: device.id, employeeId, counter: qrResult.counter },
@@ -192,9 +200,9 @@ export async function POST(req: NextRequest) {
         tanggalKerja,
         deviceId: device.id,
         roomId: device.roomId,
-        workUnitId: device.workUnitId,
+        workUnitId,
         counter: qrResult.counter,
-        beaconDetected: true,
+        beaconDetected: beacon.detected,
         status: "VALID",
         telat,
         flags,
