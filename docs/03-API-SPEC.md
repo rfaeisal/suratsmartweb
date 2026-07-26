@@ -452,8 +452,30 @@ Response: `{ "created": number, "skipped": number, "period_id": "string" }`
 
 ### Utility (Development)
 
-#### `GET /api/v1/dev/qr-token` *(dev-only, `LEGACY_SSO_MOCK=true`)*
-Generate token QR untuk pengujian absensi tanpa perangkat ESP32 fisik. Hanya tersedia saat environment variable `LEGACY_SSO_MOCK=true`. Response: `{ "token": "deviceId|counter|hmac", "device_id": "...", "expires_in": 30 }`.
+> Semua endpoint di bawah ini **hanya aktif saat `LEGACY_SSO_MOCK=true`**. Di production akan mengembalikan 404. Tidak memerlukan autentikasi.
+
+#### `GET /api/v1/dev/qr-token?device_id=DEV-MOCK-001`
+Generate token QR teks untuk pengujian tanpa perangkat ESP32 fisik.
+Response: `{ "token": "deviceId|counter|hmac", "counter": "string", "expires_in_sec": 30 }`
+
+#### `GET /api/v1/dev/qr-image?device_id=DEV-MOCK-001`
+Generate QR code sebagai gambar PNG siap-scan. Header response menyertakan:
+- `X-Token` — nilai token (sama seperti `qr-token`)
+- `X-Expires-In` — sisa detik sebelum token expire
+- `X-Interval` — interval rotasi token (detik)
+
+Dipakai oleh halaman dev tools `/dev/attendance-qr` untuk menampilkan QR visual.
+
+#### `GET /api/v1/dev/attendance-log?limit=50`
+Daftar record absensi terbaru (maks 200). Dipakai oleh halaman `/dev/attendance-log`.
+Response: `{ "data": [{ "id", "fullName", "nip", "eventType", "recordedAt", "tanggalKerja", "room", "status", "telat", "beaconDetected", "flags" }] }`
+
+**Halaman Dev Tools (web):**
+- `/dev/attendance-qr` — Tampilkan QR code visual, auto-refresh saat ada scan baru (~2 detik), notifikasi scan berhasil
+- `/dev/attendance-log` — Log absensi realtime, auto-refresh setiap 2 detik, highlight record baru
+
+**Mock device yang tersedia di seed:**
+- `DEV-MOCK-001` — Perangkat Mock Dev, Ruang Mock Dev, Unit Bagian Umum (U01)
 
 ### Job Terjadwal
 
@@ -497,6 +519,11 @@ Response 201:
   "flags": []
 }
 ```
+
+**Catatan perilaku:**
+- **Beacon**: Wajib `detected: true` di production. Di dev mode (`LEGACY_SSO_MOCK=true`), nilai ini diabaikan dan server menyimpan `beaconDetected: false`. Tim mobile sebaiknya kirim `detected: false` di dev mode.
+- **Roster**: Jika pegawai tidak punya roster hari itu (misal tukar shift belum disetujui), absensi tetap direkam dengan `tanggal_kerja` = tanggal kalender WIB dan flag `"no_roster"`. Kalkulasi keterlambatan tidak dilakukan.
+- **Flag `no_roster`**: Menandakan absensi masuk tanpa roster — perlu rekonsiliasi manual setelah tukar shift disetujui.
 
 #### `GET /api/v1/attendance/me` `[Mobile]`
 Riwayat absensi pegawai sendiri. Query: `from`, `to` (YYYY-MM-DD, wajib).
