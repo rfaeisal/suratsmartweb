@@ -16,14 +16,14 @@ export async function POST(req: NextRequest) {
     return Errors.internal()
   }
 
-  await prisma.userSession.update({
+  const session = await prisma.userSession.update({
     where: { id: user.sessionId },
     data: { status: "REVOKED", revokedAt: new Date(), revokedBy: "SELF" },
   })
 
-  // Hapus FCM token yang terkait (opsional: perlu deviceId untuk hapus spesifik)
-  // Untuk sekarang hapus semua token FCM milik user ini di session yang di-revoke
-  // TODO: filter berdasarkan deviceId ketika FCM token menyimpan deviceId
+  await prisma.fcmToken.deleteMany({
+    where: { userId: user.userId, deviceId: session.deviceId },
+  })
 
   await writeAuditLog({
     actorId: user.userId,

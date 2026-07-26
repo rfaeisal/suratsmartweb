@@ -30,13 +30,17 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     return Errors.conflict("Sesi sudah dalam status REVOKED")
   }
 
-  await prisma.userSession.update({
+  const revokedSession = await prisma.userSession.update({
     where: { id: sessionId },
     data: {
       status: "REVOKED",
       revokedAt: new Date(),
       revokedBy: adminUser.userId,
     },
+  })
+
+  await prisma.fcmToken.deleteMany({
+    where: { userId, deviceId: revokedSession.deviceId },
   })
 
   await writeAuditLog({
