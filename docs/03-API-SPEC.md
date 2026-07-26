@@ -215,8 +215,10 @@ Body: `{ "fcmToken": "string", "deviceId": "string" }`
 Response: `{ "message": "Token registered" }`
 
 ### `DELETE /api/v1/devices/register-token` `[Mobile]`
-Hapus token FCM device. Dipanggil saat logout manual.
+Hapus token FCM device secara eksplisit.
 Body: `{ "deviceId": "string" }`
+
+> **Catatan:** `POST /auth/logout` sudah otomatis menghapus token FCM device terkait — endpoint ini hanya diperlukan bila app ingin berhenti menerima notifikasi tanpa melakukan logout (kasus tidak umum).
 
 ### `POST /api/v1/profile/avatar` (multipart/form-data) `[Mobile]`
 Upload atau ganti foto profil pegawai. File: JPG/PNG, maks 2 MB.
@@ -321,7 +323,7 @@ Mengubah roles user (replace semua). Body: `{ "roles": ["PEGAWAI", "APPROVER"] }
 Melihat sesi aktif milik pegawai, termasuk `deviceLabel` dan `lastActiveAt`.
 
 #### `POST /api/v1/admin/users/:userId/sessions/:sessionId/revoke`
-Paksa sign-out sesi (`status → REVOKED`). Dipakai saat pegawai kehilangan device atau perlu login di device baru.
+Paksa sign-out sesi (`status → REVOKED`) **dan hapus token FCM device terkait**. Dipakai saat pegawai kehilangan device atau perlu login di device baru. Setelah revoke, device tersebut tidak akan menerima push notification sampai user login ulang dan register token FCM baru.
 
 ---
 
@@ -762,3 +764,35 @@ Dikirim ke **pegawai** oleh job terjadwal per jam.
 | `tanggalKerja` | string | Tanggal kerja (format lokal id-ID) |
 
 **Aksi mobile:** buka layar absen → `POST /attendance`.
+
+---
+
+### Siklus Hidup Token FCM
+
+| Kejadian | Token FCM |
+|---|---|
+| Login + `POST /devices/register-token` | Dibuat / diperbarui (upsert berdasarkan `deviceId`) |
+| `POST /auth/logout` | **Dihapus otomatis** (berdasarkan `deviceId` session) |
+| Admin force-revoke session | **Dihapus otomatis** (berdasarkan `deviceId` session) |
+| Firebase `onTokenRefresh` (Flutter) | Diperbarui via `POST /devices/register-token` |
+| Token tidak valid saat kirim (FCM error) | Dihapus otomatis oleh server saat pengiriman gagal |
+
+> Token FCM hanya ada selama sesi aktif. Setelah logout atau force-revoke, device tidak menerima notifikasi sampai user login ulang dan memanggil `POST /devices/register-token`.
+
+---
+
+### Kirim Notifikasi Test dari Server (Development/Ops)
+
+Untuk mengirim FCM test langsung dari container production tanpa melalui alur bisnis:
+
+```bash
+# Masuk ke container (ganti nama container sesuai output `docker ps`)
+docker exec -it <nama-container> sh
+
+# Kirim ke semua token FCM yang terdaftar di DB
+node_modules/.bin/tsx prisma/test-notification.ts
+```
+
+Script ini membaca `DATABASE_URL` dan `FIREBASE_SERVICE_ACCOUNT_JSON` dari environment container, lalu mengirim pesan test ke **semua** `FcmToken` yang ada. Output menunjukkan status tiap token (✅ berhasil, ⚠ token kedaluwarsa, ❌ gagal).
+
+Token yang sudah tidak valid (`messaging/registration-token-not-registered`) **dihapus otomatis** dari DB saat script berjalan.

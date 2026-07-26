@@ -321,6 +321,8 @@ model AppSetting {
 
 > **Kebijakan sesi**: satu `AppUser` hanya boleh punya **satu `UserSession` berstatus `ACTIVE`** dalam satu waktu. Percobaan login baru saat sesi lain masih `ACTIVE` akan ditolak (bukan otomatis mencabut sesi lama) — pegawai harus minta admin kepegawaian mencabut (revoke) sesi lama, atau logout dulu dari device lama. Sesi tidak punya masa kedaluwarsa otomatis (tidak ada batas waktu) — hanya berakhir jika di-*revoke* (oleh pegawai sendiri lewat tombol logout, atau oleh admin kepegawaian).
 
+> **Siklus hidup `FcmToken`**: token FCM terikat ke `deviceId` (UNIQUE). Dibuat/diperbarui saat `POST /devices/register-token` dipanggil setelah login. **Dihapus otomatis** saat session di-revoke — baik oleh pegawai sendiri (`POST /auth/logout`) maupun oleh admin (`POST /admin/.../sessions/:id/revoke`). Token juga dihapus otomatis jika Firebase melaporkan token tidak valid saat pengiriman notifikasi. Dengan demikian, device yang tidak punya sesi aktif tidak akan pernah menerima push notification.
+
 ## 4. Catatan Desain Penting
 - **Data identitas pegawai** (`legacyId`, `nip`, `fullName`, `employeeType`, `isActive`) disinkron dari sistem lama saat login (SSO) dan via fitur sinkronisasi massal di admin panel. Field `unitId`, `positionTitle`, dan `directSupervisorId` **tidak diambil dari sistem lama** — dikelola manual oleh admin kepegawaian di CutiSmart.
 - **`AppUser.username`** diisi otomatis dari field `username` yang dikirim saat login SSO. Jika `username` berubah di sisi sistem lama, nilai di CutiSmart ikut diperbarui pada login berikutnya. Nilai `null` berarti pegawai belum pernah login ke CutiSmart sama sekali.
