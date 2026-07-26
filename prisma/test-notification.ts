@@ -4,7 +4,8 @@
  */
 import { PrismaClient } from "@prisma/client"
 import { PrismaPg } from "@prisma/adapter-pg"
-import * as admin from "firebase-admin"
+import { initializeApp, getApps, cert, type App } from "firebase-admin/app"
+import { getMessaging } from "firebase-admin/messaging"
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter })
@@ -16,18 +17,11 @@ async function main() {
     process.exit(1)
   }
 
-  // Init Firebase (skip jika sudah ada)
-  let app: admin.app.App
-  try {
-    app = admin.app("test-notif")
-  } catch {
-    app = admin.initializeApp(
-      { credential: admin.credential.cert(JSON.parse(serviceAccountJson)) },
-      "test-notif"
-    )
-  }
+  const existing = getApps()
+  const app: App = existing.length > 0
+    ? existing[0]
+    : initializeApp({ credential: cert(JSON.parse(serviceAccountJson)) })
 
-  // Ambil token terbaru
   const latest = await prisma.fcmToken.findFirst({
     orderBy: { createdAt: "desc" },
     select: { id: true, token: true, deviceId: true },
@@ -42,7 +36,7 @@ async function main() {
   console.log(`   Token: ${latest.token.slice(0, 30)}...`)
 
   try {
-    const msgId = await admin.messaging(app).send({
+    const msgId = await getMessaging(app).send({
       token: latest.token,
       data: {
         type: "STATUS_CHANGE",
