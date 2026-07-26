@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 
-type Record = {
+type AttendanceRecord = {
   id: string
   fullName: string
   nip: string
@@ -39,7 +39,7 @@ function toWib(iso: string) {
 }
 
 export default function AttendanceLogPage() {
-  const [records, setRecords]   = useState<Record[]>([])
+  const [records, setRecords]   = useState<AttendanceRecord[]>([])
   const [loading, setLoading]   = useState(true)
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
   const [newIds, setNewIds]     = useState<Set<string>>(new Set())
@@ -52,7 +52,7 @@ export default function AttendanceLogPage() {
       const json = await res.json()
       setRecords((prev) => {
         const prevIds = new Set(prev.map((r) => r.id))
-        const incoming: Record[] = json.data
+        const incoming: AttendanceRecord[] = json.data
         const fresh = incoming.filter((r) => !prevIds.has(r.id)).map((r) => r.id)
         if (fresh.length) {
           setNewIds(new Set(fresh))

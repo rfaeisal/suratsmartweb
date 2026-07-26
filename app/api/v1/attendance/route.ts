@@ -70,7 +70,6 @@ export async function GET(req: NextRequest) {
     where,
     include: {
       employee: { select: { nip: true, fullName: true } },
-      shift:    { select: { nama: true } },
       room:     { select: { nama: true } },
     },
     orderBy: [{ tanggalKerja: "desc" }, { recordedAt: "desc" }],
@@ -84,7 +83,7 @@ export async function GET(req: NextRequest) {
       nip:            r.employee.nip,
       nama:           r.employee.fullName,
       work_unit_id:   r.workUnitId,
-      shift:          r.shift?.nama ?? null,
+      shift:          null,
       room:           r.room?.nama ?? null,
       event_type:     r.eventType,
       recorded_at:    r.recordedAt.toISOString(),

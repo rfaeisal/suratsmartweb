@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
     margin: 2,
   })
 
-  return new NextResponse(pngBuffer, {
+  return new NextResponse(new Uint8Array(pngBuffer), {
     headers: {
       "Content-Type": "image/png",
       "Cache-Control": "no-store",
