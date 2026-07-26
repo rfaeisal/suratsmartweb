@@ -23,6 +23,8 @@ const WEAK_DEFAULTS = [
 
 export function validateEnv(): void {
   if (process.env.NODE_ENV !== "production") return
+  // Skip saat Next.js sedang build (env runtime belum tersedia di build phase)
+  if (process.env.NEXT_PHASE === "phase-production-build") return
 
   const required = [...REQUIRED_ALWAYS]
   if (process.env.LEGACY_SSO_MOCK !== "true") {
