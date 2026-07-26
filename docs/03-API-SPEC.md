@@ -96,6 +96,11 @@ Field `unit` bisa `null` jika admin belum menetapkan unit kerja. Jika sesi tidak
 ### `POST /api/v1/auth/logout` `[Mobile]`
 Revoke `UserSession` device yang sedang login (`revokedBy: "SELF"`) dan hapus FCM token device tersebut.
 
+> **Alur login yang benar (Flutter):**
+> 1. `POST /auth/login` → simpan `accessToken` + `refreshToken`
+> 2. **`POST /devices/register-token`** → kirim FCM token + `deviceId` *(langkah ini wajib; lihat Seksi 6)*
+> 3. `GET /auth/me` → load data user terbaru
+
 ### `POST /api/v1/auth/fcm-token` `[Mobile]` *(deprecated)*
 Body: `{ "token": "fcm_device_token" }` — daftarkan token FCM device. **Gunakan `/devices/register-token` untuk client baru** — endpoint ini dipertahankan untuk kompatibilitas mundur.
 
@@ -202,7 +207,10 @@ Efek:
 ## 6. Manajemen Device & Profil `[Mobile]`
 
 ### `POST /api/v1/devices/register-token` `[Mobile]`
-Daftarkan atau perbarui token FCM untuk device tertentu. Dipanggil setelah login atau saat token FCM berubah.
+Daftarkan atau perbarui token FCM untuk device tertentu.
+
+> **Wajib dipanggil segera setelah `POST /auth/login` berhasil** (dan setiap kali Firebase menghasilkan token baru via `onTokenRefresh`). Tanpa ini, tabel `FcmToken` kosong dan **tidak ada notifikasi push yang akan sampai ke device**, meski Firebase sudah dikonfigurasi dengan benar di server.
+
 Body: `{ "fcmToken": "string", "deviceId": "string" }`
 Response: `{ "message": "Token registered" }`
 
