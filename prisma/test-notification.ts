@@ -22,46 +22,44 @@ async function main() {
     ? existing[0]
     : initializeApp({ credential: cert(JSON.parse(serviceAccountJson)) })
 
-  const latest = await prisma.fcmToken.findFirst({
+  const tokens = await prisma.fcmToken.findMany({
     orderBy: { createdAt: "desc" },
     select: { id: true, token: true, deviceId: true },
   })
 
-  if (!latest) {
+  if (tokens.length === 0) {
     console.error("❌ Tidak ada FCM token di database")
     process.exit(1)
   }
 
-  console.log(`\n📱 Mengirim ke device: ${latest.deviceId}`)
-  console.log(`   Token: ${latest.token.slice(0, 30)}...`)
+  console.log(`\n📱 Mengirim ke ${tokens.length} token:`)
 
-  try {
-    const msgId = await getMessaging(app).send({
-      token: latest.token,
-      data: {
-        type: "STATUS_CHANGE",
-        newStatus: "APPROVED",
-        title: "Test Notifikasi CutiSmart",
-        body: "FCM push notification berhasil — sistem siap digunakan",
-        leaveRequestId: "test-001",
-        requestNumber: "TEST/2026/001",
-      },
-    })
-    console.log(`\n✅ Notifikasi berhasil terkirim!`)
-    console.log(`   Message ID: ${msgId}`)
-  } catch (err: unknown) {
-    const code = (err as { code?: string })?.code
-    if (
-      code === "messaging/invalid-registration-token" ||
-      code === "messaging/registration-token-not-registered"
-    ) {
-      console.error("❌ Token tidak valid atau sudah kedaluwarsa di Firebase")
-      console.error("   Minta tim mobile login ulang untuk memperbarui token")
-    } else {
-      console.error("❌ Gagal kirim:", err)
-    }
-    process.exit(1)
+  const data = {
+    type: "STATUS_CHANGE",
+    newStatus: "APPROVED",
+    title: "Test Notifikasi CutiSmart",
+    body: "FCM push notification berhasil — sistem siap digunakan",
+    leaveRequestId: "test-001",
+    requestNumber: "TEST/2026/001",
   }
+
+  for (const t of tokens) {
+    try {
+      const msgId = await getMessaging(app).send({ token: t.token, data })
+      console.log(`   ✅ ${t.deviceId.slice(0, 16)}... → ${msgId.slice(-12)}`)
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code
+      if (
+        code === "messaging/invalid-registration-token" ||
+        code === "messaging/registration-token-not-registered"
+      ) {
+        console.log(`   ⚠ ${t.deviceId.slice(0, 16)}... → token tidak valid (sudah kedaluwarsa)`)
+      } else {
+        console.log(`   ❌ ${t.deviceId.slice(0, 16)}... → gagal:`, code ?? err)
+      }
+    }
+  }
+  console.log("\n✅ Selesai.")
 }
 
 main()
