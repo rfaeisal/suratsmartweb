@@ -46,7 +46,7 @@ async function main() {
   for (const t of tokens) {
     try {
       const msgId = await getMessaging(app).send({ token: t.token, data })
-      console.log(`   ✅ ${t.deviceId.slice(0, 16)}... → ${msgId.slice(-12)}`)
+      console.log(`   ✅ ${(t.deviceId ?? "unknown").slice(0, 16)}... → ${msgId.slice(-12)}`)
     } catch (err: unknown) {
       const code = (err as { code?: string })?.code
       if (
