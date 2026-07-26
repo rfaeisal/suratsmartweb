@@ -202,7 +202,7 @@ export async function POST(req: NextRequest) {
         roomId: device.roomId,
         workUnitId,
         counter: qrResult.counter,
-        beaconDetected: beacon.detected,
+        beaconDetected: devMode ? false : beacon.detected,
         status: "VALID",
         telat,
         flags,
