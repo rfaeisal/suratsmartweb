@@ -111,7 +111,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     ...(process.env.LEGACY_SSO_MOCK === "true" ? [{
       group: "Dev Tools",
       items: [
-        { href: "/dev/attendance-qr", label: "QR Absensi (Mock)", iconName: "device" },
+        { href: "/dev/attendance-qr",  label: "QR Absensi (Mock)", iconName: "device" },
+        { href: "/dev/attendance-log", label: "Log Absensi",        iconName: "attendance" },
       ],
     }] : []),
   ].filter((g) => g.items.length > 0)
