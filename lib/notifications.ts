@@ -173,7 +173,7 @@ export async function sendNotification(payload: NotifPayload): Promise<void> {
     await Promise.all(
       tokens.map(async ({ id, token }) => {
         try {
-          await messaging.send({ token, data: fcmData })
+          await messaging.send({ token, data: fcmData, android: { priority: "high" } })
         } catch (err: unknown) {
           const code = (err as { code?: string })?.code
           if (
