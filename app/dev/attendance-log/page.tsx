@@ -68,7 +68,7 @@ export default function AttendanceLogPage() {
 
   useEffect(() => {
     fetch_()
-    const id = setInterval(() => fetch_(true), 5000)
+    const id = setInterval(() => fetch_(true), 2000)
     return () => clearInterval(id)
   }, [fetch_])
 
@@ -89,7 +89,7 @@ export default function AttendanceLogPage() {
         <div>
           <div style={s.title}>Dev Tools — Log Absensi</div>
           <div style={s.sub}>
-            {lastRefresh ? `Refresh terakhir: ${lastRefresh.toLocaleTimeString("id-ID")} · auto setiap 5s` : "Memuat..."}
+            {lastRefresh ? `Refresh terakhir: ${lastRefresh.toLocaleTimeString("id-ID")} · auto setiap 2s` : "Memuat..."}
           </div>
         </div>
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
