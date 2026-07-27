@@ -410,12 +410,26 @@ Tambah unit ke shift. Body: `{ "work_unit_id": "string" }`.
 Hapus mapping unit dari shift.
 
 #### `GET /api/v1/public-holidays`
-Daftar libur nasional. Query: `year`.
+Daftar libur nasional dan cuti bersama. Query: `year` (opsional).
+Response item: `{ id, date: "YYYY-MM-DD", nama, jenis: "NASIONAL" | "CUTI_BERSAMA" }`.
 
 #### `POST /api/v1/public-holidays`
-Tambah libur nasional. Body: `{ "date": "YYYY-MM-DD", "nama": "string" }`.
+Tambah hari libur. Body: `{ "date": "YYYY-MM-DD", "nama": "string", "jenis"?: "NASIONAL" | "CUTI_BERSAMA" }`.
+`jenis` default `NASIONAL` jika tidak dikirim.
+
+#### `PATCH /api/v1/public-holidays/:id`
+Update hari libur. Body (semua opsional): `{ "date": "YYYY-MM-DD", "nama": "string", "jenis": "NASIONAL" | "CUTI_BERSAMA" }`.
 
 #### `DELETE /api/v1/public-holidays/:id`
+
+#### `GET /api/v1/public-holidays/sync`
+Preview hari libur dari sumber eksternal `https://libur.deno.dev/api?year=YYYY` yang **belum ada** di database. Role: `ADMIN_KEPEGAWAIAN`, `SUPERADMIN`.
+Query: `year` (wajib). Response: `{ year, items: [{ date, nama, jenis }] }`.
+
+#### `POST /api/v1/public-holidays/sync`
+Bulk import hari libur dari daftar yang dicentang admin di preview. Role: `ADMIN_KEPEGAWAIAN`, `SUPERADMIN`.
+Body: `{ "items": [{ "date": "YYYY-MM-DD", "nama": "string", "jenis": "NASIONAL" | "CUTI_BERSAMA" }, ...] }`.
+Idempotent: tanggal yang sudah ada di DB akan dilewati. Response: `{ inserted, skipped }`.
 
 #### `GET /api/v1/roster-periods`
 Daftar periode roster. Query: `work_unit_id`, `year`, `month`.
