@@ -21,6 +21,8 @@ interface Supervisor {
   positionTitle: string | null
 }
 
+type EmployeeSource = "MOCK" | "LEGACY" | "MANUAL"
+
 interface EmployeeRow {
   id: string
   legacyId: string
@@ -32,8 +34,21 @@ interface EmployeeRow {
   position: PositionInfo | null
   directSupervisorId: string | null
   isActive: boolean
+  source: EmployeeSource
   unit: { id: string; name: string } | null
   supervisor: Supervisor | null
+}
+
+const SOURCE_LABEL: Record<EmployeeSource, string> = {
+  MOCK: "Mock",
+  LEGACY: "Legacy",
+  MANUAL: "Manual",
+}
+
+const SOURCE_BADGE: Record<EmployeeSource, string> = {
+  MOCK: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800",
+  LEGACY: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800",
+  MANUAL: "bg-gray-50 text-gray-600 border-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600",
 }
 
 interface PageData {
@@ -255,6 +270,7 @@ export default function EmployeesPage() {
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Jabatan</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Atasan Langsung</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Tipe</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Sumber</th>
                     <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
@@ -312,6 +328,11 @@ export default function EmployeesPage() {
                             "bg-amber-50 text-amber-700 dark:bg-yellow-900/40 dark:text-yellow-300"
                           }`}>
                             {EMPLOYEE_TYPE_LABELS[emp.employeeType] ?? emp.employeeType}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${SOURCE_BADGE[emp.source]}`}>
+                            {SOURCE_LABEL[emp.source]}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right">

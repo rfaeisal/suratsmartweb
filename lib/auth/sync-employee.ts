@@ -10,6 +10,7 @@ export async function syncEmployeeFromLegacy(data: LegacyEmployee) {
       fullName: data.fullName,
       employeeType: data.employeeType,
       isActive: data.isActive,
+      source: "LEGACY",
     },
     update: {
       nip: data.nip,
