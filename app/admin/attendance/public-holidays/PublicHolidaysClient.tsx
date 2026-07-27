@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { Tooltip } from "@/components/Tooltip"
 
 type Jenis = "NASIONAL" | "CUTI_BERSAMA"
 
@@ -267,7 +268,7 @@ export default function PublicHolidaysClient({ initial }: Props) {
             onClick={openSync}
             className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-medium rounded-lg hover:bg-emerald-700"
           >
-            Sync dari libur.deno.dev
+            Sync Libur
           </button>
         </div>
         <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3">
@@ -363,20 +364,29 @@ export default function PublicHolidaysClient({ initial }: Props) {
                             <option value="CUTI_BERSAMA">Cuti Bersama</option>
                           </select>
                         </div>
-                        <button
-                          onClick={handleSaveEdit}
-                          disabled={editSaving}
-                          className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                        >
-                          {editSaving ? "Menyimpan…" : "Simpan"}
-                        </button>
-                        <button
-                          onClick={cancelEdit}
-                          disabled={editSaving}
-                          className="px-3 py-1.5 border border-gray-300 dark:border-slate-600 text-xs rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700"
-                        >
-                          Batal
-                        </button>
+                        <Tooltip label="Simpan">
+                          <button
+                            onClick={handleSaveEdit}
+                            disabled={editSaving}
+                            className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          </button>
+                        </Tooltip>
+                        <Tooltip label="Batal">
+                          <button
+                            onClick={cancelEdit}
+                            disabled={editSaving}
+                            className="p-1.5 rounded-lg text-gray-400 dark:text-slate-500 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="18" y1="6" x2="6" y2="18" />
+                              <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                          </button>
+                        </Tooltip>
                       </div>
                       {editError && <p className="text-xs text-red-600 dark:text-red-400 mt-2">{editError}</p>}
                     </div>
@@ -391,18 +401,33 @@ export default function PublicHolidaysClient({ initial }: Props) {
                         </div>
                         <p className="text-xs text-gray-500 dark:text-slate-400">{dateFmt.format(new Date(h.date))}</p>
                       </div>
-                      <button
-                        onClick={() => startEdit(h)}
-                        className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-slate-700 mr-1"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(h.id, h.nama)}
-                        className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-slate-700"
-                      >
-                        Hapus
-                      </button>
+                      <div className="flex gap-1 items-center">
+                        <Tooltip label="Edit">
+                          <button
+                            onClick={() => startEdit(h)}
+                            className="p-1.5 rounded-lg text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                          </button>
+                        </Tooltip>
+                        <Tooltip label="Hapus">
+                          <button
+                            onClick={() => handleDelete(h.id, h.nama)}
+                            className="p-1.5 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-slate-700 transition-colors"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                              <path d="M10 11v6" />
+                              <path d="M14 11v6" />
+                              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                            </svg>
+                          </button>
+                        </Tooltip>
+                      </div>
                     </div>
                   ),
                 )}
