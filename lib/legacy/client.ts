@@ -224,14 +224,27 @@ async function legacyFetch<T>(path: string, options?: RequestInit & { body?: str
   const base = process.env.LEGACY_API_BASE_URL ?? ""
   const body = options?.body ?? ""
   const headers = buildHeaders(body)
-  const response = await fetch(`${base}${path}`, {
+  const url = `${base}${path}`
+  const response = await fetch(url, {
     ...options,
     headers: { ...headers, ...options?.headers },
   })
+
+  const text = await response.text().catch(() => "")
   if (!response.ok) {
+    console.error(`[legacyFetch] ${url} → ${response.status} ${response.statusText}. Body: ${text.slice(0, 300)}`)
     throw new Error(`Legacy API error: ${response.status} ${response.statusText}`)
   }
-  return response.json() as Promise<T>
+  if (!text) {
+    console.error(`[legacyFetch] ${url} → 200 tapi body kosong`)
+    throw new Error("Legacy API mengembalikan body kosong")
+  }
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    console.error(`[legacyFetch] ${url} → response bukan JSON valid. Body preview: ${text.slice(0, 300)}`)
+    throw new Error("Legacy API mengembalikan response bukan JSON")
+  }
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────

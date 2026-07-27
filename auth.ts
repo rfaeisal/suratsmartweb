@@ -21,46 +21,51 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) return null
 
-        const result = await validateSSOCredentials(
-          credentials.username as string,
-          credentials.password as string,
-        )
-        if (!result.valid) return null
+        try {
+          const result = await validateSSOCredentials(
+            credentials.username as string,
+            credentials.password as string,
+          )
+          if (!result.valid) return null
 
-        const employee = await syncEmployeeFromLegacy(result.employee)
+          const employee = await syncEmployeeFromLegacy(result.employee)
 
-        let appUser = await prisma.appUser.findUnique({
-          where: { employeeId: employee.id },
-          include: { employee: { include: { unit: true } } },
-        })
-
-        const username = credentials.username as string
-        if (!appUser) {
-          const isMock = process.env.LEGACY_SSO_MOCK === "true"
-          const defaultRoles: AppRole[] =
-            isMock && result.employee.legacyId && MOCK_DEFAULT_ROLES[result.employee.legacyId]
-              ? MOCK_DEFAULT_ROLES[result.employee.legacyId]
-              : ["PEGAWAI"]
-          appUser = await prisma.appUser.create({
-            data: { employeeId: employee.id, roles: defaultRoles, username },
+          let appUser = await prisma.appUser.findUnique({
+            where: { employeeId: employee.id },
             include: { employee: { include: { unit: true } } },
           })
-        } else if (appUser.username !== username) {
-          await prisma.appUser.update({
-            where: { id: appUser.id },
-            data: { username },
-          })
-          appUser = { ...appUser, username }
-        }
 
-        return {
-          id: appUser.id,
-          name: employee.fullName,
-          email: `${employee.nip}@cutismart.internal`,
-          roles: appUser.roles,
-          employeeId: employee.id,
-          unitId: employee.unitId,
-          nip: employee.nip,
+          const username = credentials.username as string
+          if (!appUser) {
+            const isMock = process.env.LEGACY_SSO_MOCK === "true"
+            const defaultRoles: AppRole[] =
+              isMock && result.employee.legacyId && MOCK_DEFAULT_ROLES[result.employee.legacyId]
+                ? MOCK_DEFAULT_ROLES[result.employee.legacyId]
+                : ["PEGAWAI"]
+            appUser = await prisma.appUser.create({
+              data: { employeeId: employee.id, roles: defaultRoles, username },
+              include: { employee: { include: { unit: true } } },
+            })
+          } else if (appUser.username !== username) {
+            await prisma.appUser.update({
+              where: { id: appUser.id },
+              data: { username },
+            })
+            appUser = { ...appUser, username }
+          }
+
+          return {
+            id: appUser.id,
+            name: employee.fullName,
+            email: `${employee.nip}@cutismart.internal`,
+            roles: appUser.roles,
+            employeeId: employee.id,
+            unitId: employee.unitId,
+            nip: employee.nip,
+          }
+        } catch (err) {
+          console.error("[auth.authorize] gagal:", err instanceof Error ? err.message : err)
+          return null
         }
       },
     }),
