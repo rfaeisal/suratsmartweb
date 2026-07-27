@@ -22,13 +22,14 @@ export async function GET(req: NextRequest) {
   })
 
   return NextResponse.json({
-    data: holidays.map((h) => ({ id: h.id, date: h.date.toISOString().slice(0, 10), nama: h.nama })),
+    data: holidays.map((h) => ({ id: h.id, date: h.date.toISOString().slice(0, 10), nama: h.nama, jenis: h.jenis })),
   })
 }
 
 const createSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   nama: z.string().min(1).max(100),
+  jenis: z.enum(["NASIONAL", "CUTI_BERSAMA"]).optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -50,6 +51,11 @@ export async function POST(req: NextRequest) {
   const existing = await prisma.publicHoliday.findUnique({ where: { date } })
   if (existing) return Errors.conflict("Tanggal libur sudah ada")
 
-  const holiday = await prisma.publicHoliday.create({ data: { date, nama: parsed.data.nama } })
-  return NextResponse.json({ id: holiday.id, date: holiday.date.toISOString().slice(0, 10), nama: holiday.nama }, { status: 201 })
+  const holiday = await prisma.publicHoliday.create({
+    data: { date, nama: parsed.data.nama, jenis: parsed.data.jenis ?? "NASIONAL" },
+  })
+  return NextResponse.json(
+    { id: holiday.id, date: holiday.date.toISOString().slice(0, 10), nama: holiday.nama, jenis: holiday.jenis },
+    { status: 201 },
+  )
 }

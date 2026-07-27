@@ -401,10 +401,16 @@ model ShiftUnit {
 }
 
 model PublicHoliday {
-  id        String   @id @default(cuid())
-  date      DateTime @unique @db.Date
+  id        String            @id @default(cuid())
+  date      DateTime          @unique @db.Date
   nama      String
-  createdAt DateTime @default(now())
+  jenis     PublicHolidayType @default(NASIONAL)
+  createdAt DateTime          @default(now())
+}
+
+enum PublicHolidayType {
+  NASIONAL
+  CUTI_BERSAMA
 }
 
 model RosterPeriod {
