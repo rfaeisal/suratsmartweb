@@ -242,9 +242,33 @@ async function legacyFetch<T>(path: string, options?: RequestInit & { body?: str
   try {
     return JSON.parse(text) as T
   } catch {
+    // Workaround: ehos PHP kadang echo notice HTML sebelum JSON — ekstrak substring JSON.
+    const extracted = extractJson(text)
+    if (extracted !== null) {
+      try {
+        const parsed = JSON.parse(extracted) as T
+        console.warn(`[legacyFetch] ${url} → JSON di-recover dari response yang terkontaminasi. Prefix noise: ${text.slice(0, Math.min(text.indexOf(extracted[0]), 200))}`)
+        return parsed
+      } catch {
+        // fallthrough ke error di bawah
+      }
+    }
     console.error(`[legacyFetch] ${url} → response bukan JSON valid. Body preview: ${text.slice(0, 300)}`)
     throw new Error("Legacy API mengembalikan response bukan JSON")
   }
+}
+
+function extractJson(text: string): string | null {
+  const objStart = text.indexOf("{")
+  const arrStart = text.indexOf("[")
+  const startCandidates = [objStart, arrStart].filter((i) => i >= 0)
+  if (startCandidates.length === 0) return null
+  const start = Math.min(...startCandidates)
+  const openChar = text[start]
+  const closeChar = openChar === "{" ? "}" : "]"
+  const end = text.lastIndexOf(closeChar)
+  if (end <= start) return null
+  return text.slice(start, end + 1)
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
