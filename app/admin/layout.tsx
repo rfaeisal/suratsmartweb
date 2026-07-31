@@ -108,7 +108,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         { href: "/admin/settings",   label: "Pengaturan Sistem",  iconName: "settings" },
       ],
     }] : []),
-    ...(process.env.LEGACY_SSO_MOCK === "true" ? [{
+    ...(isSuperAdmin ? [{
       group: "Dev Tools",
       items: [
         { href: "/dev/attendance-qr",  label: "QR Absensi (Mock)", iconName: "device" },
