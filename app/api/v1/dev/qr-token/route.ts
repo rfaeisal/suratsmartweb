@@ -4,15 +4,19 @@ import { prisma } from "@/lib/prisma"
 import { decryptSecret } from "@/lib/device-crypto"
 import { getAttendanceSettings } from "@/lib/settings"
 import { Errors } from "@/lib/errors"
+import { requireSuperAdmin } from "@/lib/dev/require-superadmin"
+import { ensureMockDevice, MOCK_DEVICE_ID } from "@/lib/dev/ensure-mock-device"
 
-// Endpoint ini HANYA aktif saat LEGACY_SSO_MOCK=true (development)
+// Endpoint dev tools — hanya SUPERADMIN. Mengembalikan token QR mentah
+// (JSON) untuk pengujian curl / mobile debug.
 export async function GET(req: NextRequest) {
-  if (process.env.LEGACY_SSO_MOCK !== "true") {
-    return Errors.notFound("Endpoint")
-  }
+  const denied = await requireSuperAdmin()
+  if (denied) return denied
 
   const deviceId = new URL(req.url).searchParams.get("device_id")
   if (!deviceId) return Errors.validation("device_id wajib diisi")
+
+  if (deviceId === MOCK_DEVICE_ID) await ensureMockDevice()
 
   const device = await prisma.device.findUnique({
     where: { deviceId, status: "ACTIVE" },

@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { Errors } from "@/lib/errors"
+import { requireSuperAdmin } from "@/lib/dev/require-superadmin"
 
-// Endpoint ini HANYA aktif saat LEGACY_SSO_MOCK=true (development)
+// Endpoint dev tools — hanya SUPERADMIN.
 export async function GET(req: NextRequest) {
-  if (process.env.LEGACY_SSO_MOCK !== "true") {
-    return Errors.notFound("Endpoint")
-  }
+  const denied = await requireSuperAdmin()
+  if (denied) return denied
 
   const limit = Math.min(parseInt(new URL(req.url).searchParams.get("limit") ?? "50", 10), 200)
 

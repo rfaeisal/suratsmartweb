@@ -5,15 +5,18 @@ import { prisma } from "@/lib/prisma"
 import { decryptSecret } from "@/lib/device-crypto"
 import { getAttendanceSettings } from "@/lib/settings"
 import { Errors } from "@/lib/errors"
+import { requireSuperAdmin } from "@/lib/dev/require-superadmin"
+import { ensureMockDevice, MOCK_DEVICE_ID } from "@/lib/dev/ensure-mock-device"
 
-// Endpoint ini HANYA aktif saat LEGACY_SSO_MOCK=true (development)
-// Mengembalikan QR code sebagai PNG untuk ditampilkan di halaman dev tools
+// Endpoint dev tools — hanya SUPERADMIN. Dipakai untuk uji coba QR sebelum
+// device asli tersedia. Mengembalikan QR code sebagai PNG.
 export async function GET(req: NextRequest) {
-  if (process.env.LEGACY_SSO_MOCK !== "true") {
-    return Errors.notFound("Endpoint")
-  }
+  const denied = await requireSuperAdmin()
+  if (denied) return denied
 
-  const deviceId = new URL(req.url).searchParams.get("device_id") ?? "DEV-MOCK-001"
+  const deviceId = new URL(req.url).searchParams.get("device_id") ?? MOCK_DEVICE_ID
+
+  if (deviceId === MOCK_DEVICE_ID) await ensureMockDevice()
 
   const device = await prisma.device.findUnique({
     where: { deviceId, status: "ACTIVE" },

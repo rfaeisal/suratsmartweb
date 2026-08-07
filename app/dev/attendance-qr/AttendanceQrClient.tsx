@@ -115,8 +115,9 @@ export default function DevAttendanceQrPage() {
           </div>
         )}
         {state === "error" && (
-          <div style={{ width: 200, height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: "#ef4444", textAlign: "center", fontSize: "0.8rem" }}>
-            Gagal memuat QR.<br />Pastikan device mock sudah diseed.
+          <div style={{ width: 200, height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: "#ef4444", textAlign: "center", fontSize: "0.8rem", padding: "0 0.5rem" }}>
+            Gagal memuat QR.<br />
+            Periksa <code>DEVICE_SECRET_KEY</code> di env, lalu coba lagi.
           </div>
         )}
         {(state === "ready" || state === "refreshing") && imgSrc && (
@@ -172,7 +173,7 @@ export default function DevAttendanceQrPage() {
           <li>QR auto-refresh setiap {interval}s</li>
         </ol>
         <div style={{ marginTop: "0.75rem", color: "#475569", fontSize: "0.65rem" }}>
-          Halaman ini hanya muncul saat LEGACY_SSO_MOCK=true
+          Halaman ini hanya bisa diakses akun SUPERADMIN. Device mock dibuat otomatis on-demand.
         </div>
       </div>
     </div>
