@@ -3,7 +3,7 @@ import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import { requireAuth, AuthError } from "@/lib/auth/require-auth"
 import { verifyQrToken } from "@/lib/qr-verifier"
-import { getAttendanceSettings } from "@/lib/settings"
+import { getAttendanceSettings, isBeaconVerificationEnabled } from "@/lib/settings"
 import { getWibDate, hitungTanggalKerja, shiftStartUtc } from "@/lib/tanggal-kerja"
 import { Errors } from "@/lib/errors"
 import { rateLimit } from "@/lib/rate-limiter"
@@ -133,9 +133,12 @@ export async function POST(req: NextRequest) {
     return Errors.qrInvalid()
   }
 
-  // Beacon wajib terdeteksi (anti-relay) — dilewati di dev mode
+  // Beacon wajib terdeteksi (anti-relay) — dilewati di dev mode atau bila
+  // toggle AppSetting `beacon_verification_enabled` dimatikan (masa uji coba
+  // sebelum device beacon fisik terpasang).
   const devMode = process.env.LEGACY_SSO_MOCK === "true"
-  if (!beacon.detected && !devMode) return Errors.beaconTidakTerdeteksi()
+  const beaconRequired = await isBeaconVerificationEnabled()
+  if (!beacon.detected && beaconRequired && !devMode) return Errors.beaconTidakTerdeteksi()
 
   // Tentukan tanggal_kerja + lookup roster
   const now = new Date()

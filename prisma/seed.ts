@@ -280,6 +280,7 @@ async function main() {
   const attendanceSettings = [
     { key: "enforce_single_session",  value: "true", label: "Satu sesi aktif per akun mobile" },
     { key: "device_binding_enabled",  value: "true", label: "Aktifkan binding perangkat (anti titip absen). Set 'false' untuk menonaktifkan." },
+    { key: "beacon_verification_enabled", value: "true", label: "Verifikasi beacon iBeacon (anti-relay). Set 'false' selama uji coba sebelum device beacon fisik terpasang." },
     { key: "toleransi_telat_menit",   value: "15",   label: "Toleransi keterlambatan dalam menit sebelum dianggap terlambat." },
     { key: "interval_rotasi_detik",   value: "30",   label: "Interval rotasi token QR perangkat absensi (detik)." },
   ]

@@ -30,6 +30,13 @@ const KNOWN_SETTINGS: Record<string, SettingMeta> = {
     description:
       "Jika aktif, satu akun hanya bisa absen dari perangkat yang sama dengan sesi aktifnya. Login dari perangkat berbeda akan ditolak (409 device_conflict).",
   },
+  beacon_verification_enabled: {
+    label: "Verifikasi beacon iBeacon (anti-relay)",
+    default: "true",
+    type: "boolean",
+    description:
+      "Jika aktif, absen ditolak bila aplikasi tidak mendeteksi sinyal iBeacon dari perangkat absensi. Matikan sementara selama uji coba sebelum device beacon fisik terpasang.",
+  },
   toleransi_telat_menit: {
     label: "Toleransi keterlambatan (menit)",
     default: "15",

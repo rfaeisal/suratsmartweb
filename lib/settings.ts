@@ -27,6 +27,11 @@ export async function isDeviceBindingEnabled(): Promise<boolean> {
   return val === "true"
 }
 
+export async function isBeaconVerificationEnabled(): Promise<boolean> {
+  const val = await getSetting("beacon_verification_enabled", "true")
+  return val === "true"
+}
+
 export async function getAttendanceSettings(): Promise<{
   toleransiTelatMenit: number
   intervalRotasiDetik: number
