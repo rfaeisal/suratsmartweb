@@ -1,6 +1,6 @@
 #include "beacon.h"
 #include <NimBLEDevice.h>
-#include <NimBLEBeacon.h>
+#include <string.h>
 
 static bool advertising = false;
 
@@ -36,20 +36,24 @@ void beaconStart(const String &uuidStr, uint16_t major, uint16_t minor, int8_t t
     NimBLEDevice::setPower(ESP_PWR_LVL_P9);
   }
 
-  NimBLEBeacon beacon;
-  NimBLEUUID uuid(uuidBytes, 16, true);
-  beacon.setManufacturerId(0x004C); // Apple
-  beacon.setProximityUUID(uuid);
-  beacon.setMajor(major);
-  beacon.setMinor(minor);
-  beacon.setSignalPower(txPower);
+  // Build iBeacon manufacturer data manually (25 bytes) — bypass NimBLEBeacon
+  // helper karena setter-nya double-swap Apple company id, yang bikin bytes
+  // di udara jadi [0x00, 0x4C] (big-endian) — melanggar BLE spec dan bikin
+  // scanner (Android BluetoothLeScanner, iOS CoreBluetooth) tidak mengenali
+  // sebagai Apple/iBeacon.
+  uint8_t payload[25];
+  payload[0] = 0x4C; payload[1] = 0x00;       // Company ID Apple, little-endian on wire
+  payload[2] = 0x02; payload[3] = 0x15;       // iBeacon sub-type + length
+  memcpy(&payload[4], uuidBytes, 16);         // Proximity UUID (big-endian, MSB first)
+  payload[20] = (uint8_t) ((major >> 8) & 0xFF);
+  payload[21] = (uint8_t) (major & 0xFF);
+  payload[22] = (uint8_t) ((minor >> 8) & 0xFF);
+  payload[23] = (uint8_t) (minor & 0xFF);
+  payload[24] = (uint8_t) txPower;
 
   NimBLEAdvertisementData advData;
   advData.setFlags(0x04); // BR_EDR_NOT_SUPPORTED
-  // NimBLEBeacon::getData() sudah mengandung manufacturer id Apple (0x4C 0x00)
-  // di awalnya, jadi jangan prepend lagi — kalau di-prepend, packet iBeacon rusak
-  // dan scanner tidak mengenalinya sebagai iBeacon.
-  advData.setManufacturerData(beacon.getData());
+  advData.setManufacturerData(std::string((char*) payload, sizeof(payload)));
 
   NimBLEAdvertising *pAdv = NimBLEDevice::getAdvertising();
   pAdv->stop();
