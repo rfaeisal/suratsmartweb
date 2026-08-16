@@ -97,12 +97,14 @@ export default function DevicesClient({ initial, rooms: initialRooms, units }: P
         deviceId: data.device_id,
         nama: data.nama ?? null,
         status: data.status,
-        roomId: data.room_id ?? null,
-        room: rooms.find((r) => r.id === data.room_id) ?? null,
-        ibeaconUuid: data.ibeacon_uuid ?? "",
-        ibeaconMajor: data.ibeacon_major ?? 0,
-        ibeaconMinor: data.ibeacon_minor ?? 0,
-        createdAt: data.createdAt,
+        roomId: data.room?.id ?? null,
+        room: data.room
+          ? { id: data.room.id, nama: data.room.nama, workUnit: data.room.unit }
+          : null,
+        ibeaconUuid: data.ibeacon?.uuid ?? "",
+        ibeaconMajor: data.ibeacon?.major ?? 0,
+        ibeaconMinor: data.ibeacon?.minor ?? 0,
+        createdAt: data.created_at,
       }
       setDevices((prev) => [newDevice, ...prev])
       setForm({ nama: "", roomId: "", ibeaconUuid: "", ibeaconMajor: "", ibeaconMinor: "" })
@@ -125,7 +127,15 @@ export default function DevicesClient({ initial, rooms: initialRooms, units }: P
       const res = await fetch(`/api/v1/devices/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
       const data = await res.json()
       if (!res.ok) { setEditError(data.error?.message ?? "Gagal menyimpan"); return }
-      setDevices((prev) => prev.map((d) => d.id === id ? { ...d, ...data, room: rooms.find((r) => r.id === data.roomId) ?? null } : d))
+      setDevices((prev) => prev.map((d) => d.id === id ? {
+        ...d,
+        nama: data.nama ?? null,
+        status: data.status,
+        roomId: data.room?.id ?? null,
+        room: data.room
+          ? { id: data.room.id, nama: data.room.nama, workUnit: data.room.unit }
+          : null,
+      } : d))
       setEditId(null)
     } catch { setEditError("Koneksi gagal") }
     finally { setSaving(false) }
