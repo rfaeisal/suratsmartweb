@@ -75,8 +75,7 @@ static void drawQrBitmap(QRCode &qr, int x, int y, int scale) {
   }
 }
 
-void displayRenderQr(const String &qrPayload, const DisplayState &state) {
-  // Header ---
+static void drawHeader(const DisplayState &state) {
   tft.fillRect(0, 0, 240, HEADER_H, TFT_NAVY);
   tft.setTextColor(TFT_WHITE, TFT_NAVY);
   tft.setTextDatum(ML_DATUM);
@@ -87,22 +86,9 @@ void displayRenderQr(const String &qrPayload, const DisplayState &state) {
 
   tft.setTextDatum(MR_DATUM);
   tft.drawString(state.clock, 234, HEADER_H / 2);
+}
 
-  // QR area ---
-  // Encode QR
-  QRCode qr;
-  // Version 4 (33x33) muat 62 karakter alnum atau 78 numeric. Payload kita ~50 char.
-  uint8_t qrBuffer[qrcode_getBufferSize(4)];
-  qrcode_initText(&qr, qrBuffer, 4, ECC_MEDIUM, qrPayload.c_str());
-  int scale = 6; // 33 * 6 = 198px
-  int drawX = (240 - qr.size * scale) / 2;
-  int drawY = QR_TOP + (QR_SIZE - qr.size * scale) / 2;
-
-  // Kosongkan area QR
-  tft.fillRect(0, QR_TOP, 240, QR_SIZE, TFT_BLACK);
-  drawQrBitmap(qr, drawX, drawY, scale);
-
-  // Footer ---
+static void drawFooter(const DisplayState &state) {
   tft.fillRect(0, FOOTER_Y - 5, 240, 320 - (FOOTER_Y - 5), TFT_BLACK);
   tft.setTextDatum(ML_DATUM);
   tft.setTextFont(2);
@@ -116,4 +102,25 @@ void displayRenderQr(const String &qrPayload, const DisplayState &state) {
   tft.setTextColor(TFT_YELLOW, TFT_BLACK);
   String next = String(state.secondsLeft) + "s";
   tft.drawString(next, 234, FOOTER_Y + 10);
+}
+
+void displayRenderQr(const String &qrPayload, const DisplayState &state) {
+  drawHeader(state);
+
+  QRCode qr;
+  uint8_t qrBuffer[qrcode_getBufferSize(4)];
+  qrcode_initText(&qr, qrBuffer, 4, ECC_MEDIUM, qrPayload.c_str());
+  int scale = 6;
+  int drawX = (240 - qr.size * scale) / 2;
+  int drawY = QR_TOP + (QR_SIZE - qr.size * scale) / 2;
+
+  tft.fillRect(0, QR_TOP, 240, QR_SIZE, TFT_BLACK);
+  drawQrBitmap(qr, drawX, drawY, scale);
+
+  drawFooter(state);
+}
+
+void displayRefreshStatus(const DisplayState &state) {
+  drawHeader(state);
+  drawFooter(state);
 }

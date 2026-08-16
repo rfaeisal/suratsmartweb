@@ -125,11 +125,10 @@ static void runTick() {
     return;
   }
 
-  // Refresh footer (jam + countdown) ~1x/detik tanpa redraw QR
+  // Refresh header/footer (jam + countdown) ~1x/detik tanpa redraw QR (anti-flicker)
   if (now - lastFooterTick > 1000) {
     lastFooterTick = now;
-    // Re-render QR sekaligus supaya footer ter-update (murah karena scale=6 di frame yang sama)
-    displayRenderQr(token, ds);
+    displayRefreshStatus(ds);
   }
 }
 

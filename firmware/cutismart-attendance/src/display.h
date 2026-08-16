@@ -20,5 +20,8 @@ struct DisplayState {
 
 void displayRenderQr(const String &qrPayload, const DisplayState &state);
 
+// Update hanya area header (jam) + footer (WiFi/BLE/countdown) — tanpa redraw QR
+void displayRefreshStatus(const DisplayState &state);
+
 // Untuk captive portal — instruksi ke user.
 void displayShowCaptivePortalHint(const String &ssid, const String &ipHint);
