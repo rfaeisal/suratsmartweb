@@ -339,18 +339,21 @@ model Room {
 }
 
 model Device {
-  id           String       @id @default(cuid())
-  nama         String?
-  deviceId     String       @unique
-  secretHash   String       // AES-256-GCM encrypted; NEVER log
-  ibeaconUuid  String
-  ibeaconMajor Int
-  ibeaconMinor Int
-  roomId       String?
-  room         Room?        @relation(fields: [roomId], references: [id])
-  status       DeviceStatus @default(ACTIVE)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id                    String       @id @default(cuid())
+  nama                  String?
+  deviceId              String       @unique
+  secretHash            String       // AES-256-GCM encrypted; NEVER log
+  ibeaconUuid           String
+  ibeaconMajor          Int
+  ibeaconMinor          Int
+  roomId                String?
+  room                  Room?        @relation(fields: [roomId], references: [id])
+  status                DeviceStatus @default(ACTIVE)
+  enrollCode            String?      @unique
+  enrollCodeExpiresAt   DateTime?
+  enrolledAt            DateTime?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
 
   attendances Attendance[]
   qrUsages    QrUsage[]

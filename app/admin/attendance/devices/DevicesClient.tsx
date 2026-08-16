@@ -51,6 +51,32 @@ export default function DevicesClient({ initial, rooms: initialRooms, units }: P
   const [saving, setSaving] = useState(false)
   const [editError, setEditError] = useState("")
 
+  const [enrollLoading, setEnrollLoading] = useState<string | null>(null)
+  const [enrollTicket, setEnrollTicket] = useState<{
+    deviceId: string
+    deviceLabel: string
+    code: string
+    expiresAt: string
+  } | null>(null)
+  const [enrollError, setEnrollError] = useState("")
+
+  async function handleEnroll(d: Device) {
+    setEnrollError("")
+    setEnrollLoading(d.id)
+    try {
+      const res = await fetch(`/api/v1/devices/${d.id}/enroll-ticket`, { method: "POST" })
+      const data = await res.json()
+      if (!res.ok) { setEnrollError(data.error?.message ?? "Gagal generate kode"); return }
+      setEnrollTicket({
+        deviceId: d.deviceId,
+        deviceLabel: d.nama ?? d.deviceId,
+        code: data.enroll_code,
+        expiresAt: data.expires_at,
+      })
+    } catch { setEnrollError("Koneksi gagal") }
+    finally { setEnrollLoading(null) }
+  }
+
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
     setAddError("")
@@ -194,6 +220,40 @@ export default function DevicesClient({ initial, rooms: initialRooms, units }: P
       )}
 
       {activeTab === "devices" && (<>
+      {enrollTicket && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setEnrollTicket(null)}>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6 max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-slate-100 mb-1">Kode Enroll untuk {enrollTicket.deviceLabel}</h3>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mb-4">
+              Masukkan kode di bawah pada portal captive WiFi perangkat ESP32 (SSID: <code>CutiSmart-Setup</code>).
+              Kode berlaku sampai {new Date(enrollTicket.expiresAt).toLocaleString("id-ID")}.
+            </p>
+            <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-center">
+              <div className="text-3xl font-mono font-bold tracking-widest text-blue-700 dark:text-blue-300 select-all">
+                {enrollTicket.code}
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mt-3">
+              Device ID: <code className="font-mono">{enrollTicket.deviceId}</code>
+            </p>
+            <div className="flex justify-end gap-2 mt-5">
+              <button
+                onClick={() => navigator.clipboard.writeText(enrollTicket.code)}
+                className="px-3 py-1.5 text-xs border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-400 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700"
+              >Salin kode</button>
+              <button
+                onClick={() => setEnrollTicket(null)}
+                className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >Tutup</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {enrollError && (
+        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-300">
+          {enrollError}
+        </div>
+      )}
       {newSecret && (
         <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-5">
           <p className="text-sm font-semibold text-yellow-800 mb-2">Perangkat baru berhasil dibuat. Salin Device Secret sekarang — tidak akan ditampilkan lagi!</p>
@@ -291,7 +351,12 @@ export default function DevicesClient({ initial, rooms: initialRooms, units }: P
                         <button onClick={() => setEditId(null)} className="px-3 py-1 text-xs border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-400 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700">Batal</button>
                       </div>
                     ) : (
-                      <div className="flex justify-end">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => handleEnroll(d)}
+                          disabled={enrollLoading === d.id}
+                          className="px-3 py-1 text-xs border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/30 disabled:opacity-50"
+                        >{enrollLoading === d.id ? "…" : "Enroll"}</button>
                         <button onClick={() => startEdit(d)} className="px-3 py-1 text-xs border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-400 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700">Edit</button>
                       </div>
                     )}
