@@ -60,6 +60,8 @@ export default function DevicesClient({ initial, rooms: initialRooms, units }: P
   } | null>(null)
   const [enrollError, setEnrollError] = useState("")
 
+  const [infoDevice, setInfoDevice] = useState<Device | null>(null)
+
   async function handleEnroll(d: Device) {
     setEnrollError("")
     setEnrollLoading(d.id)
@@ -259,6 +261,44 @@ export default function DevicesClient({ initial, rooms: initialRooms, units }: P
           </div>
         </div>
       )}
+      {infoDevice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setInfoDevice(null)}>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6 max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-slate-100 mb-1">Detail iBeacon</h3>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mb-4">
+              Nilai ini yang di-broadcast ESP32 dan dicocokkan oleh app mobile.
+              Bandingkan dengan hasil scan nRF Connect.
+            </p>
+            <dl className="space-y-3 text-sm">
+              <div>
+                <dt className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-0.5">Label</dt>
+                <dd className="text-gray-900 dark:text-slate-100">{infoDevice.nama ?? "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-0.5">Device ID</dt>
+                <dd className="font-mono text-xs bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded px-2 py-1 select-all">{infoDevice.deviceId}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-0.5">iBeacon UUID</dt>
+                <dd className="font-mono text-xs bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded px-2 py-1 select-all break-all">{infoDevice.ibeaconUuid}</dd>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <dt className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-0.5">Major</dt>
+                  <dd className="font-mono text-sm bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded px-2 py-1 select-all">{infoDevice.ibeaconMajor}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-0.5">Minor</dt>
+                  <dd className="font-mono text-sm bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded px-2 py-1 select-all">{infoDevice.ibeaconMinor}</dd>
+                </div>
+              </div>
+            </dl>
+            <div className="flex justify-end mt-5">
+              <button onClick={() => setInfoDevice(null)} className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700">Tutup</button>
+            </div>
+          </div>
+        </div>
+      )}
       {enrollError && (
         <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-300">
           {enrollError}
@@ -362,6 +402,10 @@ export default function DevicesClient({ initial, rooms: initialRooms, units }: P
                       </div>
                     ) : (
                       <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => setInfoDevice(d)}
+                          className="px-3 py-1 text-xs border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-400 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700"
+                        >Info</button>
                         <button
                           onClick={() => handleEnroll(d)}
                           disabled={enrollLoading === d.id}
