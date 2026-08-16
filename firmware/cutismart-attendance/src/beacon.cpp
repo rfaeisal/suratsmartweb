@@ -46,11 +46,10 @@ void beaconStart(const String &uuidStr, uint16_t major, uint16_t minor, int8_t t
 
   NimBLEAdvertisementData advData;
   advData.setFlags(0x04); // BR_EDR_NOT_SUPPORTED
-  std::string beaconData = beacon.getData();
-  std::string mfgPacket;
-  mfgPacket += (char) 0x4C; mfgPacket += (char) 0x00; // manufacturer id LE
-  mfgPacket += beaconData;
-  advData.setManufacturerData(mfgPacket);
+  // NimBLEBeacon::getData() sudah mengandung manufacturer id Apple (0x4C 0x00)
+  // di awalnya, jadi jangan prepend lagi — kalau di-prepend, packet iBeacon rusak
+  // dan scanner tidak mengenalinya sebagai iBeacon.
+  advData.setManufacturerData(beacon.getData());
 
   NimBLEAdvertising *pAdv = NimBLEDevice::getAdvertising();
   pAdv->stop();
