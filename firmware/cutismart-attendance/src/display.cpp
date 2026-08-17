@@ -122,13 +122,31 @@ static void drawLabelBar(const DisplayState &state, bool force) {
 
   tft.fillRect(0, LABEL_BAR_Y, SCREEN_W, LABEL_BAR_H, TFT_NAVY);
 
-  // Font 4 ≈ 26 px, potong kalau kepanjangan (kira-kira 20 char muat)
-  if (label.length() > 20) label = label.substring(0, 19) + "…";
-
-  tft.setTextDatum(MC_DATUM);
-  tft.setTextColor(TFT_WHITE, TFT_NAVY);
+  const int cy = LABEL_BAR_Y + LABEL_BAR_H / 2;
   tft.setTextFont(4);
-  tft.drawString(label, SCREEN_W / 2, LABEL_BAR_Y + LABEL_BAR_H / 2);
+  tft.setTextColor(TFT_WHITE, TFT_NAVY);
+
+  // RSSMART bold rata kiri (bold disimulasikan: gambar 2x offset 1 px)
+  tft.setTextDatum(ML_DATUM);
+  tft.drawString("RSSMART", 6, cy);
+  tft.drawString("RSSMART", 7, cy);
+
+  int brandRight = 6 + tft.textWidth("RSSMART") + 1;
+
+  // Label rata kanan, font lebih kecil + warna abu-abu
+  tft.setTextFont(2);
+  tft.setTextColor(TFT_LIGHTGREY, TFT_NAVY);
+  tft.setTextDatum(MR_DATUM);
+  const int rightX = SCREEN_W - 6;
+  int available = rightX - brandRight - 8; // beri gap 8 px antara brand & label
+  String shown = label;
+  while (shown.length() > 0 && tft.textWidth(shown) > available) {
+    shown.remove(shown.length() - 1);
+  }
+  if (shown.length() < label.length() && shown.length() > 1) {
+    shown = shown.substring(0, shown.length() - 1) + "…";
+  }
+  tft.drawString(shown, rightX, cy);
 }
 
 void displayRenderQr(const String &qrPayload, const DisplayState &state) {
