@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     device_id: device.deviceId,
     secret,
+    label: device.nama ?? device.deviceId,
     ibeacon: {
       uuid: device.ibeaconUuid,
       major: device.ibeaconMajor,

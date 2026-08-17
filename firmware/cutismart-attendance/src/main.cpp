@@ -8,6 +8,7 @@
 #include "timesync.h"
 #include "qrtoken.h"
 #include "beacon.h"
+#include "configsync.h"
 
 static DeviceConfig cfg;
 
@@ -20,6 +21,8 @@ static String pendingEnrollCode;
 static uint64_t lastCounter = 0;
 static uint32_t lastTick = 0;
 static uint32_t lastFooterTick = 0;
+static uint32_t lastConfigSync = 0;
+static const uint32_t CONFIG_SYNC_INTERVAL_MS = 5UL * 60UL * 1000UL; // 5 menit
 
 // Tombol reset (long press)
 static uint32_t buttonHeldSince = 0;
@@ -92,6 +95,10 @@ static void enterRun() {
   }
   lastCounter = 0;
   lastTick = 0;
+  // Sync config sekali di awal supaya label langsung terupdate kalau admin
+  // ubah nama device setelah enroll.
+  configSync(cfg);
+  lastConfigSync = millis();
 }
 
 static void runTick() {
@@ -110,7 +117,7 @@ static void runTick() {
   String token = buildQrToken(cfg.deviceId, cfg.secretHex, epoch, cfg.intervalSec, counter);
 
   DisplayState ds;
-  ds.deviceLabel = cfg.deviceId; // gunakan deviceId; nama humane belum di-sync
+  ds.deviceLabel = cfg.deviceLabel.length() > 0 ? cfg.deviceLabel : cfg.deviceId;
   ds.deviceId = cfg.deviceId;
   ds.clock = nowClockString();
   ds.wifiRssi = (WiFi.status() == WL_CONNECTED) ? WiFi.RSSI() : 0;
@@ -185,6 +192,9 @@ void loop() {
       if (WiFi.status() != WL_CONNECTED) {
         Serial.println("[main] WiFi disconnected, retry");
         WiFi.reconnect();
+      } else if (millis() - lastConfigSync > CONFIG_SYNC_INTERVAL_MS) {
+        lastConfigSync = millis();
+        configSync(cfg);
       }
       runTick();
       break;

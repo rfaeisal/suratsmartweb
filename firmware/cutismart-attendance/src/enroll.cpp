@@ -66,6 +66,8 @@ EnrollOutcome enrollDevice(const String &serverUrl, const String &enrollCode, De
   cfg.serverUrl     = serverUrl;
   cfg.deviceId      = String((const char *) res["device_id"]);
   cfg.secretHex     = String((const char *) res["secret"]);
+  const char *labelC = res["label"] | (const char *) nullptr;
+  cfg.deviceLabel   = labelC ? String(labelC) : String("");
   cfg.ibeaconUuid   = String((const char *) res["ibeacon"]["uuid"]);
   cfg.ibeaconMajor  = res["ibeacon"]["major"] | 0;
   cfg.ibeaconMinor  = res["ibeacon"]["minor"] | 0;

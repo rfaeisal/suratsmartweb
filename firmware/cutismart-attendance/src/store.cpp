@@ -13,6 +13,7 @@ bool storeLoad(DeviceConfig &cfg) {
   cfg.serverUrl      = prefs.getString("srv", "");
   cfg.deviceId       = prefs.getString("did", "");
   cfg.secretHex      = prefs.getString("sec", "");
+  cfg.deviceLabel    = prefs.getString("dlbl", "");
   cfg.ibeaconUuid    = prefs.getString("buuid", "");
   cfg.ibeaconMajor   = prefs.getUShort("bmaj", 0);
   cfg.ibeaconMinor   = prefs.getUShort("bmin", 0);
@@ -25,6 +26,7 @@ bool storeSave(const DeviceConfig &cfg) {
   prefs.putString("srv", cfg.serverUrl);
   prefs.putString("did", cfg.deviceId);
   prefs.putString("sec", cfg.secretHex);
+  prefs.putString("dlbl", cfg.deviceLabel);
   prefs.putString("buuid", cfg.ibeaconUuid);
   prefs.putUShort("bmaj", cfg.ibeaconMajor);
   prefs.putUShort("bmin", cfg.ibeaconMinor);

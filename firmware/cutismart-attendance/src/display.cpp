@@ -5,21 +5,35 @@
 
 static TFT_eSPI tft;
 
-// Layout portrait 240x320:
-//   0..30  header (label + clock)
-//   30..270 QR area (240 lebar, kotak 240x240)
-//   270..320 footer status
-#define HEADER_H 28
-#define QR_TOP   30
-#define QR_SIZE  240
-#define FOOTER_Y 275
+// Layout landscape 320x240 (rotation 1 — USB kanan):
+//
+//   x: 0 ........................ 220 ....... 320
+//   y: 0 +----------------------+---------+
+//        |                      |  jam    |
+//        |         QR           |  BLE    |
+//        |       198x198        |  WiFi   |
+//        |                      |  30s    |
+//     210 +----------------------+---------+
+//        |         Label device (font 4)   |
+//     240 +--------------------------------+
+#define SCREEN_W       320
+#define SCREEN_H       240
+#define PANEL_X        220
+#define PANEL_W        (SCREEN_W - PANEL_X)
+#define LABEL_BAR_Y    210
+#define LABEL_BAR_H    (SCREEN_H - LABEL_BAR_Y)
+#define QR_AREA_W      PANEL_X
+#define QR_AREA_H      LABEL_BAR_Y
+
+static String lastLabel;
 
 void displayBegin() {
   tft.init();
-  tft.setRotation(0); // portrait
+  tft.setRotation(1); // landscape, USB di kanan
   tft.fillScreen(TFT_BLACK);
   pinMode(TFT_BL, OUTPUT);
   digitalWrite(TFT_BL, HIGH);
+  lastLabel = "";
 }
 
 void displayMessage(const String &title, const String &subtitle, uint16_t color) {
@@ -27,12 +41,13 @@ void displayMessage(const String &title, const String &subtitle, uint16_t color)
   tft.setTextColor(color, TFT_BLACK);
   tft.setTextDatum(MC_DATUM);
   tft.setTextFont(4);
-  tft.drawString(title, 120, 140);
+  tft.drawString(title, SCREEN_W / 2, SCREEN_H / 2 - 15);
   if (subtitle.length() > 0) {
     tft.setTextFont(2);
     tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
-    tft.drawString(subtitle, 120, 175);
+    tft.drawString(subtitle, SCREEN_W / 2, SCREEN_H / 2 + 20);
   }
+  lastLabel = "";
 }
 
 void displayShowCaptivePortalHint(const String &ssid, const String &ipHint) {
@@ -40,30 +55,28 @@ void displayShowCaptivePortalHint(const String &ssid, const String &ipHint) {
   tft.setTextDatum(MC_DATUM);
   tft.setTextColor(TFT_YELLOW, TFT_BLACK);
   tft.setTextFont(4);
-  tft.drawString("SETUP MODE", 120, 40);
+  tft.drawString("SETUP MODE", SCREEN_W / 2, 30);
 
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setTextFont(2);
-  tft.drawString("Sambungkan HP ke WiFi:", 120, 90);
+  tft.drawString("Sambungkan HP ke WiFi:", SCREEN_W / 2, 70);
   tft.setTextFont(4);
   tft.setTextColor(TFT_CYAN, TFT_BLACK);
-  tft.drawString(ssid, 120, 120);
+  tft.drawString(ssid, SCREEN_W / 2, 100);
 
   tft.setTextFont(2);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.drawString("Lalu buka:", 120, 160);
+  tft.drawString("Lalu buka:", SCREEN_W / 2, 135);
   tft.setTextColor(TFT_CYAN, TFT_BLACK);
-  tft.drawString(ipHint, 120, 180);
+  tft.drawString(ipHint, SCREEN_W / 2, 155);
 
   tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
-  tft.drawString("Isi WiFi + kode enroll", 120, 220);
-  tft.drawString("dari admin panel.", 120, 240);
+  tft.drawString("Isi WiFi + kode enroll dari admin panel.", SCREEN_W / 2, 200);
+  lastLabel = "";
 }
 
 static void drawQrBitmap(QRCode &qr, int x, int y, int scale) {
-  // Modul QR digambar sebagai kotak-kotak `scale`x`scale` piksel.
   int side = qr.size * scale;
-  // Latar putih dulu (dengan quiet zone 4 modul di dalam area kotak QR)
   int quiet = 4 * scale;
   tft.fillRect(x - quiet, y - quiet, side + quiet * 2, side + quiet * 2, TFT_WHITE);
   for (int yy = 0; yy < qr.size; yy++) {
@@ -75,52 +88,66 @@ static void drawQrBitmap(QRCode &qr, int x, int y, int scale) {
   }
 }
 
-static void drawHeader(const DisplayState &state) {
-  tft.fillRect(0, 0, 240, HEADER_H, TFT_NAVY);
-  tft.setTextColor(TFT_WHITE, TFT_NAVY);
-  tft.setTextDatum(ML_DATUM);
-  tft.setTextFont(2);
-  String label = state.deviceLabel.length() > 0 ? state.deviceLabel : state.deviceId;
-  if (label.length() > 20) label = label.substring(0, 19) + "…";
-  tft.drawString(label, 6, HEADER_H / 2);
+static void drawRightPanel(const DisplayState &state) {
+  // Latar navy penuh
+  tft.fillRect(PANEL_X, 0, PANEL_W, LABEL_BAR_Y, TFT_NAVY);
 
-  tft.setTextDatum(MR_DATUM);
-  tft.drawString(state.clock, 234, HEADER_H / 2);
+  int cx = PANEL_X + PANEL_W / 2;
+
+  // Jam besar
+  tft.setTextDatum(MC_DATUM);
+  tft.setTextColor(TFT_WHITE, TFT_NAVY);
+  tft.setTextFont(4);
+  tft.drawString(state.clock, cx, 25);
+
+  // BLE
+  tft.setTextFont(2);
+  tft.setTextColor(TFT_CYAN, TFT_NAVY);
+  tft.drawString(state.bleStatus, cx, 75);
+
+  // WiFi
+  tft.setTextColor(state.wifiRssi < 0 ? TFT_GREEN : TFT_RED, TFT_NAVY);
+  tft.drawString(state.wifiRssi < 0 ? "WiFi ON" : "WiFi OFF", cx, 110);
+
+  // Countdown detik
+  tft.setTextFont(4);
+  tft.setTextColor(TFT_YELLOW, TFT_NAVY);
+  tft.drawString(String(state.secondsLeft) + "s", cx, 170);
 }
 
-static void drawFooter(const DisplayState &state) {
-  tft.fillRect(0, FOOTER_Y - 5, 240, 320 - (FOOTER_Y - 5), TFT_BLACK);
-  tft.setTextDatum(ML_DATUM);
-  tft.setTextFont(2);
-  tft.setTextColor(state.wifiRssi < 0 ? TFT_GREEN : TFT_RED, TFT_BLACK);
-  tft.drawString(state.wifiRssi < 0 ? "WiFi" : "OFF", 6, FOOTER_Y + 10);
+static void drawLabelBar(const DisplayState &state, bool force) {
+  String label = state.deviceLabel.length() > 0 ? state.deviceLabel : state.deviceId;
+  if (!force && label == lastLabel) return;
+  lastLabel = label;
 
-  tft.setTextColor(TFT_CYAN, TFT_BLACK);
-  tft.drawString(state.bleStatus, 60, FOOTER_Y + 10);
+  tft.fillRect(0, LABEL_BAR_Y, SCREEN_W, LABEL_BAR_H, TFT_NAVY);
 
-  tft.setTextDatum(MR_DATUM);
-  tft.setTextColor(TFT_YELLOW, TFT_BLACK);
-  String next = String(state.secondsLeft) + "s";
-  tft.drawString(next, 234, FOOTER_Y + 10);
+  // Font 4 ≈ 26 px, potong kalau kepanjangan (kira-kira 20 char muat)
+  if (label.length() > 20) label = label.substring(0, 19) + "…";
+
+  tft.setTextDatum(MC_DATUM);
+  tft.setTextColor(TFT_WHITE, TFT_NAVY);
+  tft.setTextFont(4);
+  tft.drawString(label, SCREEN_W / 2, LABEL_BAR_Y + LABEL_BAR_H / 2);
 }
 
 void displayRenderQr(const String &qrPayload, const DisplayState &state) {
-  drawHeader(state);
-
   QRCode qr;
   uint8_t qrBuffer[qrcode_getBufferSize(4)];
   qrcode_initText(&qr, qrBuffer, 4, ECC_MEDIUM, qrPayload.c_str());
   int scale = 6;
-  int drawX = (240 - qr.size * scale) / 2;
-  int drawY = QR_TOP + (QR_SIZE - qr.size * scale) / 2;
+  int side = qr.size * scale;
+  int drawX = (QR_AREA_W - side) / 2;
+  int drawY = (QR_AREA_H - side) / 2;
 
-  tft.fillRect(0, QR_TOP, 240, QR_SIZE, TFT_BLACK);
+  tft.fillRect(0, 0, QR_AREA_W, QR_AREA_H, TFT_BLACK);
   drawQrBitmap(qr, drawX, drawY, scale);
 
-  drawFooter(state);
+  drawRightPanel(state);
+  drawLabelBar(state, /*force=*/true);
 }
 
 void displayRefreshStatus(const DisplayState &state) {
-  drawHeader(state);
-  drawFooter(state);
+  drawRightPanel(state);
+  drawLabelBar(state, /*force=*/false);
 }
