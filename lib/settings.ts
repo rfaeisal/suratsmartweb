@@ -35,14 +35,27 @@ export async function isBeaconVerificationEnabled(): Promise<boolean> {
 export async function getAttendanceSettings(): Promise<{
   toleransiTelatMenit: number
   intervalRotasiDetik: number
+  checkInBeforeStartMinutes: number
+  checkOutBeforeEndMinutes: number
+  checkOutAfterEndMinutes: number
+  allowNoRoster: boolean
 }> {
-  const [toleransi, interval] = await Promise.all([
-    getSetting("toleransi_telat_menit", "15"),
-    getSetting("interval_rotasi_detik", "30"),
-  ])
+  const [toleransi, interval, checkInBefore, checkOutBefore, checkOutAfter, allowNoRoster] =
+    await Promise.all([
+      getSetting("toleransi_telat_menit", "15"),
+      getSetting("interval_rotasi_detik", "30"),
+      getSetting("attendance_check_in_before_start_minutes", "60"),
+      getSetting("attendance_check_out_before_end_minutes", "30"),
+      getSetting("attendance_check_out_after_end_minutes", "120"),
+      getSetting("attendance_allow_no_roster", "false"),
+    ])
   return {
     toleransiTelatMenit: parseInt(toleransi, 10),
     intervalRotasiDetik: parseInt(interval, 10),
+    checkInBeforeStartMinutes: parseInt(checkInBefore, 10),
+    checkOutBeforeEndMinutes: parseInt(checkOutBefore, 10),
+    checkOutAfterEndMinutes: parseInt(checkOutAfter, 10),
+    allowNoRoster: allowNoRoster === "true",
   }
 }
 

@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth, AuthError } from "@/lib/auth/require-auth"
 import { Errors } from "@/lib/errors"
 
+const timeOrNull = z.string().regex(/^\d{2}:\d{2}$/).nullable()
+
 const patchSchema = z.object({
   nama: z.string().min(1).max(100).optional(),
   start_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
@@ -12,6 +14,10 @@ const patchSchema = z.object({
   type: z.enum(["ROTASI", "TETAP"]).optional(),
   work_days: z.array(z.number().int().min(1).max(7)).optional(),
   active: z.boolean().optional(),
+  check_in_window_start: timeOrNull.optional(),
+  check_in_window_end: timeOrNull.optional(),
+  check_out_window_start: timeOrNull.optional(),
+  check_out_window_end: timeOrNull.optional(),
 })
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -43,6 +49,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(parsed.data.type !== undefined && { type: parsed.data.type }),
       ...(parsed.data.work_days !== undefined && { workDays: parsed.data.work_days }),
       ...(parsed.data.active !== undefined && { active: parsed.data.active }),
+      ...(parsed.data.check_in_window_start !== undefined && { checkInWindowStart: parsed.data.check_in_window_start }),
+      ...(parsed.data.check_in_window_end !== undefined && { checkInWindowEnd: parsed.data.check_in_window_end }),
+      ...(parsed.data.check_out_window_start !== undefined && { checkOutWindowStart: parsed.data.check_out_window_start }),
+      ...(parsed.data.check_out_window_end !== undefined && { checkOutWindowEnd: parsed.data.check_out_window_end }),
     },
   })
 
@@ -55,6 +65,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     type: updated.type,
     work_days: updated.workDays,
     active: updated.active,
+    check_in_window_start: updated.checkInWindowStart,
+    check_in_window_end: updated.checkInWindowEnd,
+    check_out_window_start: updated.checkOutWindowStart,
+    check_out_window_end: updated.checkOutWindowEnd,
   })
 }
 

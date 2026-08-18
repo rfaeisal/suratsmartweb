@@ -14,6 +14,10 @@ interface Shift {
   workDays: number[] | null
   active: boolean
   shiftUnits: ShiftUnit[]
+  checkInWindowStart: string | null
+  checkInWindowEnd: string | null
+  checkOutWindowStart: string | null
+  checkOutWindowEnd: string | null
 }
 
 interface Props {
@@ -28,7 +32,17 @@ export default function ShiftsClient({ initial, units }: Props) {
   const [shifts, setShifts] = useState<Shift[]>(initial)
   const [adding, setAdding] = useState(false)
   const [addError, setAddError] = useState("")
-  const [form, setForm] = useState({ nama: "", type: "ROTASI", startTime: "07:00", endTime: "14:00", workDays: [1, 2, 3, 4, 5] as number[] })
+  const [form, setForm] = useState({
+    nama: "",
+    type: "ROTASI",
+    startTime: "07:00",
+    endTime: "14:00",
+    workDays: [1, 2, 3, 4, 5] as number[],
+    checkInWindowStart: "",
+    checkInWindowEnd: "",
+    checkOutWindowStart: "",
+    checkOutWindowEnd: "",
+  })
 
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [addUnitId, setAddUnitId] = useState("")
@@ -38,7 +52,17 @@ export default function ShiftsClient({ initial, units }: Props) {
 
   // Edit state
   const [editingShift, setEditingShift] = useState<Shift | null>(null)
-  const [editForm, setEditForm] = useState({ nama: "", type: "ROTASI", startTime: "07:00", endTime: "14:00", workDays: [] as number[] })
+  const [editForm, setEditForm] = useState({
+    nama: "",
+    type: "ROTASI",
+    startTime: "07:00",
+    endTime: "14:00",
+    workDays: [] as number[],
+    checkInWindowStart: "",
+    checkInWindowEnd: "",
+    checkOutWindowStart: "",
+    checkOutWindowEnd: "",
+  })
   const [saving, setSaving] = useState(false)
   const [editError, setEditError] = useState("")
 
@@ -50,6 +74,10 @@ export default function ShiftsClient({ initial, units }: Props) {
       startTime: shift.startTime,
       endTime: shift.endTime,
       workDays: shift.workDays ?? [],
+      checkInWindowStart: shift.checkInWindowStart ?? "",
+      checkInWindowEnd: shift.checkInWindowEnd ?? "",
+      checkOutWindowStart: shift.checkOutWindowStart ?? "",
+      checkOutWindowEnd: shift.checkOutWindowEnd ?? "",
     })
     setEditError("")
   }
@@ -76,6 +104,10 @@ export default function ShiftsClient({ initial, units }: Props) {
           start_time: editForm.startTime,
           end_time: editForm.endTime,
           work_days: editForm.workDays,
+          check_in_window_start: editForm.checkInWindowStart || null,
+          check_in_window_end: editForm.checkInWindowEnd || null,
+          check_out_window_start: editForm.checkOutWindowStart || null,
+          check_out_window_end: editForm.checkOutWindowEnd || null,
         }),
       })
       const data = await res.json()
@@ -83,7 +115,18 @@ export default function ShiftsClient({ initial, units }: Props) {
       setShifts((prev) =>
         prev.map((s) =>
           s.id === editingShift.id
-            ? { ...s, nama: data.nama, type: data.type, startTime: data.start_time, endTime: data.end_time, workDays: data.work_days }
+            ? {
+                ...s,
+                nama: data.nama,
+                type: data.type,
+                startTime: data.start_time,
+                endTime: data.end_time,
+                workDays: data.work_days,
+                checkInWindowStart: data.check_in_window_start,
+                checkInWindowEnd: data.check_in_window_end,
+                checkOutWindowStart: data.check_out_window_start,
+                checkOutWindowEnd: data.check_out_window_end,
+              }
             : s
         ).sort((a, b) => a.nama.localeCompare(b.nama))
       )
@@ -101,7 +144,17 @@ export default function ShiftsClient({ initial, units }: Props) {
       const res = await fetch("/api/v1/shifts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nama: form.nama, type: form.type, start_time: form.startTime, end_time: form.endTime, work_days: form.workDays }),
+        body: JSON.stringify({
+          nama: form.nama,
+          type: form.type,
+          start_time: form.startTime,
+          end_time: form.endTime,
+          work_days: form.workDays,
+          check_in_window_start: form.checkInWindowStart || null,
+          check_in_window_end: form.checkInWindowEnd || null,
+          check_out_window_start: form.checkOutWindowStart || null,
+          check_out_window_end: form.checkOutWindowEnd || null,
+        }),
       })
       const data = await res.json()
       if (!res.ok) { setAddError(data.error?.message ?? "Gagal menyimpan"); return }
@@ -115,9 +168,23 @@ export default function ShiftsClient({ initial, units }: Props) {
         workDays: data.work_days,
         active: data.active,
         shiftUnits: [],
+        checkInWindowStart: data.check_in_window_start,
+        checkInWindowEnd: data.check_in_window_end,
+        checkOutWindowStart: data.check_out_window_start,
+        checkOutWindowEnd: data.check_out_window_end,
       }
       setShifts((prev) => [...prev, newShift].sort((a, b) => a.nama.localeCompare(b.nama)))
-      setForm({ nama: "", type: "ROTASI", startTime: "07:00", endTime: "14:00", workDays: [1, 2, 3, 4, 5] })
+      setForm({
+        nama: "",
+        type: "ROTASI",
+        startTime: "07:00",
+        endTime: "14:00",
+        workDays: [1, 2, 3, 4, 5],
+        checkInWindowStart: "",
+        checkInWindowEnd: "",
+        checkOutWindowStart: "",
+        checkOutWindowEnd: "",
+      })
     } catch { setAddError("Koneksi gagal") }
     finally { setAdding(false) }
   }
@@ -223,6 +290,29 @@ export default function ShiftsClient({ initial, units }: Props) {
                   ))}
                 </div>
               </div>
+              <div className="border-t border-gray-100 dark:border-slate-700 pt-3">
+                <p className="text-xs font-medium text-gray-700 dark:text-slate-300 mb-1.5">
+                  Window Absen <span className="text-gray-400 dark:text-slate-500 font-normal">(opsional — kosongkan untuk pakai default)</span>
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] text-gray-500 dark:text-slate-400 mb-1">Mulai absen masuk</label>
+                    <input type="time" value={editForm.checkInWindowStart} onChange={(e) => setEditForm({ ...editForm, checkInWindowStart: e.target.value })} className={`${inputClass} w-full`} />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-gray-500 dark:text-slate-400 mb-1">Akhir absen masuk</label>
+                    <input type="time" value={editForm.checkInWindowEnd} onChange={(e) => setEditForm({ ...editForm, checkInWindowEnd: e.target.value })} className={`${inputClass} w-full`} />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-gray-500 dark:text-slate-400 mb-1">Mulai absen pulang</label>
+                    <input type="time" value={editForm.checkOutWindowStart} onChange={(e) => setEditForm({ ...editForm, checkOutWindowStart: e.target.value })} className={`${inputClass} w-full`} />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-gray-500 dark:text-slate-400 mb-1">Akhir absen pulang</label>
+                    <input type="time" value={editForm.checkOutWindowEnd} onChange={(e) => setEditForm({ ...editForm, checkOutWindowEnd: e.target.value })} className={`${inputClass} w-full`} />
+                  </div>
+                </div>
+              </div>
             </div>
             {editError && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{editError}</p>}
             <div className="flex gap-2 justify-end mt-5">
@@ -276,6 +366,29 @@ export default function ShiftsClient({ initial, units }: Props) {
               ))}
             </div>
           </div>
+          <div className="border-t border-gray-100 dark:border-slate-700 pt-3">
+            <p className="text-xs font-medium text-gray-700 dark:text-slate-300 mb-1.5">
+              Window Absen <span className="text-gray-400 dark:text-slate-500 font-normal">(opsional — kosongkan untuk pakai default sistem)</span>
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <div>
+                <label className="block text-[11px] text-gray-500 dark:text-slate-400 mb-1">Mulai absen masuk</label>
+                <input type="time" value={form.checkInWindowStart} onChange={(e) => setForm({ ...form, checkInWindowStart: e.target.value })} className={`${inputClass} w-32`} />
+              </div>
+              <div>
+                <label className="block text-[11px] text-gray-500 dark:text-slate-400 mb-1">Akhir absen masuk</label>
+                <input type="time" value={form.checkInWindowEnd} onChange={(e) => setForm({ ...form, checkInWindowEnd: e.target.value })} className={`${inputClass} w-32`} />
+              </div>
+              <div>
+                <label className="block text-[11px] text-gray-500 dark:text-slate-400 mb-1">Mulai absen pulang</label>
+                <input type="time" value={form.checkOutWindowStart} onChange={(e) => setForm({ ...form, checkOutWindowStart: e.target.value })} className={`${inputClass} w-32`} />
+              </div>
+              <div>
+                <label className="block text-[11px] text-gray-500 dark:text-slate-400 mb-1">Akhir absen pulang</label>
+                <input type="time" value={form.checkOutWindowEnd} onChange={(e) => setForm({ ...form, checkOutWindowEnd: e.target.value })} className={`${inputClass} w-32`} />
+              </div>
+            </div>
+          </div>
           <div className="flex items-center gap-3">
             <button type="submit" disabled={adding} className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">
               {adding ? "Menyimpan…" : "Tambah Shift"}
@@ -311,6 +424,13 @@ export default function ShiftsClient({ initial, units }: Props) {
                   {" · "}
                   {(shift.workDays ?? []).map((d: number) => DAY_NAMES[d]).join(", ")}
                 </p>
+                {(shift.checkInWindowStart || shift.checkInWindowEnd || shift.checkOutWindowStart || shift.checkOutWindowEnd) && (
+                  <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-1">
+                    Window absen — masuk: {shift.checkInWindowStart ?? "—"}–{shift.checkInWindowEnd ?? "—"}
+                    {" · "}
+                    pulang: {shift.checkOutWindowStart ?? "—"}–{shift.checkOutWindowEnd ?? "—"}
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 {deleteErrors[shift.id] && <span className="text-xs text-red-600 dark:text-red-400">{deleteErrors[shift.id]}</span>}

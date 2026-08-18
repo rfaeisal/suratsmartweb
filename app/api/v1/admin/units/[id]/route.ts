@@ -9,6 +9,7 @@ const updateSchema = z.object({
   parentId: z.string().nullable().optional(),
   kepalaRuanganId: z.string().nullable().optional(),
   adminUnitId: z.string().nullable().optional(),
+  allowAttendanceWithoutRoster: z.boolean().optional(),
 })
 
 type RouteParams = { params: Promise<{ id: string }> }
@@ -96,6 +97,9 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       ...(parsed.data.parentId !== undefined ? { parentId: parsed.data.parentId } : {}),
       ...(parsed.data.kepalaRuanganId !== undefined ? { kepalaRuanganId: parsed.data.kepalaRuanganId } : {}),
       ...(parsed.data.adminUnitId !== undefined ? { adminUnitId: parsed.data.adminUnitId } : {}),
+      ...(parsed.data.allowAttendanceWithoutRoster !== undefined
+        ? { allowAttendanceWithoutRoster: parsed.data.allowAttendanceWithoutRoster }
+        : {}),
     },
     include: {
       parent: { select: { id: true, name: true } },

@@ -86,6 +86,9 @@ model WorkUnit {
   adminUnitId     String?
   adminUnit       Employee?  @relation("AdminUnit", fields: [adminUnitId], references: [id])
   employees       Employee[]
+  // Override: kalau true, pegawai unit ini boleh absen MASUK/PULANG walaupun
+  // tidak ada roster untuk tanggal itu. Default false (strict).
+  allowAttendanceWithoutRoster Boolean @default(false)
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
@@ -395,6 +398,13 @@ model Shift {
   type            ShiftType @default(ROTASI)
   workDays        Int[]     @default([])
   active          Boolean   @default(true)
+  // Window absen (opsional). Kalau null → fallback ke setting global
+  // (attendance_check_in_before_start_minutes, toleransi_telat_menit,
+  // attendance_check_out_before_end_minutes, attendance_check_out_after_end_minutes).
+  checkInWindowStart  String? // "HH:MM"
+  checkInWindowEnd    String? // "HH:MM"
+  checkOutWindowStart String? // "HH:MM"
+  checkOutWindowEnd   String? // "HH:MM"
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

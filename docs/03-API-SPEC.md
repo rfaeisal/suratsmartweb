@@ -24,7 +24,7 @@ Hanya endpoint berikut yang perlu diimplementasikan di sisi Flutter:
 | Approval | `GET /approvals/inbox`, `POST /approvals/:stepId/decision` |
 | Profil | `POST /profile/avatar`, `DELETE /profile/avatar` |
 | Absensi | `POST /attendance` (scan QR), `GET /attendance/me` |
-| Roster | `GET /rosters?employee_id=` (lihat roster sendiri/rekan) |
+| Roster | `GET /rosters?employee_id=` (lihat roster mendatang), `GET /rosters/today` (jadwal + window absen hari ini) |
 | Lembur | `GET /overtime`, `POST /overtime` |
 | Tukar shift | `GET /shift-swaps`, `POST /shift-swaps`, `POST /shift-swaps/:id/accept`, `POST /shift-swaps/:id/reject`, `POST /shift-swaps/:id/approve` *(KEPALA_UNIT)* |
 
@@ -346,6 +346,12 @@ Kode error yang mungkin:
 | `INVALID_APPROVAL_STATE` | 422 | Operasi tidak valid untuk status pengajuan saat ini |
 | `INTEGRATION_ERROR` | 502 | Gagal mengirim data ke sistem lama |
 | `TOO_MANY_REQUESTS` | 429 | Rate limit — berlaku untuk login, refresh, dan upload |
+| `NO_ROSTER` | 422 | Tap absen ditolak: pegawai tidak punya roster di tanggal itu (kecuali unit-nya `allowAttendanceWithoutRoster=true` atau setting `attendance_allow_no_roster=true`). Berlaku hanya untuk event `MASUK`/`PULANG`. |
+| `OUTSIDE_CHECK_IN_WINDOW` | 422 | Tap absen masuk di luar rentang jam yang diperbolehkan shift (details: `window_start`, `window_end` — ISO8601 UTC) |
+| `OUTSIDE_CHECK_OUT_WINDOW` | 422 | Tap absen pulang di luar rentang jam yang diperbolehkan shift (details: `window_start`, `window_end`) |
+| `BEACON_TIDAK_TERDETEKSI` | 422 | Beacon Bluetooth tidak terdeteksi saat tap absen |
+| `QR_INVALID` / `QR_EXPIRED` / `QR_REPLAYED` | 422 | QR token bermasalah — scan ulang QR terbaru |
+| `FACE_NOT_ENROLLED` / `FACE_MISMATCH` / `FACE_LIVENESS_FAILED` / `FACE_STALE` | 422 | Face verification gagal (details tergantung code) |
 
 ---
 
@@ -391,11 +397,27 @@ Daftar shift. Query: `work_unit_id`, `active`.
 #### `POST /api/v1/shifts`
 Buat shift baru. Role: `ADMIN_KEPEGAWAIAN`, `SUPERADMIN`.
 ```json
-{ "nama": "string", "type": "ROTASI|TETAP", "start_time": "HH:MM", "end_time": "HH:MM", "work_days": [1,2,3,4,5] }
+{
+  "nama": "string",
+  "type": "ROTASI|TETAP",
+  "start_time": "HH:MM",
+  "end_time": "HH:MM",
+  "work_days": [1,2,3,4,5],
+  "check_in_window_start": "HH:MM|null",   // opsional; kalau null pakai default
+  "check_in_window_end":   "HH:MM|null",
+  "check_out_window_start": "HH:MM|null",
+  "check_out_window_end":   "HH:MM|null"
+}
 ```
+Empat field `check_*_window_*` bersifat opsional. Kalau kosong, sistem
+mem-fallback ke setting global (`attendance_check_in_before_start_minutes`,
+`toleransi_telat_menit`, `attendance_check_out_before_end_minutes`,
+`attendance_check_out_after_end_minutes`).
 
 #### `PATCH /api/v1/shifts/:id`
-Update shift (nama, active). Role: `ADMIN_KEPEGAWAIAN`, `SUPERADMIN`.
+Update shift. Role: `ADMIN_KEPEGAWAIAN`, `SUPERADMIN`. Semua field body
+opsional; termasuk `check_in_window_start/end`, `check_out_window_start/end`
+(kirim `null` untuk kembalikan ke fallback default).
 
 #### `DELETE /api/v1/shifts/:id`
 Hapus shift (diblokir jika dipakai di roster aktif).
@@ -453,6 +475,35 @@ Batalkan publikasi roster (kembalikan ke DRAFT). Role: `KEPALA_UNIT`, `ADMIN_KEP
 Daftar entri roster. Dua mode filter (salah satu wajib):
 - `period_id` — semua roster dalam periode (role: `KEPALA_UNIT`, `ADMIN_UNIT`, admin)
 - `employee_id` — roster mendatang milik pegawai tertentu; pemanggil harus satu unit dengan target (bisa dipakai pegawai biasa untuk lihat roster rekan saat ajukan tukar shift)
+
+#### `GET /api/v1/rosters/today` `[Mobile]`
+Jadwal kerja pegawai untuk hari ini (WIB) + status boleh tap absen atau tidak.
+Tanpa parameter → jadwal milik pegawai yang login. Admin/kepala unit boleh
+kirim `employee_id=<id>` untuk lookup pegawai lain.
+Response:
+```json
+{
+  "tanggal_wib": "YYYY-MM-DD",
+  "roster": {
+    "id": "string",
+    "employee_id": "string",
+    "work_unit_id": "string",
+    "tanggal_kerja": "YYYY-MM-DD",
+    "shift": { "nama": "string", "start_time": "HH:MM", "end_time": "HH:MM", "crosses_midnight": false }
+  } | null,
+  "window": {
+    "check_in":  { "start": "ISO8601", "end": "ISO8601", "source": "shift|default" },
+    "check_out": { "start": "ISO8601", "end": "ISO8601", "source": "shift|default" }
+  } | null,
+  "can_check_in": false,
+  "can_check_out": false,
+  "overtime_status_today": "DIAJUKAN|DISETUJUI_UNIT|SAH|DITOLAK|null"
+}
+```
+Kalau tidak ada roster hari ini (dan tidak ada shift kemarin yang
+`crossesMidnight` menutupi `now`), `roster` dan `window` = `null` dan
+`can_check_in`/`can_check_out` = `false`. Mobile app pakai flag ini untuk
+enable/disable tombol absen.
 
 #### `POST /api/v1/rosters`
 Tambah entri roster manual.

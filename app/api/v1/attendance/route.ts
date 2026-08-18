@@ -11,10 +11,12 @@ import {
   isFaceVerificationRequiredForUnit,
 } from "@/lib/settings"
 import { getWibDate, hitungTanggalKerja, shiftStartUtc } from "@/lib/tanggal-kerja"
+import { resolveWindow } from "@/lib/attendance-window"
 import { Errors } from "@/lib/errors"
 import { rateLimit } from "@/lib/rate-limiter"
 import { writeAuditLog } from "@/lib/audit"
 import { cosineSimilarity, FACE_ENROLLMENT, unpackEmbedding } from "@/lib/face-embedding"
+import { sendNotification } from "@/lib/notifications"
 
 const bodySchema = z.object({
   qr_token: z.string().min(1),
@@ -179,10 +181,17 @@ export async function POST(req: NextRequest) {
   let faceMatchScore: number | null = null
   let livenessScore: number | null = null
   let livenessChallenge: string | null = null
-  const employeeUnitId = (await prisma.employee.findUnique({
+  // Sekalian ambil employee + unit info yang dipakai untuk face check, override
+  // roster, dan notifikasi lembur — hindari query ganda.
+  const employeeInfo = await prisma.employee.findUnique({
     where: { id: employeeId },
-    select: { unitId: true },
-  }))?.unitId
+    select: {
+      fullName: true,
+      unitId: true,
+      unit: { select: { id: true, allowAttendanceWithoutRoster: true } },
+    },
+  })
+  const employeeUnitId = employeeInfo?.unitId
   const faceRequired =
     !devMode &&
     (await isFaceVerificationRequiredForUnit(employeeUnitId))
@@ -245,9 +254,19 @@ export async function POST(req: NextRequest) {
   const now = new Date()
   const calendarDateWib = getWibDate(now)
 
+  const shiftSelect = {
+    startTime: true,
+    endTime: true,
+    crossesMidnight: true,
+    checkInWindowStart: true,
+    checkInWindowEnd: true,
+    checkOutWindowStart: true,
+    checkOutWindowEnd: true,
+  } as const
+
   let roster = await prisma.roster.findUnique({
     where: { employeeId_tanggalKerja: { employeeId, tanggalKerja: calendarDateWib } },
-    include: { shift: { select: { startTime: true, crossesMidnight: true, endTime: true } } },
+    include: { shift: { select: shiftSelect } },
   })
 
   // Cek apakah pegawai sedang dalam shift lintas tengah malam dari kemarin
@@ -255,7 +274,7 @@ export async function POST(req: NextRequest) {
     const yesterday = new Date(calendarDateWib.getTime() - 86_400_000)
     const yRoster = await prisma.roster.findUnique({
       where: { employeeId_tanggalKerja: { employeeId, tanggalKerja: yesterday } },
-      include: { shift: { select: { startTime: true, crossesMidnight: true, endTime: true } } },
+      include: { shift: { select: shiftSelect } },
     })
     if (yRoster?.shift.crossesMidnight) {
       const tanggalKerjaHitung = hitungTanggalKerja(now, yRoster.shift)
@@ -265,20 +284,55 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Tidak ada roster tetap direkam — handle tukar shift yang belum disetujui
   const tanggalKerja = roster?.tanggalKerja ?? calendarDateWib
 
   const settings = await getAttendanceSettings()
   let telat = false
   const flags: string[] = []
-  if (!roster) flags.push("no_roster")
 
-  if (event_type === "masuk" && roster) {
-    const shiftStart = shiftStartUtc(tanggalKerja, roster.shift.startTime)
-    const threshold = new Date(shiftStart.getTime() + settings.toleransiTelatMenit * 60_000)
-    if (now > threshold) {
-      telat = true
-      flags.push("telat")
+  const isRegular = event_type === "masuk" || event_type === "pulang"
+  const isOvertime = event_type === "lembur_masuk" || event_type === "lembur_pulang"
+
+  // === MASUK / PULANG BIASA ===
+  // Roster wajib (kecuali unit punya override atau setting global mengizinkan).
+  if (isRegular && !roster) {
+    const allowOverride =
+      employeeInfo?.unit?.allowAttendanceWithoutRoster === true || settings.allowNoRoster
+    if (!allowOverride) return Errors.noRoster()
+    flags.push("no_roster")
+  }
+
+  if (isRegular && roster) {
+    const window = resolveWindow(roster.shift, tanggalKerja, settings)
+    if (event_type === "masuk") {
+      if (now < window.checkIn.startUtc || now > window.checkIn.endUtc) {
+        return Errors.outsideCheckInWindow(window.checkIn.startUtc, window.checkIn.endUtc)
+      }
+      const shiftStart = shiftStartUtc(tanggalKerja, roster.shift.startTime)
+      const threshold = new Date(shiftStart.getTime() + settings.toleransiTelatMenit * 60_000)
+      if (now > threshold) {
+        telat = true
+        flags.push("telat")
+      }
+    } else {
+      if (now < window.checkOut.startUtc || now > window.checkOut.endUtc) {
+        return Errors.outsideCheckOutWindow(window.checkOut.startUtc, window.checkOut.endUtc)
+      }
+    }
+  }
+
+  // === LEMBUR ===
+  // Tidak wajib roster & tidak divalidasi window. Kalau tidak ada Overtime SAH
+  // pada tanggal ini, tetap catat + flag `overtime_unapproved` + notif ke Kepala Unit.
+  let overtimeUnapproved = false
+  if (isOvertime) {
+    const overtime = await prisma.overtime.findFirst({
+      where: { employeeId, tanggalKerja, status: "SAH" },
+      select: { id: true },
+    })
+    if (!overtime) {
+      overtimeUnapproved = true
+      flags.push("overtime_unapproved")
     }
   }
 
@@ -327,6 +381,44 @@ export async function POST(req: NextRequest) {
     entityId: attendance.id,
     metadata: { eventType: event_type, employeeId },
   })
+
+  // Notif Kepala Unit kalau lembur tanpa pengajuan yang disetujui.
+  // Non-blocking — kegagalan notif tidak boleh menggagalkan absen.
+  if (overtimeUnapproved) {
+    const notifUnitId = attendance.workUnitId ?? employeeInfo?.unit?.id
+    if (notifUnitId) {
+      try {
+        const kepalaUsers = await prisma.appUser.findMany({
+          where: { managedWorkUnitId: notifUnitId, roles: { has: "KEPALA_UNIT" } },
+          select: { id: true },
+        })
+        await Promise.all(
+          kepalaUsers.map((u) =>
+            sendNotification({
+              event: "OVERTIME_TAP_WITHOUT_APPROVAL",
+              targetUserId: u.id,
+              data: {
+                attendanceId: attendance.id,
+                employeeId,
+                employeeName: employeeInfo?.fullName ?? "",
+                eventType: event_type,
+                tanggalKerja: attendance.tanggalKerja.toISOString().slice(0, 10),
+              },
+            }),
+          ),
+        )
+      } catch (err) {
+        console.error("[attendance] Gagal kirim notif lembur unapproved:", err)
+      }
+      await writeAuditLog({
+        actorId: authUser.userId,
+        action: "OVERTIME_TAP_WITHOUT_APPROVAL",
+        entityType: "Attendance",
+        entityId: attendance.id,
+        metadata: { eventType: event_type, employeeId, workUnitId: notifUnitId },
+      })
+    }
+  }
 
   return NextResponse.json(
     {

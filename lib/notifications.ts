@@ -19,6 +19,7 @@ export type NotifEvent =
   | "ATTENDANCE_MISSING_CHECKOUT"
   | "FACE_ENROLLMENT_APPROVED"
   | "FACE_ENROLLMENT_REJECTED"
+  | "OVERTIME_TAP_WITHOUT_APPROVAL"
 
 interface NotifPayload {
   event: NotifEvent
@@ -165,6 +166,13 @@ function buildFcmData(event: NotifEvent, data: Record<string, string>): Record<s
         body: data.reason
           ? `Alasan: ${data.reason}`
           : "Enrollment wajah ditolak. Silakan ulang di bagian kepegawaian.",
+      }
+    case "OVERTIME_TAP_WITHOUT_APPROVAL":
+      return {
+        ...data,
+        type: "OVERTIME_UNAPPROVED",
+        title: "Absen Lembur Tanpa Persetujuan",
+        body: `${data.employeeName ?? "Pegawai"} tap absen lembur tanpa pengajuan yang disetujui. Perlu validasi.`,
       }
   }
 }

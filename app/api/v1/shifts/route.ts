@@ -7,6 +7,8 @@ import { Errors } from "@/lib/errors"
 function shiftToJson(s: {
   id: string; nama: string; startTime: string; endTime: string
   crossesMidnight: boolean; type: string; workDays: number[]; active: boolean
+  checkInWindowStart: string | null; checkInWindowEnd: string | null
+  checkOutWindowStart: string | null; checkOutWindowEnd: string | null
 }) {
   return {
     id: s.id,
@@ -17,6 +19,10 @@ function shiftToJson(s: {
     type: s.type,
     work_days: s.workDays,
     active: s.active,
+    check_in_window_start: s.checkInWindowStart,
+    check_in_window_end: s.checkInWindowEnd,
+    check_out_window_start: s.checkOutWindowStart,
+    check_out_window_end: s.checkOutWindowEnd,
   }
 }
 
@@ -53,6 +59,12 @@ export async function GET(req: NextRequest) {
   })
 }
 
+const timeOrNull = z
+  .string()
+  .regex(/^\d{2}:\d{2}$/)
+  .nullable()
+  .optional()
+
 const createSchema = z.object({
   nama: z.string().min(1).max(100),
   start_time: z.string().regex(/^\d{2}:\d{2}$/),
@@ -60,6 +72,10 @@ const createSchema = z.object({
   crosses_midnight: z.boolean().default(false),
   type: z.enum(["ROTASI", "TETAP"]).default("ROTASI"),
   work_days: z.array(z.number().int().min(1).max(7)).default([]),
+  check_in_window_start: timeOrNull,
+  check_in_window_end: timeOrNull,
+  check_out_window_start: timeOrNull,
+  check_out_window_end: timeOrNull,
 })
 
 export async function POST(req: NextRequest) {
@@ -85,6 +101,10 @@ export async function POST(req: NextRequest) {
       crossesMidnight: parsed.data.crosses_midnight,
       type: parsed.data.type,
       workDays: parsed.data.work_days,
+      checkInWindowStart: parsed.data.check_in_window_start ?? null,
+      checkInWindowEnd: parsed.data.check_in_window_end ?? null,
+      checkOutWindowStart: parsed.data.check_out_window_start ?? null,
+      checkOutWindowEnd: parsed.data.check_out_window_end ?? null,
     },
   })
 

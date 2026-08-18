@@ -20,6 +20,8 @@ export type ErrorCode =
   | "QR_EXPIRED"
   | "QR_REPLAYED"
   | "NO_ROSTER"
+  | "OUTSIDE_CHECK_IN_WINDOW"
+  | "OUTSIDE_CHECK_OUT_WINDOW"
   | "EMPLOYEE_INACTIVE"
   | "FACE_NOT_ENROLLED"
   | "FACE_MISMATCH"
@@ -97,6 +99,22 @@ export const Errors = {
 
   noRoster: () =>
     apiError("NO_ROSTER", "Tidak ada jadwal kerja untuk tanggal ini", 422),
+
+  outsideCheckInWindow: (windowStart: Date, windowEnd: Date) =>
+    apiError(
+      "OUTSIDE_CHECK_IN_WINDOW",
+      "Belum atau sudah lewat waktu absen masuk untuk shift ini.",
+      422,
+      { window_start: windowStart.toISOString(), window_end: windowEnd.toISOString() },
+    ),
+
+  outsideCheckOutWindow: (windowStart: Date, windowEnd: Date) =>
+    apiError(
+      "OUTSIDE_CHECK_OUT_WINDOW",
+      "Belum atau sudah lewat waktu absen pulang untuk shift ini.",
+      422,
+      { window_start: windowStart.toISOString(), window_end: windowEnd.toISOString() },
+    ),
 
   employeeInactive: () =>
     apiError(

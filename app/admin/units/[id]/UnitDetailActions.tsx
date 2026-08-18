@@ -29,6 +29,7 @@ interface Props {
     parent: { id: string; name: string } | null
     employees: EmployeeOption[]
     _count: { employees: number; children: number }
+    allowAttendanceWithoutRoster: boolean
   }
   allUnits: UnitOption[]
 }
@@ -41,6 +42,7 @@ export default function UnitDetailActions({ unit, allUnits }: Props) {
   const [editParentId, setEditParentId] = useState(unit.parentId ?? "")
   const [editKepalaId, setEditKepalaId] = useState(unit.kepalaRuanganId ?? "")
   const [editAdminId, setEditAdminId] = useState(unit.adminUnitId ?? "")
+  const [editAllowNoRoster, setEditAllowNoRoster] = useState(unit.allowAttendanceWithoutRoster)
   const [saving, setSaving] = useState(false)
   const [editError, setEditError] = useState("")
 
@@ -62,6 +64,7 @@ export default function UnitDetailActions({ unit, allUnits }: Props) {
           parentId: editParentId || null,
           kepalaRuanganId: editKepalaId || null,
           adminUnitId: editAdminId || null,
+          allowAttendanceWithoutRoster: editAllowNoRoster,
         }),
       })
       if (!res.ok) {
@@ -124,7 +127,7 @@ export default function UnitDetailActions({ unit, allUnits }: Props) {
             <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{unit.name}</h1>
             <Tooltip label="Edit">
               <button
-                onClick={() => { setEditName(unit.name); setEditParentId(unit.parentId ?? ""); setEditKepalaId(unit.kepalaRuanganId ?? ""); setEditAdminId(unit.adminUnitId ?? ""); setEditOpen(true) }}
+                onClick={() => { setEditName(unit.name); setEditParentId(unit.parentId ?? ""); setEditKepalaId(unit.kepalaRuanganId ?? ""); setEditAdminId(unit.adminUnitId ?? ""); setEditAllowNoRoster(unit.allowAttendanceWithoutRoster); setEditOpen(true) }}
                 className="p-1.5 rounded-lg text-blue-500 hover:text-blue-700 hover:bg-blue-50 transition-colors"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -210,6 +213,25 @@ export default function UnitDetailActions({ unit, allUnits }: Props) {
                   allowEmpty
                   emptyLabel="— Tidak ada —"
                 />
+              </div>
+              <div className="border-t border-gray-100 dark:border-slate-700 pt-3">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editAllowNoRoster}
+                    onChange={(e) => setEditAllowNoRoster(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <div>
+                    <span className="text-xs font-medium text-gray-700 dark:text-slate-300">
+                      Izinkan absen tanpa jadwal (roster)
+                    </span>
+                    <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5">
+                      Kalau aktif, pegawai unit ini boleh tap absen masuk/pulang walaupun tidak ada jadwal
+                      di tanggal tersebut. Default: dimatikan (strict).
+                    </p>
+                  </div>
+                </label>
               </div>
             </div>
             {editError && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{editError}</p>}
