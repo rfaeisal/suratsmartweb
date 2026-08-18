@@ -35,9 +35,20 @@ const bodySchema = z.object({
       embedding_model_version: z.string().min(1).max(64),
       liveness_score: z.number().min(0).max(1),
       liveness_challenge: z.string().max(64).optional(),
+      // ISO 8601 timestamp saat face+liveness selesai di-capture.
+      // Backend enforce freshness < FACE_MAX_AGE_SECONDS (5 menit) supaya
+      // face embedding tidak bisa di-cache lama untuk skenario titip.
+      // Optional untuk backward compat build mobile yang belum kirim field ini.
+      face_captured_at: z.string().datetime().optional(),
     })
     .optional(),
 })
+
+// Batas umur face capture — 5 menit dari capture sampai POST tiba.
+// Match dengan client-side check (mobile v1.4.2+9).
+const FACE_MAX_AGE_SECONDS = 5 * 60
+// Toleransi jam HP di masa depan (kalau HP clock ngaco/skew).
+const FACE_FUTURE_TOLERANCE_SECONDS = 60
 
 const EVENT_TYPE_MAP = {
   masuk: "MASUK",
@@ -169,6 +180,24 @@ export async function POST(req: NextRequest) {
     (await isFaceVerificationRequiredForUnit(qrResult.device.workUnitId))
   if (faceRequired) {
     if (!face) return Errors.faceNotEnrolled()
+
+    // Freshness check — cegah face embedding di-cache untuk skenario titip
+    // (capture pagi hari, POST sore hari). Kalau field tidak dikirim
+    // (backward compat build lama), skip — client-side check jadi satu-
+    // satunya proteksi. Build mobile v1.4.2+9+ kirim field ini.
+    if (face.face_captured_at) {
+      const capturedAtMs = Date.parse(face.face_captured_at)
+      if (Number.isNaN(capturedAtMs)) {
+        return Errors.validation("face_captured_at tidak valid")
+      }
+      const ageSeconds = (Date.now() - capturedAtMs) / 1000
+      if (ageSeconds < -FACE_FUTURE_TOLERANCE_SECONDS) {
+        return Errors.validation("face_captured_at di masa depan")
+      }
+      if (ageSeconds > FACE_MAX_AGE_SECONDS) {
+        return Errors.faceStale(Math.round(ageSeconds))
+      }
+    }
 
     const employeeFace = await prisma.employee.findUnique({
       where: { id: employeeId },

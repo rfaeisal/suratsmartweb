@@ -765,12 +765,20 @@ tercantum di `AppSetting.face_verification_required_units`.
   "client_time": "2026-08-18T08:00:00Z",
   "face": {
     "embedding": [0.123, -0.045, ...],
-    "embedding_model_version": "mobilefacenet-v1",
-    "liveness_score": 0.87,
-    "liveness_challenge": "BLINK,HEAD_LEFT"
+    "embedding_model_version": "mobilefacenet-sirius-v1",
+    "liveness_score": 1.0,
+    "liveness_challenge": "FRONTAL,BLINK,HEAD_LEFT",
+    "face_captured_at": "2026-08-18T07:59:30.123Z"
   }
 }
 ```
+
+Field `face_captured_at` (ISO 8601, optional untuk backward compat):
+- Timestamp saat face+liveness selesai capture di HP.
+- Backend enforce freshness: max 5 menit dari capture sampai server terima
+  (`FACE_MAX_AGE_SECONDS`). Kalau lewat → `FACE_STALE` (422).
+- Toleransi jam HP di masa depan: max 60 detik (kalau clock skew).
+- Kalau field tidak dikirim (build mobile lama), skip check.
 Server verify:
 1. `embedding_model_version` == `Employee.faceEmbeddingModelVersion` (kalau
    beda → `FACE_MISMATCH`, minta re-enroll).
@@ -825,6 +833,7 @@ Response 200:
 | `FACE_NOT_ENROLLED` | 422 | Wajah belum di-enroll padahal unit require |
 | `FACE_MISMATCH` | 422 | Cosine similarity < threshold (kirim `score`) |
 | `FACE_LIVENESS_FAILED` | 422 | Skor liveness < threshold (kirim `score`) |
+| `FACE_STALE` | 422 | `face_captured_at` > 5 menit dari server time (kirim `ageSeconds`) |
 
 ---
 

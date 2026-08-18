@@ -24,6 +24,7 @@ export type ErrorCode =
   | "FACE_NOT_ENROLLED"
   | "FACE_MISMATCH"
   | "FACE_LIVENESS_FAILED"
+  | "FACE_STALE"
 
 interface ApiError {
   code: ErrorCode
@@ -125,6 +126,14 @@ export const Errors = {
       "Deteksi keaslian wajah gagal. Ulangi dengan pencahayaan cukup dan ikuti instruksi.",
       422,
       score !== undefined ? { score } : undefined,
+    ),
+
+  faceStale: (ageSeconds?: number) =>
+    apiError(
+      "FACE_STALE",
+      "Verifikasi wajah kadaluarsa. Ulangi pemindaian wajah lalu absen ulang.",
+      422,
+      ageSeconds !== undefined ? { ageSeconds } : undefined,
     ),
 
   internal: (message = "Terjadi kesalahan internal server") =>

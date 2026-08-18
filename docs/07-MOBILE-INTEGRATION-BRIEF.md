@@ -183,12 +183,21 @@ Request body `POST /api/v1/attendance`:
   "client_time": "2026-08-18T08:00:00Z",
   "face": {
     "embedding": [0.123, -0.045, ...],
-    "embedding_model_version": "mobilefacenet-v1",
-    "liveness_score": 0.87,
-    "liveness_challenge": "BLINK,HEAD_LEFT"
+    "embedding_model_version": "mobilefacenet-sirius-v1",
+    "liveness_score": 1.0,
+    "liveness_challenge": "FRONTAL,BLINK,HEAD_LEFT",
+    "face_captured_at": "2026-08-18T07:59:30.123Z"
   }
 }
 ```
+
+**Flip flow recommended** (2026-08-18 pilot feedback): capture face+liveness
+DULU (bebas time-pressure), lalu scan QR (< 2s di depan ESP32), lalu POST
+langsung. QR umurnya jadi 1-2 detik → tidak akan `QR_EXPIRED`.
+
+`face_captured_at` = ISO 8601 timestamp saat face+liveness selesai capture
+di HP. Backend enforce freshness max 5 menit (`FACE_STALE` error kalau
+lewat) untuk cegah cache attack. Toleransi jam HP masa depan: 60 detik.
 
 ## 5. Liveness Check
 
@@ -224,6 +233,7 @@ default 0.5 (jadi safety net, bukan primary gate).
 | `FACE_NOT_ENROLLED` | 422 | "Wajah belum terdaftar. Datang ke bagian kepegawaian untuk enrollment." Tombol shortcut ke halaman enrollment. |
 | `FACE_MISMATCH` (dengan `score` di details) | 422 | "Wajah tidak cocok (skor X). Coba lagi." Kalau berulang → arahkan re-enroll. |
 | `FACE_LIVENESS_FAILED` (dengan `score`) | 422 | "Deteksi keaslian gagal. Ulangi dengan pencahayaan cukup, ikuti challenge." |
+| `FACE_STALE` (dengan `ageSeconds`) | 422 | "Verifikasi wajah kadaluarsa (X detik). Ulangi pemindaian wajah." Force ulang capture. |
 | `EMPLOYEE_INACTIVE` | 403 (saat login/refresh) | "Akun non-aktif. Hubungi kepegawaian." Force logout. |
 | `BEACON_TIDAK_TERDETEKSI` | 422 | Existing — tetap tampilkan seperti sekarang. |
 | `QR_EXPIRED` / `QR_REPLAYED` / `QR_INVALID` | 422 | Existing. |
