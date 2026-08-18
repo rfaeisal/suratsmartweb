@@ -52,13 +52,23 @@ firmware ESP32**.
 
 - **Passive** (background, tanpa aksi user): moiré detection + head pose
   sanity + eye open probability.
-- **Active challenge** (per sesi, random 2 dari 3):
-  - Kedip mata
-  - Toleh kanan
-  - Toleh kiri
+- **Active challenge** (per sesi, random subset):
+  - Kedip mata (BLINK) — **ditunda ke iterasi berikutnya di MVP mobile**
+    (2026-08-18). Alasan tim mobile: butuh package `camera` realtime yang
+    perlu tuning lebih. Kalau data lapangan menunjukkan video-replay
+    attack lolos, BLINK akan ditambahkan.
+  - Toleh kanan (HEAD_RIGHT)
+  - Toleh kiri (HEAD_LEFT)
 - Timeout 8–10 detik.
 - **Threshold liveness awal**: 0.5.
 - Skor tersimpan per Attendance untuk audit.
+
+**Format field `liveness_challenge` di request `/attendance`**:
+comma-separated uppercase. `FRONTAL` sebagai passive marker + kombinasi
+active challenge. Contoh: `"FRONTAL,HEAD_LEFT"`, `"FRONTAL,HEAD_RIGHT"`,
+atau nanti `"FRONTAL,BLINK,HEAD_LEFT"`. Backend tidak parse content —
+hanya simpan apa adanya di `Attendance.livenessChallenge` (max 64 char)
+untuk audit / analytics lapangan.
 
 ### Handling Offline
 
