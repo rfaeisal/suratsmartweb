@@ -26,6 +26,12 @@ model Employee {
   avatarUrl          String?
   isActive           Boolean        @default(true)
   source             EmployeeSource @default(LEGACY)
+  // Face recognition (Fase 6+, lihat docs/06-FACE-RECOGNITION-PRD.md)
+  faceEmbedding             Bytes?    // Packed float32 (Little-Endian), dimensi sesuai model
+  faceThumbnailUrl          String?   // path relatif di storage (LOKAL/BLOB)
+  faceEnrolledAt            DateTime?
+  faceEmbeddingModelVersion String?   // mis. "mobilefacenet-v1"
+  faceEnrollmentDeviceInfo  Json?     // model HP, camera info saat enroll
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
@@ -42,6 +48,7 @@ model Employee {
   alphaRecords      AlphaRecord[]
   swapRequests      ShiftSwapRequest[] @relation("SwapRequester")
   swapTargets       ShiftSwapRequest[] @relation("SwapTarget")
+  faceEnrollmentSessions FaceEnrollmentSession[]
 }
 
 enum EmployeeType {
@@ -489,6 +496,13 @@ model Attendance {
   status         AttendanceStatus @default(VALID)
   telat          Boolean          @default(false)
   flags          Json             @default("[]")
+  // Face recognition (opsional, hanya bila unit mengaktifkan)
+  faceMatchScore       Float?
+  livenessScore        Float?
+  livenessChallenge    String?    // mis. "BLINK,HEAD_LEFT"
+  // Manual recovery oleh admin (kalau status = MANUAL_RECOVERY)
+  manualRecoveryBy     String?    // AppUser.id admin
+  manualRecoveryReason String?
   createdAt      DateTime         @default(now())
 
   @@unique([employeeId, deviceId, counter])
@@ -504,6 +518,46 @@ enum AttendanceEvent {
 enum AttendanceStatus {
   VALID
   ALPHA
+  MANUAL_RECOVERY
+}
+
+// ============================================================
+// FACE RECOGNITION — SESI ENROLLMENT
+// ============================================================
+// Rincian PRD ada di docs/06-FACE-RECOGNITION-PRD.md.
+// Flow: admin buat sesi (return QR token) → pegawai scan + submit selfie
+// & embedding via mobile → admin approve/reject on-the-spot.
+model FaceEnrollmentSession {
+  id                    String   @id @default(cuid())
+  employeeId            String
+  employee              Employee @relation(fields: [employeeId], references: [id])
+  adminId               String   // AppUser.id admin yang generate sesi
+  token                 String   @unique
+  tokenExpiresAt        DateTime
+  status                FaceEnrollmentStatus @default(PENDING)
+  submittedAt           DateTime?
+  embedding             Bytes?   // packed float32 hasil submit mobile
+  embeddingModelVersion String?
+  thumbnailUrl          String?  // path relatif di storage
+  deviceInfo            Json?
+  approvedAt            DateTime?
+  approvedBy            String?
+  rejectedAt            DateTime?
+  rejectedBy            String?
+  rejectReason          String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([employeeId, status])
+  @@index([status, tokenExpiresAt])
+}
+
+enum FaceEnrollmentStatus {
+  PENDING    // token dibuat, menunggu submit dari mobile
+  SUBMITTED  // sudah submit dari mobile, menunggu approve admin
+  APPROVED
+  REJECTED
+  EXPIRED
 }
 
 model AlphaRecord {

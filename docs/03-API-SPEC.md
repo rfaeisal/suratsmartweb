@@ -630,6 +630,91 @@ Response XLSX/PDF: file download.
 | `QR_REPLAYED` | 422 | Token QR sudah pernah dipakai (replay attack) |
 | `BEACON_TIDAK_TERDETEKSI` | 422 | BLE beacon tidak terdeteksi (pegawai tidak ada di lokasi) |
 | `NO_ROSTER` | 422 | Tidak ada roster aktif untuk pegawai di tanggal ini |
+| `EMPLOYEE_INACTIVE` | 403 | Akun pegawai berstatus non-aktif (blok login & refresh) |
+
+---
+
+## 9b. Face Recognition Enrollment `[Mobile + Web]`
+
+Sesi enrollment wajah untuk absen. Rincian PRD di `docs/06-FACE-RECOGNITION-PRD.md`.
+Ringkasan flow: admin di admin panel generate sesi (return QR token) → pegawai
+scan QR di mobile → mobile submit embedding + thumbnail → admin approve/reject
+on-the-spot di admin panel.
+
+#### `POST /api/v1/admin/face-enrollment/sessions` `[Web — Admin]`
+Buat sesi enrollment untuk pegawai tertentu. Role: `ADMIN_KEPEGAWAIAN` /
+`SUPERADMIN`. Sesi PENDING lama untuk pegawai yang sama otomatis di-EXPIRE.
+
+Request:
+```json
+{ "employeeId": "cuid" }
+```
+Response 200:
+```json
+{
+  "id": "session-cuid",
+  "employeeId": "cuid",
+  "employeeName": "Budi Santoso",
+  "token": "AB3F9XKM",
+  "qrPayload": "cs-enroll:AB3F9XKM",
+  "tokenExpiresAt": "2026-08-18T05:30:00.000Z",
+  "ttlSeconds": 300
+}
+```
+Admin panel encode `qrPayload` ke QR code di layar; pegawai scan pakai
+scanner QR di app. Prefix `cs-enroll:` membedakan dari QR absen ESP32.
+
+#### `GET /api/v1/admin/face-enrollment/sessions` `[Web — Admin]`
+List sesi (max 100 terbaru). Query optional: `?status=PENDING|SUBMITTED|APPROVED|REJECTED|EXPIRED`,
+`?employeeId=cuid`.
+
+#### `POST /api/v1/employees/me/face-enrollment` `[Mobile]`
+Submit hasil capture. Wajib login pegawai (Bearer token). Rate-limit 5/menit/IP.
+
+Request:
+```json
+{
+  "token": "AB3F9XKM",
+  "embedding": [0.123, -0.045, ...],
+  "embeddingModelVersion": "mobilefacenet-v1",
+  "thumbnailBase64": "/9j/4AAQSkZJRg...",
+  "deviceInfo": {
+    "model": "Xiaomi Redmi Note 12",
+    "os": "Android 14",
+    "cameraResolution": "1280x720"
+  }
+}
+```
+Batasan:
+- `embedding` — dim antara 64–1024 (angka finite).
+- `thumbnailBase64` — JPEG, hasil decode <60 KB (idealnya 160×160 q70 ~15 KB).
+- `token` — panjang persis 8 char.
+
+Server validate: token exists, PENDING, belum expired, milik `employeeId` yang
+login. Kalau lolos → status jadi `SUBMITTED`, tunggu approval admin.
+
+Response 200:
+```json
+{ "id": "session-cuid", "status": "SUBMITTED", "message": "Enrollment dikirim. Menunggu persetujuan admin." }
+```
+
+#### `POST /api/v1/admin/face-enrollment/sessions/:id/approve` `[Web — Admin]`
+Approve. Copy embedding+thumbnail ke `Employee`, tandai `faceEnrolledAt = now`,
+semua sesi PENDING/SUBMITTED lain untuk pegawai ini otomatis EXPIRE.
+
+Response 200:
+```json
+{ "id": "session-cuid", "status": "APPROVED", "approvedAt": "2026-08-18T05:32:00.000Z" }
+```
+
+#### `POST /api/v1/admin/face-enrollment/sessions/:id/reject` `[Web — Admin]`
+Reject dengan alasan (wajib). Thumbnail + embedding di sesi dihapus (privacy —
+data biometrik enrollment yang ditolak tidak disimpan).
+
+Request:
+```json
+{ "reason": "Foto blur, minta enroll ulang" }
+```
 
 ---
 
