@@ -21,6 +21,9 @@ export type ErrorCode =
   | "QR_REPLAYED"
   | "NO_ROSTER"
   | "EMPLOYEE_INACTIVE"
+  | "FACE_NOT_ENROLLED"
+  | "FACE_MISMATCH"
+  | "FACE_LIVENESS_FAILED"
 
 interface ApiError {
   code: ErrorCode
@@ -99,6 +102,29 @@ export const Errors = {
       "EMPLOYEE_INACTIVE",
       "Akun pegawai berstatus non-aktif. Hubungi bagian kepegawaian.",
       403,
+    ),
+
+  faceNotEnrolled: () =>
+    apiError(
+      "FACE_NOT_ENROLLED",
+      "Wajah belum terdaftar. Hubungi bagian kepegawaian untuk enrollment.",
+      422,
+    ),
+
+  faceMismatch: (score?: number) =>
+    apiError(
+      "FACE_MISMATCH",
+      "Verifikasi wajah gagal. Coba lagi atau hubungi kepegawaian.",
+      422,
+      score !== undefined ? { score } : undefined,
+    ),
+
+  faceLivenessFailed: (score?: number) =>
+    apiError(
+      "FACE_LIVENESS_FAILED",
+      "Deteksi keaslian wajah gagal. Ulangi dengan pencahayaan cukup dan ikuti instruksi.",
+      422,
+      score !== undefined ? { score } : undefined,
     ),
 
   internal: (message = "Terjadi kesalahan internal server") =>

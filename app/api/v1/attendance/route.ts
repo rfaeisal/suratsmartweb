@@ -3,11 +3,18 @@ import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import { requireAuth, AuthError } from "@/lib/auth/require-auth"
 import { verifyQrToken } from "@/lib/qr-verifier"
-import { getAttendanceSettings, isBeaconVerificationEnabled } from "@/lib/settings"
+import {
+  getAttendanceSettings,
+  getFaceMatchThreshold,
+  getLivenessThreshold,
+  isBeaconVerificationEnabled,
+  isFaceVerificationRequiredForUnit,
+} from "@/lib/settings"
 import { getWibDate, hitungTanggalKerja, shiftStartUtc } from "@/lib/tanggal-kerja"
 import { Errors } from "@/lib/errors"
 import { rateLimit } from "@/lib/rate-limiter"
 import { writeAuditLog } from "@/lib/audit"
+import { cosineSimilarity, FACE_ENROLLMENT, unpackEmbedding } from "@/lib/face-embedding"
 
 const bodySchema = z.object({
   qr_token: z.string().min(1),
@@ -19,6 +26,17 @@ const bodySchema = z.object({
     minor: z.number().int().optional(),
   }),
   client_time: z.string(),
+  face: z
+    .object({
+      embedding: z
+        .array(z.number().finite())
+        .min(FACE_ENROLLMENT.EMBEDDING_MIN_DIM)
+        .max(FACE_ENROLLMENT.EMBEDDING_MAX_DIM),
+      embedding_model_version: z.string().min(1).max(64),
+      liveness_score: z.number().min(0).max(1),
+      liveness_challenge: z.string().max(64).optional(),
+    })
+    .optional(),
 })
 
 const EVENT_TYPE_MAP = {
@@ -122,7 +140,7 @@ export async function POST(req: NextRequest) {
   const parsed = bodySchema.safeParse(body)
   if (!parsed.success) return Errors.validation(parsed.error.issues[0].message)
 
-  const { qr_token, event_type, beacon } = parsed.data
+  const { qr_token, event_type, beacon, face } = parsed.data
   const { employeeId } = authUser
 
   // Verifikasi QR token (parse → device → counter window → HMAC → dedup)
@@ -139,6 +157,52 @@ export async function POST(req: NextRequest) {
   const devMode = process.env.LEGACY_SSO_MOCK === "true"
   const beaconRequired = await isBeaconVerificationEnabled()
   if (!beacon.detected && beaconRequired && !devMode) return Errors.beaconTidakTerdeteksi()
+
+  // Face verification — hanya kalau unit device mengaktifkannya.
+  // Verifikasi setelah beacon supaya ordering error konsisten (network → QR →
+  // beacon → face). Skip di dev mode agar dev tools tidak break.
+  let faceMatchScore: number | null = null
+  let livenessScore: number | null = null
+  let livenessChallenge: string | null = null
+  const faceRequired =
+    !devMode &&
+    (await isFaceVerificationRequiredForUnit(qrResult.device.workUnitId))
+  if (faceRequired) {
+    if (!face) return Errors.faceNotEnrolled()
+
+    const employeeFace = await prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { faceEmbedding: true, faceEmbeddingModelVersion: true },
+    })
+    if (!employeeFace?.faceEmbedding || !employeeFace.faceEmbeddingModelVersion) {
+      return Errors.faceNotEnrolled()
+    }
+    if (employeeFace.faceEmbeddingModelVersion !== face.embedding_model_version) {
+      // Model beda → embedding tidak comparable. Paksa re-enroll.
+      return Errors.faceMismatch()
+    }
+
+    const [matchThreshold, livenessThreshold] = await Promise.all([
+      getFaceMatchThreshold(),
+      getLivenessThreshold(),
+    ])
+
+    livenessScore = face.liveness_score
+    livenessChallenge = face.liveness_challenge ?? null
+    if (livenessScore < livenessThreshold) {
+      return Errors.faceLivenessFailed(livenessScore)
+    }
+
+    const storedEmb = unpackEmbedding(employeeFace.faceEmbedding)
+    const incomingEmb = Float32Array.from(face.embedding)
+    if (storedEmb.length !== incomingEmb.length) {
+      return Errors.faceMismatch()
+    }
+    faceMatchScore = cosineSimilarity(storedEmb, incomingEmb)
+    if (faceMatchScore < matchThreshold) {
+      return Errors.faceMismatch(faceMatchScore)
+    }
+  }
 
   // Tentukan tanggal_kerja + lookup roster
   const now = new Date()
@@ -208,6 +272,9 @@ export async function POST(req: NextRequest) {
         status: "VALID",
         telat,
         flags,
+        faceMatchScore,
+        livenessScore,
+        livenessChallenge,
       },
       include: {
         room: { select: { id: true, nama: true } },

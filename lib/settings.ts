@@ -45,3 +45,38 @@ export async function getAttendanceSettings(): Promise<{
     intervalRotasiDetik: parseInt(interval, 10),
   }
 }
+
+/**
+ * Face verification aktif per unit. Value setting berupa JSON array unitId.
+ * Kalau unit tidak ada di list, absen tidak butuh face check.
+ * Kalau ada, absen wajib sertakan face_embedding + liveness_score.
+ */
+export async function getFaceVerificationUnits(): Promise<string[]> {
+  const val = await getSetting("face_verification_required_units", "[]")
+  try {
+    const parsed = JSON.parse(val)
+    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === "string") : []
+  } catch {
+    return []
+  }
+}
+
+export async function isFaceVerificationRequiredForUnit(
+  unitId: string | null | undefined,
+): Promise<boolean> {
+  if (!unitId) return false
+  const units = await getFaceVerificationUnits()
+  return units.includes(unitId)
+}
+
+export async function getFaceMatchThreshold(): Promise<number> {
+  const val = await getSetting("face_match_threshold", "0.65")
+  const n = parseFloat(val)
+  return Number.isFinite(n) ? n : 0.65
+}
+
+export async function getLivenessThreshold(): Promise<number> {
+  const val = await getSetting("face_liveness_threshold", "0.5")
+  const n = parseFloat(val)
+  return Number.isFinite(n) ? n : 0.5
+}

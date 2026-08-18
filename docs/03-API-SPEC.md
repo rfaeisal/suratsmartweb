@@ -716,6 +716,89 @@ Request:
 { "reason": "Foto blur, minta enroll ulang" }
 ```
 
+#### `GET /api/v1/admin/face-enrollment/sessions/:id/thumbnail` `[Web — Admin]`
+Baca thumbnail JPEG dari sesi (untuk preview di form approval). Akses tercatat
+di AuditLog (`FACE_ENROLLMENT_THUMBNAIL_VIEWED`). Header
+`Cache-Control: private, no-store`.
+
+#### `GET /api/v1/admin/employees/:id/face-thumbnail` `[Web — Admin]`
+Baca thumbnail JPEG pegawai yang sudah enrolled. Akses tercatat di AuditLog
+(`FACE_THUMBNAIL_VIEWED`).
+
+#### `POST /api/v1/attendance` — extension face `[Mobile]`
+Body existing (`qr_token`, `event_type`, `beacon`, `client_time`) tetap;
+tambahan **opsional** `face` yang wajib disertakan hanya kalau unit device
+tercantum di `AppSetting.face_verification_required_units`.
+
+```json
+{
+  "qr_token": "…",
+  "event_type": "masuk",
+  "beacon": { "detected": true, "uuid": "…", "major": 1, "minor": 1 },
+  "client_time": "2026-08-18T08:00:00Z",
+  "face": {
+    "embedding": [0.123, -0.045, ...],
+    "embedding_model_version": "mobilefacenet-v1",
+    "liveness_score": 0.87,
+    "liveness_challenge": "BLINK,HEAD_LEFT"
+  }
+}
+```
+Server verify:
+1. `embedding_model_version` == `Employee.faceEmbeddingModelVersion` (kalau
+   beda → `FACE_MISMATCH`, minta re-enroll).
+2. `liveness_score >= AppSetting.face_liveness_threshold` (default 0.5) →
+   kalau kurang, `FACE_LIVENESS_FAILED`.
+3. Cosine similarity(embedding stored, embedding kirim) `>= AppSetting.face_match_threshold`
+   (default 0.65) → kalau kurang, `FACE_MISMATCH`.
+
+Setelah lolos, `Attendance` dicatat dengan `faceMatchScore`, `livenessScore`,
+`livenessChallenge`.
+
+Kalau pegawai belum enroll padahal unit require → `FACE_NOT_ENROLLED`.
+
+## 9c. Manual Attendance Recovery `[Web — Admin]`
+
+Input absensi manual untuk kasus outage jaringan / device rusak. Role:
+`ADMIN_KEPEGAWAIAN` / `SUPERADMIN`.
+
+#### `POST /api/v1/admin/attendance/manual-recovery`
+Request:
+```json
+{
+  "employeeId": "cuid",
+  "eventType": "MASUK",
+  "recordedAt": "2026-08-18T08:15:00.000Z",
+  "deviceId": "cuid",
+  "roomId": "cuid",
+  "reason": "Outage jaringan 08:00–08:30 di IGD."
+}
+```
+- `deviceId` opsional — kalau kosong, server pilih device ACTIVE pertama
+  sekadar memenuhi FK. `recordedAt` tidak boleh masa depan.
+- Menyimpan `Attendance` dengan `status = MANUAL_RECOVERY`,
+  `manualRecoveryBy = adminId`, `manualRecoveryReason = reason`.
+- Audit log `MANUAL_ATTENDANCE_RECOVERY`.
+
+Response 200:
+```json
+{
+  "id": "att-cuid",
+  "status": "MANUAL_RECOVERY",
+  "recordedAt": "2026-08-18T08:15:00.000Z",
+  "tanggalKerja": "2026-08-18",
+  "eventType": "MASUK"
+}
+```
+
+### Error Codes Tambahan (Face)
+
+| Kode | HTTP | Keterangan |
+|---|---|---|
+| `FACE_NOT_ENROLLED` | 422 | Wajah belum di-enroll padahal unit require |
+| `FACE_MISMATCH` | 422 | Cosine similarity < threshold (kirim `score`) |
+| `FACE_LIVENESS_FAILED` | 422 | Skor liveness < threshold (kirim `score`) |
+
 ---
 
 ## 10. Push Notification (FCM) `[Mobile]`
