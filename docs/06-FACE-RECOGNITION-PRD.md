@@ -52,23 +52,29 @@ firmware ESP32**.
 
 - **Passive** (background, tanpa aksi user): moiré detection + head pose
   sanity + eye open probability.
-- **Active challenge** (per sesi, random subset):
-  - Kedip mata (BLINK) — **ditunda ke iterasi berikutnya di MVP mobile**
-    (2026-08-18). Alasan tim mobile: butuh package `camera` realtime yang
-    perlu tuning lebih. Kalau data lapangan menunjukkan video-replay
-    attack lolos, BLINK akan ditambahkan.
-  - Toleh kanan (HEAD_RIGHT)
-  - Toleh kiri (HEAD_LEFT)
+- **Active challenge** (per sesi, random subset dari 3):
+  - `BLINK` — kedip mata (aktif sejak mobile v1.4.0+7, 2026-08-18).
+  - `HEAD_LEFT` — toleh kiri.
+  - `HEAD_RIGHT` — toleh kanan.
 - Timeout 8–10 detik.
 - **Threshold liveness awal**: 0.5.
+- Mobile client abort tanpa POST kalau challenge gagal — jadi backend
+  hampir selalu terima `liveness_score = 1.0` (kirim = lulus). Threshold
+  di backend jadi safety net, bukan primary gate.
 - Skor tersimpan per Attendance untuk audit.
 
 **Format field `liveness_challenge` di request `/attendance`**:
 comma-separated uppercase. `FRONTAL` sebagai passive marker + kombinasi
-active challenge. Contoh: `"FRONTAL,HEAD_LEFT"`, `"FRONTAL,HEAD_RIGHT"`,
-atau nanti `"FRONTAL,BLINK,HEAD_LEFT"`. Backend tidak parse content —
-hanya simpan apa adanya di `Attendance.livenessChallenge` (max 64 char)
-untuk audit / analytics lapangan.
+active challenge. Contoh nilai yang mungkin muncul:
+
+- `"FRONTAL,BLINK,HEAD_LEFT"` (absen — 1 frontal + 2 challenge random)
+- `"FRONTAL,BLINK,HEAD_RIGHT"`
+- `"FRONTAL,HEAD_LEFT,HEAD_RIGHT"`
+- `"FRONTAL,HEAD_LEFT,HEAD_RIGHT"` (enrollment — fixed sequence, tanpa BLINK)
+
+Backend tidak parse content — hanya simpan apa adanya di
+`Attendance.livenessChallenge` (max 64 char) untuk audit / analytics
+lapangan. Analytics distribusi bisa dilakukan dari SQL langsung.
 
 ### Handling Offline
 

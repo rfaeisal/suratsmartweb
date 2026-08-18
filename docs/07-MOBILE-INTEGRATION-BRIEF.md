@@ -192,30 +192,30 @@ Request body `POST /api/v1/attendance`:
 
 ## 5. Liveness Check
 
-Kombinasi passive + active challenge.
+Kombinasi passive + active challenge. Update 2026-08-18 (mobile v1.4.0+7):
+BLINK sudah aktif — sebelumnya ditunda.
 
 - **Passive** (background, tanpa aksi user): head pose sanity, eye open
   probability, smile probability dari Google ML Kit.
-- **Active challenge** (MVP mobile 2026-08-18):
+- **Active challenge** (random subset per sesi):
+  - `BLINK` — kedip mata.
   - `HEAD_LEFT` — toleh kiri (yaw angle negative).
   - `HEAD_RIGHT` — toleh kanan (yaw angle positive).
-  - `BLINK` — kedip mata. **Ditunda ke iterasi berikutnya** (butuh
-    package `camera` realtime). Tambah kalau lapangan tunjukkan
-    video-replay attack lolos.
 - Timeout total 8–10 detik.
-- Kalau gagal, retry.
+- Kalau gagal, retry (client abort tanpa POST).
 
 Format field `liveness_challenge`: comma-separated uppercase dengan
 `FRONTAL` sebagai passive marker + active challenge. Contoh:
-- `"FRONTAL,HEAD_LEFT"`
-- `"FRONTAL,HEAD_RIGHT"`
-- Nanti kalau BLINK aktif: `"FRONTAL,BLINK,HEAD_LEFT"`
+- `"FRONTAL,BLINK,HEAD_LEFT"` (absen — 1 frontal + 2 challenge random)
+- `"FRONTAL,BLINK,HEAD_RIGHT"`
+- `"FRONTAL,HEAD_LEFT,HEAD_RIGHT"`
+- `"FRONTAL,HEAD_LEFT,HEAD_RIGHT"` (enrollment — fixed sequence)
 
 Backend tidak parse content — hanya simpan max 64 char untuk audit.
 
 `liveness_score` (0.0–1.0) = skor gabungan. Kirim `1.0` saat lulus
 challenge, atau abort di client tanpa POST kalau gagal. Backend threshold
-default 0.5.
+default 0.5 (jadi safety net, bukan primary gate).
 
 ## 6. Error Handling
 
