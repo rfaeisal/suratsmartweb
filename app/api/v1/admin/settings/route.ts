@@ -9,10 +9,11 @@ import { writeAuditLog } from "@/lib/audit"
 type SettingMeta = {
   label: string
   default: string
-  type: "boolean" | "number"
+  type: "boolean" | "number" | "float" | "unit_multiselect"
   description?: string
   min?: number
   max?: number
+  step?: number
 }
 
 const KNOWN_SETTINGS: Record<string, SettingMeta> = {
@@ -53,6 +54,30 @@ const KNOWN_SETTINGS: Record<string, SettingMeta> = {
     min: 10,
     max: 300,
   },
+  face_verification_required_units: {
+    label: "Unit yang wajib verifikasi wajah",
+    default: "[]",
+    type: "unit_multiselect",
+    description: "Daftar unit yang mengaktifkan face verification saat absen. Pegawai di unit ini wajib enroll wajah dulu (lewat menu Enrollment Wajah).",
+  },
+  face_match_threshold: {
+    label: "Ambang cocok wajah (cosine similarity)",
+    default: "0.65",
+    type: "float",
+    description: "Minimum skor cosine similarity antara wajah live dan wajah enrolled untuk dianggap match. Konservatif = 0.65; ketat = 0.75+.",
+    min: 0.3,
+    max: 0.95,
+    step: 0.05,
+  },
+  face_liveness_threshold: {
+    label: "Ambang liveness score",
+    default: "0.5",
+    type: "float",
+    description: "Minimum skor liveness (passive + challenge kedip/toleh). Naikkan bila banyak fraud lolos; turunkan bila banyak false negative.",
+    min: 0.1,
+    max: 0.95,
+    step: 0.05,
+  },
 }
 
 async function requireSuperAdmin() {
@@ -78,6 +103,7 @@ export async function GET() {
     description: meta.description ?? null,
     min: meta.min ?? null,
     max: meta.max ?? null,
+    step: meta.step ?? null,
   }))
 
   return NextResponse.json({ settings })
@@ -115,6 +141,28 @@ export async function PUT(req: NextRequest) {
     if (isNaN(num)) return Errors.validation("Nilai harus berupa angka")
     if (meta.min !== undefined && num < meta.min) return Errors.validation(`Nilai minimal ${meta.min}`)
     if (meta.max !== undefined && num > meta.max) return Errors.validation(`Nilai maksimal ${meta.max}`)
+  }
+  if (meta.type === "float") {
+    const num = parseFloat(value)
+    if (!Number.isFinite(num)) return Errors.validation("Nilai harus berupa angka desimal")
+    if (meta.min !== undefined && num < meta.min) return Errors.validation(`Nilai minimal ${meta.min}`)
+    if (meta.max !== undefined && num > meta.max) return Errors.validation(`Nilai maksimal ${meta.max}`)
+  }
+  if (meta.type === "unit_multiselect") {
+    let arr: unknown
+    try {
+      arr = JSON.parse(value)
+    } catch {
+      return Errors.validation("Nilai harus JSON array")
+    }
+    if (!Array.isArray(arr) || arr.some((x) => typeof x !== "string")) {
+      return Errors.validation("Nilai harus JSON array of string (unitId)")
+    }
+    // Cek semua unitId ada — tolak kalau ada yang tidak dikenal.
+    if (arr.length > 0) {
+      const found = await prisma.workUnit.count({ where: { id: { in: arr as string[] } } })
+      if (found !== arr.length) return Errors.validation("Beberapa unitId tidak ditemukan")
+    }
   }
 
   await prisma.appSetting.upsert({

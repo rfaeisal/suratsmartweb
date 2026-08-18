@@ -23,6 +23,17 @@ const ACTION_LABELS: Record<string, string> = {
   GENERATE_SK: "SK Digenerate",
   SEND_TO_LEGACY: "Kirim ke Sistem Lama",
   SESSION_REVOKED: "Sesi Dicabut",
+  UPDATE_EMPLOYEE: "Update Pegawai",
+  UPDATE_SYSTEM_SETTING: "Update Pengaturan",
+  DEVICE_ENROLLED: "Device Absensi Enroll",
+  FACE_ENROLLMENT_SESSION_CREATED: "Sesi Enrollment Wajah Dibuat",
+  FACE_ENROLLMENT_SUBMITTED: "Enrollment Wajah Disubmit",
+  FACE_ENROLLMENT_APPROVED: "Enrollment Wajah Disetujui",
+  FACE_ENROLLMENT_REJECTED: "Enrollment Wajah Ditolak",
+  FACE_ENROLLMENT_THUMBNAIL_VIEWED: "Thumbnail Sesi Enroll Dilihat",
+  FACE_THUMBNAIL_VIEWED: "Thumbnail Wajah Pegawai Dilihat",
+  MANUAL_ATTENDANCE_RECOVERY: "Absen Manual (Recovery)",
+  LOGIN: "Login",
 }
 
 export default async function AuditLogsPage({ searchParams }: Props) {
