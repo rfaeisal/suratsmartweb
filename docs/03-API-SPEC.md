@@ -668,6 +668,33 @@ scanner QR di app. Prefix `cs-enroll:` membedakan dari QR absen ESP32.
 List sesi (max 100 terbaru). Query optional: `?status=PENDING|SUBMITTED|APPROVED|REJECTED|EXPIRED`,
 `?employeeId=cuid`.
 
+#### `GET /api/v1/employees/me/face-enrollment-status` `[Mobile]`
+Polling ringan — cek status enrollment wajah pegawai yang login. Aman
+dipanggil tiap 3–5 detik saat user di halaman "Enroll Wajah".
+
+Response:
+```json
+{
+  "hasEnrollment": true,
+  "enrolledAt": "2026-08-18T05:32:00.000Z",
+  "modelVersion": "mobilefacenet-sirius-v1",
+  "activeSession": {
+    "id": "cuid",
+    "status": "SUBMITTED",
+    "createdAt": "…",
+    "tokenExpiresAt": "…",
+    "submittedAt": "…",
+    "rejectedAt": null,
+    "rejectReason": null
+  }
+}
+```
+- `hasEnrollment` — true jika `Employee.faceEmbedding` sudah ada
+  (pernah approved).
+- `activeSession` — sesi PENDING/SUBMITTED/REJECTED terbaru. Kalau
+  APPROVED (data sudah di Employee) atau tidak ada sesi baru → `null`.
+  Sesi REJECTED > 7 hari yang sudah punya enrollment approved diabaikan.
+
 #### `POST /api/v1/employees/me/face-enrollment` `[Mobile]`
 Submit hasil capture. Wajib login pegawai (Bearer token). Rate-limit 5/menit/IP.
 
@@ -946,6 +973,28 @@ Dikirim ke **pegawai** oleh job terjadwal per jam.
 | `tanggalKerja` | string | Tanggal kerja (format lokal id-ID) |
 
 **Aksi mobile:** buka layar absen → `POST /attendance`.
+
+---
+
+### Tipe: `face_enrollment_status` — Hasil approval enrollment wajah
+
+Dikirim ke **pegawai** saat admin approve atau reject sesi enrollment
+wajah (menghindari polling terus-menerus dari mobile).
+
+| Field | Nilai | Keterangan |
+|---|---|---|
+| `type` | `"face_enrollment_status"` | |
+| `status` | `"APPROVED"` / `"REJECTED"` | |
+| `sessionId` | string (cuid) | ID sesi FaceEnrollmentSession |
+| `reason` | string | Hanya ada saat `status=REJECTED` |
+| `title` | string | |
+| `body` | string | Untuk REJECTED, isi `"Alasan: <reason>"` |
+
+**Aksi mobile:**
+- `APPROVED` → navigate ke halaman Profil dengan banner sukses; hapus
+  status "menunggu approval" di local state.
+- `REJECTED` → navigate ke halaman Profil dengan banner reject + tombol
+  "Enroll Ulang" (arahkan pegawai kontak kepegawaian untuk sesi baru).
 
 ---
 

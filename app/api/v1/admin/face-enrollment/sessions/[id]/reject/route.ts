@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { Errors } from "@/lib/errors"
 import { writeAuditLog } from "@/lib/audit"
 import { deleteFaceThumbnail } from "@/lib/face-storage"
+import { sendNotification } from "@/lib/notifications"
 
 const bodySchema = z.object({
   reason: z.string().min(3).max(500),
@@ -67,6 +68,18 @@ export async function POST(req: NextRequest, { params }: Props) {
     entityId: id,
     metadata: { employeeId: enrollment.employeeId, reason: parsed.data.reason },
   })
+
+  const appUser = await prisma.appUser.findUnique({
+    where: { employeeId: enrollment.employeeId },
+    select: { id: true },
+  })
+  if (appUser) {
+    sendNotification({
+      event: "FACE_ENROLLMENT_REJECTED",
+      targetUserId: appUser.id,
+      data: { sessionId: id, reason: parsed.data.reason },
+    }).catch((e) => console.error("[face-reject] notif gagal:", e))
+  }
 
   return NextResponse.json({ id, status: "REJECTED", rejectedAt: rejectedAt.toISOString() })
 }

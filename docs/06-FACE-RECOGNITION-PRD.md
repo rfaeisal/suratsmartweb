@@ -122,9 +122,29 @@ firmware ESP32**.
   cross-platform Android+iOS. Sekaligus jadi input untuk liveness check +
   preprocessing (crop wajah) sebelum embedding.
 - **`tflite_flutter`** — runtime untuk model TFLite.
-- **Model: MobileFaceNet TFLite** (~5MB, embedding 128-dim). Latency
-  100–300ms di HP mid-range. Sumber pretrained: repo InsightFace atau
-  `sirius-ai/MobileFaceNet_TF` (converted). Jangan train sendiri.
+
+**Model & contract yang DI-LOCK (konfirmasi tim mobile 2026-08-18):**
+
+| Aspek | Nilai |
+| --- | --- |
+| Sumber model | `sirius-ai/MobileFaceNet_TF` → TFLite |
+| File | `assets/models/mobilefacenet.tflite` di repo `cutismart-mobile` |
+| Input | 112×112 RGB, float32 |
+| Preprocessing | Aligned crop wajah, normalisasi `(px − 127.5) / 127.5` |
+| Output | Embedding 128-dim float32 |
+| `embeddingModelVersion` string | `"mobilefacenet-sirius-v1"` |
+
+**Konsistensi preprocessing ANTARA enrollment DAN runtime absen bersifat
+mandatory** — kalau enroll pakai `(px-127.5)/127.5` tapi runtime pakai
+`px/255`, cosine similarity turun drastis dan pegawai selalu kena
+`FACE_MISMATCH`. Semua call site (enrollment + attendance) HARUS pakai
+utility class `FaceEmbedder` yang single-source-of-truth di mobile.
+
+Backend TIDAK menjalankan model — hanya membandingkan cosine similarity
+antara embedding kirim vs stored. Pilihan file .tflite ada di mobile.
+Backend cukup validate bahwa `embedding_model_version` sama antara
+enrollment dan runtime absen; kalau beda → `FACE_MISMATCH` (paksa
+re-enroll).
 
 ### Backend (Next.js — Node.js)
 
@@ -202,10 +222,36 @@ mobile+backend.
 
 ## Item yang Perlu Dikonfirmasi Sebelum Eksekusi
 
-- Model MobileFaceNet TFLite spesifik mana yang dipakai (perlu evaluasi 2–3
-  kandidat pretrained sebelum lock-in). Simpan `modelVersion` di DB.
+- ✅ Model MobileFaceNet TFLite spesifik yang dipakai (LOCK 2026-08-18):
+  `sirius-ai/MobileFaceNet_TF` → TFLite, version string
+  `mobilefacenet-sirius-v1`.
 - Enkripsi at-rest untuk thumbnail: LUKS di server on-prem atau enkripsi
   manual per-file — tergantung setup infra Coolify saat itu.
 - SOP tertulis untuk penggunaan face thumbnail (siapa boleh akses, dalam
   kondisi apa) — draft dari bagian legal/kepegawaian.
 - Draft consent form untuk pegawai (biometric consent) — perlu review legal.
+
+## Bump Model di Masa Depan (Migration Plan)
+
+Kalau nanti mobile ganti model (mis. ke `mobilefacenet-sirius-v2` atau
+`arcface-r50-v1`), embedding lama otomatis tidak comparable dengan yang
+baru — cosine similarity antar model beda arsitektur tidak meaningful.
+**Tidak ada grace period technical yang bisa "mix" embeddingnya.**
+
+Strategi migration yang direkomendasikan (operasional, bukan feature
+backend):
+
+1. **Sebelum push versi baru ke pegawai**, admin buat sesi enrollment
+   massal untuk semua pegawai yang terdampak.
+2. **Sementara transisi**, admin bisa **kosongkan
+   `face_verification_required_units`** di settings — semua absen
+   fallback ke QR + beacon. Ini "operational grace period".
+3. Setelah 80%+ pegawai re-enroll dengan model baru, admin aktifkan lagi
+   unit-nya.
+4. Pegawai yang belum re-enroll akan kena `FACE_NOT_ENROLLED` saat unit
+   sudah aktif kembali — mereka lapor ke kepegawaian untuk sesi
+   enrollment.
+
+Backend menyimpan `Employee.faceEmbeddingModelVersion` dan cek strict
+consistency (kirim beda dengan stored → tolak). Ini disengaja karena
+alternatif (accept mismatch) bakal produce cosine yang tidak akurat.

@@ -14,20 +14,28 @@ wajah + liveness saat absen, integrasi dengan endpoint yang sudah dibuat.
   **9c (Manual Recovery — abaikan, ini web)**, dan extension **`POST /attendance`**
   dengan field `face`.
 
-## 2. Library yang Dipakai
+## 2. Library & Model (LOCK)
 
-Konsistensi model wajib dengan backend supaya embedding comparable.
+**Konfirmasi 2026-08-18: model & contract di-lock**
 
-| Kebutuhan | Library / Model | Catatan |
-| --- | --- | --- |
-| Face detection + landmark | `google_ml_kit_face_detection` | Gratis, cross-platform. Untuk crop wajah + liveness signal (head pose, eye open, smile). |
-| Face embedding (recognition) | **MobileFaceNet TFLite** ~5 MB, embedding 128-dim float32 | Sumber pretrained teruji (mis. `sirius-ai/MobileFaceNet_TF` converted, atau InsightFace mobile). **Jangan train sendiri.** |
-| TFLite runtime | `tflite_flutter` | — |
-| Encrypted local storage | `flutter_secure_storage` | Simpan embedding pegawai sendiri (untuk offline preview cue). |
+| Aspek | Nilai |
+| --- | --- |
+| Face detection + landmark | `google_ml_kit_face_detection` (gratis, cross-platform) |
+| Face embedding | **MobileFaceNet TFLite** dari `sirius-ai/MobileFaceNet_TF` |
+| File di repo mobile | `assets/models/mobilefacenet.tflite` |
+| Input | 112×112 RGB float32, aligned crop |
+| Preprocessing | `(px − 127.5) / 127.5` |
+| Output | Embedding 128-dim float32 |
+| `embeddingModelVersion` string | **`"mobilefacenet-sirius-v1"`** (kirim persis string ini) |
+| TFLite runtime | `tflite_flutter` |
+| Encrypted local storage | `flutter_secure_storage` (untuk simpan embedding sendiri = offline preview cue) |
 
-Kirim `embeddingModelVersion` string (mis. `"mobilefacenet-v1"`) di setiap
-request. Backend cek konsistensi; kalau beda dengan yang di-enroll, akan
-return `FACE_MISMATCH` dan pegawai harus re-enroll.
+**Konsistensi preprocessing enrollment vs runtime wajib.** Semua call site
+harus pakai satu utility class `FaceEmbedder` yang single-source-of-truth.
+
+Backend TIDAK menjalankan model — hanya membandingkan cosine similarity.
+Backend cek `embeddingModelVersion` sama antara enrollment dan runtime;
+kalau beda → `FACE_MISMATCH` (paksa re-enroll).
 
 ## 3. Flow Enrollment
 
@@ -75,12 +83,85 @@ return `FACE_MISMATCH` dan pegawai harus re-enroll.
    }
    ```
 
-6. Response 200: app tampilkan status "Menunggu approval admin". Admin
-   approve on-the-spot (proses 30 detik).
+6. Response 200:
+   ```json
+   {
+     "id": "cmxy1234abcdef",
+     "status": "SUBMITTED",
+     "message": "Enrollment dikirim. Menunggu persetujuan admin."
+   }
+   ```
+   App tampilkan status "Menunggu approval admin". Admin approve
+   on-the-spot (proses 30 detik).
 
 7. **Simpan embedding pegawai sendiri di `flutter_secure_storage`**
    (encrypted) — biar bisa preview "wajah sesuai" indicator saat capture
    absen (UX cue, bukan security).
+
+### 3a. Cek status enrollment (polling)
+
+Untuk update UI "Menunggu approval → Disetujui / Ditolak", app polling
+endpoint ringan:
+
+**`GET /api/v1/employees/me/face-enrollment-status`** (auth PEGAWAI)
+
+Response:
+```json
+{
+  "hasEnrollment": true,
+  "enrolledAt": "2026-08-18T05:32:00.000Z",
+  "modelVersion": "mobilefacenet-sirius-v1",
+  "activeSession": {
+    "id": "cuid",
+    "status": "SUBMITTED",
+    "createdAt": "…",
+    "tokenExpiresAt": "…",
+    "submittedAt": "…",
+    "rejectedAt": null,
+    "rejectReason": null
+  }
+}
+```
+
+- `hasEnrollment` — true kalau `Employee.faceEmbedding` sudah ada
+  (pernah approved).
+- `activeSession` — sesi terbaru dengan status PENDING / SUBMITTED /
+  REJECTED. Kalau APPROVED (data sudah pindah ke Employee) atau tidak ada
+  sesi baru → null. Sesi REJECTED yang sudah lebih dari 7 hari juga di-
+  drop kalau ada enrollment yang sudah approved sebelumnya (biar UI tidak
+  tampilin banner reject yang basi).
+
+Rekomendasi polling interval saat user di halaman "Enroll Wajah": 3–5
+detik, stop kalau `hasEnrollment=true` atau `activeSession.status ==
+REJECTED`.
+
+### 3b. Push notif approve/reject (FCM)
+
+Backend juga kirim FCM saat admin approve/reject supaya UX tidak butuh
+polling terus-menerus.
+
+Payload FCM data (data-only message, konsisten dengan event notif lain):
+```json
+{
+  "type": "face_enrollment_status",
+  "status": "APPROVED",
+  "sessionId": "cuid",
+  "title": "Enrollment Wajah Disetujui",
+  "body": "Anda sudah bisa absen dengan verifikasi wajah."
+}
+```
+```json
+{
+  "type": "face_enrollment_status",
+  "status": "REJECTED",
+  "sessionId": "cuid",
+  "reason": "Foto blur, ulangi capture",
+  "title": "Enrollment Wajah Ditolak",
+  "body": "Alasan: Foto blur, ulangi capture"
+}
+```
+
+App handling: navigate ke halaman Profil dengan banner status.
 
 ## 4. Flow Absen (Extended)
 

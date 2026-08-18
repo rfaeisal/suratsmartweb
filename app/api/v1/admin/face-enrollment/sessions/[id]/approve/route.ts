@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { Errors } from "@/lib/errors"
 import { writeAuditLog } from "@/lib/audit"
 import { deleteFaceThumbnail, saveFaceThumbnail, readFaceThumbnail } from "@/lib/face-storage"
+import { sendNotification } from "@/lib/notifications"
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -108,6 +109,19 @@ export async function POST(_req: NextRequest, { params }: Props) {
       embeddingModelVersion: enrollment.embeddingModelVersion,
     },
   })
+
+  // Notif ke pegawai — cari AppUser dari employeeId.
+  const appUser = await prisma.appUser.findUnique({
+    where: { employeeId: employee.id },
+    select: { id: true },
+  })
+  if (appUser) {
+    sendNotification({
+      event: "FACE_ENROLLMENT_APPROVED",
+      targetUserId: appUser.id,
+      data: { sessionId: id },
+    }).catch((e) => console.error("[face-approve] notif gagal:", e))
+  }
 
   return NextResponse.json({ id, status: "APPROVED", approvedAt: approvedAt.toISOString() })
 }

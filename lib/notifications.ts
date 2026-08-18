@@ -17,6 +17,8 @@ export type NotifEvent =
   | "SHIFT_SWAP_REJECTED"
   | "ATTENDANCE_MISSING_CHECKIN"
   | "ATTENDANCE_MISSING_CHECKOUT"
+  | "FACE_ENROLLMENT_APPROVED"
+  | "FACE_ENROLLMENT_REJECTED"
 
 interface NotifPayload {
   event: NotifEvent
@@ -145,6 +147,24 @@ function buildFcmData(event: NotifEvent, data: Record<string, string>): Record<s
         reminderType: "CHECKOUT",
         title: "Pengingat: Belum Absen Pulang",
         body: `Anda belum melakukan absen pulang untuk shift ${data.shiftName ?? ""} hari ini`.trim(),
+      }
+    case "FACE_ENROLLMENT_APPROVED":
+      return {
+        ...data,
+        type: "face_enrollment_status",
+        status: "APPROVED",
+        title: "Enrollment Wajah Disetujui",
+        body: "Anda sudah bisa absen dengan verifikasi wajah.",
+      }
+    case "FACE_ENROLLMENT_REJECTED":
+      return {
+        ...data,
+        type: "face_enrollment_status",
+        status: "REJECTED",
+        title: "Enrollment Wajah Ditolak",
+        body: data.reason
+          ? `Alasan: ${data.reason}`
+          : "Enrollment wajah ditolak. Silakan ulang di bagian kepegawaian.",
       }
   }
 }
