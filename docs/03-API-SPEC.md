@@ -754,8 +754,11 @@ Baca thumbnail JPEG pegawai yang sudah enrolled. Akses tercatat di AuditLog
 
 #### `POST /api/v1/attendance` — extension face `[Mobile]`
 Body existing (`qr_token`, `event_type`, `beacon`, `client_time`) tetap;
-tambahan **opsional** `face` yang wajib disertakan hanya kalau unit device
-tercantum di `AppSetting.face_verification_required_units`.
+tambahan **opsional** `face` yang wajib disertakan hanya kalau **unit
+pegawai** (`employee.unitId`) tercantum di
+`AppSetting.face_verification_required_units`. Backend cek pakai unit
+pegawai — bukan unit device tempat absen — supaya pegawai unit sensitive
+tetap dicek walau absen di device unit lain.
 
 ```json
 {

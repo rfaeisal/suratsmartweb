@@ -203,6 +203,12 @@ re-enroll).
 4. **Phase 4**: jika kebutuhan muncul, tambahkan local queue offline
    (opsional iterasi kedua).
 
+**Unit scope penting (fix 2026-08-18)**: face verification aktif berdasarkan
+**`employee.unitId`** (unit tempat pegawai bekerja), BUKAN
+`device.workUnitId` (unit tempat device dipasang). Alasan: tujuan face check
+= cegah titip absen per-pegawai — pegawai unit sensitive (mis. ITIKOM)
+tetap harus dicek walau absen di device unit lain (mis. lobi / Paviliun).
+
 ## Beacon Rotating Payload (di luar scope PRD ini)
 
 Ditunda — tunggu bukti fraud dulu. Kalau nanti muncul kasus HP diprogram

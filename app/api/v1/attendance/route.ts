@@ -169,15 +169,23 @@ export async function POST(req: NextRequest) {
   const beaconRequired = await isBeaconVerificationEnabled()
   if (!beacon.detected && beaconRequired && !devMode) return Errors.beaconTidakTerdeteksi()
 
-  // Face verification — hanya kalau unit device mengaktifkannya.
-  // Verifikasi setelah beacon supaya ordering error konsisten (network → QR →
-  // beacon → face). Skip di dev mode agar dev tools tidak break.
+  // Face verification — hanya kalau unit pegawai (bukan device) mengaktifkannya.
+  // Pakai employee.unitId (bukan device.workUnitId) supaya:
+  // - Pegawai unit sensitive tetap dicek walau absen di device unit lain
+  //   (mis. staff ITIKOM absen di device ruang Paviliun tetap wajib face).
+  // - Tujuan face check = cegah titip absen per pegawai, bukan physical
+  //   security lokasi device.
+  // Skip di dev mode agar dev tools tidak break.
   let faceMatchScore: number | null = null
   let livenessScore: number | null = null
   let livenessChallenge: string | null = null
+  const employeeUnitId = (await prisma.employee.findUnique({
+    where: { id: employeeId },
+    select: { unitId: true },
+  }))?.unitId
   const faceRequired =
     !devMode &&
-    (await isFaceVerificationRequiredForUnit(qrResult.device.workUnitId))
+    (await isFaceVerificationRequiredForUnit(employeeUnitId))
   if (faceRequired) {
     if (!face) return Errors.faceNotEnrolled()
 
