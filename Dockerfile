@@ -26,6 +26,12 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 
+# Bikin subfolder upload + chown biar volume pertama kali mount (docker-compose)
+# copy struktur ini ke volume dengan owner yang benar. Volume yang SUDAH ada
+# tidak ke-override — perlu chown manual sekali kalau volume di-recreate.
+RUN mkdir -p /app/uploads/face-thumbnails /app/uploads/temp /app/uploads/attachments /app/uploads/avatars /app/uploads/sk \
+    && chown -R nextjs:nodejs /app/uploads
+
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000
