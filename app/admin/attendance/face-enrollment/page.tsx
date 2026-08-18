@@ -138,22 +138,32 @@ export default function FaceEnrollmentPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-              {sessions.map((s) => (
+              {sessions.map((s) => {
+                // Sesi PENDING yang token-nya sudah lewat waktu expire → tampilkan
+                // sebagai EXPIRED di UI (data DB tidak berubah — status di-EXPIRE
+                // saat backend menerima submit atau admin buat sesi baru untuk
+                // pegawai yang sama).
+                const effectiveStatus: Status =
+                  s.status === "PENDING" && new Date(s.tokenExpiresAt).getTime() < Date.now()
+                    ? "EXPIRED"
+                    : s.status
+                return (
                 <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50">
                   <td className="px-4 py-3">
                     <p className="font-medium text-gray-900 dark:text-slate-100">{s.employee.fullName}</p>
                     <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{s.employee.nip}</p>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium border ${STATUS_BADGE[s.status]}`}>
-                      {STATUS_LABEL[s.status]}
+                    <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium border ${STATUS_BADGE[effectiveStatus]}`}>
+                      {STATUS_LABEL[effectiveStatus]}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-500 dark:text-slate-400">
                     {new Date(s.createdAt).toLocaleString("id-ID")}
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-500 dark:text-slate-400">
-                    {s.status === "PENDING" && `Kedaluwarsa: ${new Date(s.tokenExpiresAt).toLocaleTimeString("id-ID")}`}
+                    {effectiveStatus === "PENDING" && `Kedaluwarsa: ${new Date(s.tokenExpiresAt).toLocaleTimeString("id-ID")}`}
+                    {effectiveStatus === "EXPIRED" && s.status === "PENDING" && `Kedaluwarsa sejak ${new Date(s.tokenExpiresAt).toLocaleTimeString("id-ID")}`}
                     {s.status === "SUBMITTED" && s.submittedAt && `Submitted: ${new Date(s.submittedAt).toLocaleTimeString("id-ID")}`}
                     {s.status === "APPROVED" && s.approvedAt && `Approved: ${new Date(s.approvedAt).toLocaleString("id-ID")}`}
                     {s.status === "REJECTED" && s.rejectReason && `Alasan: ${s.rejectReason}`}
@@ -169,7 +179,8 @@ export default function FaceEnrollmentPage() {
                     )}
                   </td>
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
           </table>
         </div>
