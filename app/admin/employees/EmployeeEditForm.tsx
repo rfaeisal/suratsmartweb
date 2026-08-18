@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 import { Tooltip } from "@/components/Tooltip"
 import { SearchableSelect } from "@/components/SearchableSelect"
 
@@ -36,6 +37,7 @@ interface Props {
     unitId: string
     directSupervisorId: string | null
     employeeType: string
+    isActive: boolean
   }
   positions: PositionOption[]
   workUnits: WorkUnitOption[]
@@ -47,6 +49,7 @@ interface Props {
     unitName: string
     directSupervisorId: string | null
     employeeType: string
+    isActive: boolean
   }) => void
 }
 
@@ -56,8 +59,12 @@ export default function EmployeeEditForm({ employeeId, initial, positions, workU
   const [unitId, setUnitId] = useState(initial.unitId)
   const [supervisorLegacyId, setSupervisorLegacyId] = useState(initial.directSupervisorId ?? "")
   const [employeeType, setEmployeeType] = useState(initial.employeeType)
+  const [isActive, setIsActive] = useState(initial.isActive)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => { setMounted(true) }, [])
 
   const unitOptions = [...workUnits]
     .sort((a, b) => a.name.localeCompare(b.name))
@@ -83,6 +90,7 @@ export default function EmployeeEditForm({ employeeId, initial, positions, workU
           unitId: unitId || undefined,
           directSupervisorLegacyId: supervisorLegacyId || null,
           employeeType,
+          isActive,
         }),
       })
       if (!res.ok) {
@@ -98,6 +106,7 @@ export default function EmployeeEditForm({ employeeId, initial, positions, workU
           unitName: selectedUnit?.name ?? "",
           directSupervisorId: supervisorLegacyId || null,
           employeeType,
+          isActive,
         })
         setOpen(false)
       }
@@ -121,12 +130,37 @@ export default function EmployeeEditForm({ employeeId, initial, positions, workU
         </button>
       </Tooltip>
 
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md p-6">
+      {open && mounted && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl ring-1 ring-black/5 w-full max-w-md p-6">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-4">Edit Data Pegawai</h3>
 
             <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Status</label>
+                <div className="flex gap-2">
+                  {[
+                    { value: true, label: "Aktif", cls: "bg-emerald-600 text-white border-emerald-600" },
+                    { value: false, label: "Non-Aktif", cls: "bg-gray-500 text-white border-gray-500" },
+                  ].map((opt) => (
+                    <button
+                      key={String(opt.value)}
+                      type="button"
+                      onClick={() => setIsActive(opt.value)}
+                      className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                        isActive === opt.value
+                          ? opt.cls
+                          : "bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-400 border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-1 text-[10px] text-gray-400 dark:text-slate-500">
+                  Pegawai non-aktif tidak bisa login / absen. Status override manual bertahan meski di-sync ulang dari legacy.
+                </p>
+              </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Jenis Pegawai</label>
                 <select
@@ -190,7 +224,8 @@ export default function EmployeeEditForm({ employeeId, initial, positions, workU
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   )

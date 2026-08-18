@@ -132,7 +132,7 @@ export default function EmployeesPage() {
 
   function handleSaved(
     id: string,
-    updated: { positionId: string | null; positionName: string | null; unitId: string; unitName: string; directSupervisorId: string | null; employeeType: string; }
+    updated: { positionId: string | null; positionName: string | null; unitId: string; unitName: string; directSupervisorId: string | null; employeeType: string; isActive: boolean }
   ) {
     if (!data) return
     const supervisorInfo = updated.directSupervisorId
@@ -155,6 +155,7 @@ export default function EmployeesPage() {
                 ? { legacyId: supervisorInfo.legacyId, fullName: supervisorInfo.fullName, positionTitle: supervisorInfo.positionTitle }
                 : null,
               employeeType: updated.employeeType,
+              isActive: updated.isActive,
             }
           : e
       ),
@@ -374,6 +375,7 @@ export default function EmployeesPage() {
                               unitId: emp.unit?.id ?? "",
                               directSupervisorId: emp.directSupervisorId,
                               employeeType: emp.employeeType,
+                              isActive: emp.isActive,
                             }}
                             positions={positions}
                             workUnits={workUnits}

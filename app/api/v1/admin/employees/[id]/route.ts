@@ -12,6 +12,7 @@ const updateSchema = z.object({
   unitId: z.string().optional(),
   directSupervisorLegacyId: z.string().nullable().optional(),
   employeeType: z.enum(EMPLOYEE_TYPES).optional(),
+  isActive: z.boolean().optional(),
 })
 
 type Props = { params: Promise<{ id: string }> }
@@ -75,6 +76,7 @@ export async function PUT(req: NextRequest, { params }: Props) {
         ? { directSupervisorId: parsed.data.directSupervisorLegacyId }
         : {}),
       ...(parsed.data.employeeType !== undefined ? { employeeType: parsed.data.employeeType } : {}),
+      ...(parsed.data.isActive !== undefined ? { isActive: parsed.data.isActive } : {}),
     },
     include: {
       unit: { select: { name: true } },

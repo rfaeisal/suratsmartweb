@@ -16,7 +16,11 @@ export async function syncEmployeeFromLegacy(data: LegacyEmployee) {
       nip: data.nip,
       fullName: data.fullName,
       employeeType: data.employeeType,
-      isActive: data.isActive,
+      // NOTE: isActive sengaja TIDAK di-overwrite pada update.
+      // Alasan: admin bisa override manual dari admin panel (mis. mengaktifkan
+      // pegawai yang di legacy salah ditandai non-aktif), dan override itu
+      // tidak boleh ke-reset saat sync ulang. Nilai awal saat create tetap
+      // ambil dari legacy.
     },
   })
 
