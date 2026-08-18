@@ -14,11 +14,20 @@ export async function GET(req: NextRequest) {
   const unitId = searchParams.get("unitId")
   const employeeType = searchParams.get("employeeType")
   const search = searchParams.get("search")
+  const status = searchParams.get("status") // "active" | "inactive" | null (semua)
+  const activeOnlyLegacy = searchParams.get("activeOnly") === "true"
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"))
   const perPage = Math.min(500, Math.max(1, parseInt(searchParams.get("perPage") ?? "25")))
 
+  const isActiveFilter =
+    activeOnlyLegacy || status === "active"
+      ? { isActive: true }
+      : status === "inactive"
+        ? { isActive: false }
+        : {}
+
   const where = {
-    isActive: true,
+    ...isActiveFilter,
     ...(unitId ? { unitId } : {}),
     ...(employeeType ? { employeeType: employeeType as never } : {}),
     ...(search

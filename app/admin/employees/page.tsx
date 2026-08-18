@@ -84,6 +84,7 @@ export default function EmployeesPage() {
   const [search, setSearch] = useState("")
   const [filterUnitId, setFilterUnitId] = useState("")
   const [employeeType, setEmployeeType] = useState("")
+  const [status, setStatus] = useState<"" | "active" | "inactive">("")
   const [page, setPage] = useState(1)
 
   const fetchData = useCallback(async () => {
@@ -94,6 +95,7 @@ export default function EmployeesPage() {
       if (search) qs.set("search", search)
       if (filterUnitId) qs.set("unitId", filterUnitId)
       if (employeeType) qs.set("employeeType", employeeType)
+      if (status) qs.set("status", status)
       qs.set("page", String(page))
       const res = await fetch(`/api/v1/admin/employees?${qs}`)
       if (!res.ok) throw new Error("Gagal memuat data")
@@ -103,12 +105,12 @@ export default function EmployeesPage() {
     } finally {
       setLoading(false)
     }
-  }, [search, filterUnitId, employeeType, page])
+  }, [search, filterUnitId, employeeType, status, page])
 
   useEffect(() => { fetchData() }, [fetchData])
 
   useEffect(() => {
-    fetch("/api/v1/admin/employees?page=1&perPage=1000")
+    fetch("/api/v1/admin/employees?page=1&perPage=1000&activeOnly=true")
       .then((r) => r.json())
       .then((d: PageData) =>
         setAllEmployees(
@@ -159,7 +161,7 @@ export default function EmployeesPage() {
     })
   }
 
-  const activeFilterCount = [search, filterUnitId, employeeType].filter(Boolean).length
+  const activeFilterCount = [search, filterUnitId, employeeType, status].filter(Boolean).length
 
   return (
     <div>
@@ -230,9 +232,28 @@ export default function EmployeesPage() {
             </button>
           ))}
 
+          <span className="text-xs text-gray-400 dark:text-slate-500 font-medium shrink-0 ml-2">Status:</span>
+          {[
+            { value: "", label: "Semua" },
+            { value: "active", label: "Aktif" },
+            { value: "inactive", label: "Non-Aktif" },
+          ].map(({ value, label }) => (
+            <button
+              key={value || "all"}
+              onClick={() => { setStatus(value as "" | "active" | "inactive"); setPage(1) }}
+              className={`px-3 py-1 text-xs font-medium rounded-lg border transition-colors ${
+                status === value
+                  ? "bg-blue-600 text-white border-blue-600"
+                  : "bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 hover:text-gray-800 dark:hover:text-slate-200"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+
           {activeFilterCount > 0 && (
             <button
-              onClick={() => { setSearch(""); setFilterUnitId(""); setEmployeeType(""); setPage(1) }}
+              onClick={() => { setSearch(""); setFilterUnitId(""); setEmployeeType(""); setStatus(""); setPage(1) }}
               className="ml-auto flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 hover:bg-red-100 rounded-lg border border-red-100 transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -270,6 +291,7 @@ export default function EmployeesPage() {
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Jabatan</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Atasan Langsung</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Tipe</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Status</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Sumber</th>
                     <th className="px-4 py-3"></th>
                   </tr>
@@ -279,7 +301,7 @@ export default function EmployeesPage() {
                     const jabatan = emp.position?.name ?? emp.positionTitle
                     const jabatanLevel = emp.position?.level
                     return (
-                      <tr key={emp.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+                      <tr key={emp.id} className={`hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${!emp.isActive ? "opacity-60" : ""}`}>
                         <td className="px-4 py-3">
                           <p className="font-medium text-gray-900 dark:text-slate-100">{emp.fullName}</p>
                           <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{emp.nip}</p>
@@ -328,6 +350,15 @@ export default function EmployeesPage() {
                             "bg-amber-50 text-amber-700 dark:bg-yellow-900/40 dark:text-yellow-300"
                           }`}>
                             {EMPLOYEE_TYPE_LABELS[emp.employeeType] ?? emp.employeeType}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            emp.isActive
+                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                              : "bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400"
+                          }`}>
+                            {emp.isActive ? "Aktif" : "Non-Aktif"}
                           </span>
                         </td>
                         <td className="px-4 py-3">

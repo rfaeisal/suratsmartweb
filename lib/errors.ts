@@ -20,6 +20,7 @@ export type ErrorCode =
   | "QR_EXPIRED"
   | "QR_REPLAYED"
   | "NO_ROSTER"
+  | "EMPLOYEE_INACTIVE"
 
 interface ApiError {
   code: ErrorCode
@@ -92,6 +93,13 @@ export const Errors = {
 
   noRoster: () =>
     apiError("NO_ROSTER", "Tidak ada jadwal kerja untuk tanggal ini", 422),
+
+  employeeInactive: () =>
+    apiError(
+      "EMPLOYEE_INACTIVE",
+      "Akun pegawai berstatus non-aktif. Hubungi bagian kepegawaian.",
+      403,
+    ),
 
   internal: (message = "Terjadi kesalahan internal server") =>
     apiError("INTERNAL_ERROR", message, 500),

@@ -44,6 +44,17 @@ export async function POST(req: NextRequest) {
     return Errors.forbidden("deviceId tidak cocok dengan sesi aktif")
   }
 
+  // Blok refresh untuk pegawai non-aktif — jika status berubah setelah login
+  // sukses, refresh selanjutnya harus gagal. Access token yang sedang berjalan
+  // otomatis kadaluarsa dalam <=1 jam.
+  if (!session.user.employee.isActive) {
+    await prisma.userSession.update({
+      where: { id: session.id },
+      data: { status: "REVOKED", revokedAt: new Date(), revokedBy: "SYSTEM_INACTIVE" },
+    })
+    return Errors.employeeInactive()
+  }
+
   const accessToken = await signAccessToken({
     userId: session.userId,
     sessionId: session.id,

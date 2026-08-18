@@ -30,6 +30,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           const employee = await syncEmployeeFromLegacy(result.employee)
 
+          // Blok pegawai non-aktif — legacy menandai isActive=false berarti
+          // tidak boleh login ke CutiSmart. Reaktivasi harus dari sistem lama.
+          if (!employee.isActive) {
+            console.warn(
+              `[auth.authorize] login ditolak — pegawai non-aktif: ${result.employee.legacyId} ${result.employee.fullName}`,
+            )
+            return null
+          }
+
           let appUser = await prisma.appUser.findUnique({
             where: { employeeId: employee.id },
             include: { employee: { include: { unit: true } } },

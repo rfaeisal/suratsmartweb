@@ -55,6 +55,12 @@ export async function POST(req: NextRequest) {
     include: { unit: { select: { id: true, name: true } } },
   })
 
+  // Blok pegawai non-aktif — legacy menandai isActive=false berarti tidak boleh
+  // login/absen di CutiSmart. Admin harus reaktivasi di sistem lama dulu.
+  if (!employee.isActive) {
+    return Errors.employeeInactive()
+  }
+
   // 3. Cari atau buat AppUser
   let appUser = await prisma.appUser.findUnique({
     where: { employeeId: employee.id },
