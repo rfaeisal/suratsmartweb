@@ -111,7 +111,10 @@ export async function GET(req: NextRequest) {
       shift: r.shift?.nama ?? null,
       jamMasuk: slot?.masukAt?.toISOString() ?? null,
       jamPulang: slot?.pulangAt?.toISOString() ?? null,
-      status: slot?.masukAt ? "hadir" : isAlpha ? "alpha" : "belum",
+      // "hadir" kalau ada minimal salah satu tap (masuk ATAU pulang) —
+      // pegawai yang lupa tap masuk tapi tap pulang tidak harusnya
+      // dianggap belum absen.
+      status: slot?.masukAt || slot?.pulangAt ? "hadir" : isAlpha ? "alpha" : "belum",
       telat: slot?.telat ?? false,
       flags: slot?.flags ?? [],
       beaconDetected: slot?.beaconDetected ?? null,
