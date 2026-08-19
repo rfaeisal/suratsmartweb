@@ -1,0 +1,26 @@
+Update — backend fitur window absen sudah LIVE di production, silakan test:
+
+Base URL:  https://cuti.appsmart.my.id
+Commit:    7ade000 (feat window absen + docs)
+
+Sudah saya verify dari sisi backend:
+- GET /api/v1/rosters/today  → 401 UNAUTHORIZED tanpa token ✅ (endpoint live)
+- Deployed & running via Coolify (barusan sukses build & swap container)
+
+Catatan penting soal env testing:
+Karena backend kita cuma satu environment (production), URL di atas adalah
+prod live. Jadi tolong:
+- Kalau test tap absen, pakai akun test / dummy saja, jangan pegawai real
+  (data absen bercampur ke laporan live).
+- Kalau butuh set roster / shift / flag override untuk skenario testing,
+  koordinasi dulu ke admin kepegawaian supaya tidak conflict dengan data
+  operasional.
+- Flag `attendance_allow_no_roster` saat ini masih `false` (default strict).
+  Kalau perlu diubah selama test (misal test full flow existing app), ping
+  di sini supaya saya bantu toggle sementara.
+
+Tetap plan sebelumnya: mobile rilis dulu → 1-2 hari adoption → baru kita
+umumkan strict window ke user. Test ini fokus verify integrasi contract
+API-nya, bukan strict enforcement operasional.
+
+Silakan kabari kalau ada temuan di endpoint atau butuh test data spesifik.

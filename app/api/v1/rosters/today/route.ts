@@ -81,11 +81,42 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const overtime = await prisma.overtime.findFirst({
-    where: { employeeId, tanggalKerja: today },
-    select: { status: true },
-    orderBy: { createdAt: "desc" },
-  })
+  // tanggalKerja untuk cek "sudah absen": kalau ada roster pakai roster.tanggalKerja
+  // (bisa jadi kemarin untuk shift crossesMidnight); kalau tidak, pakai today WIB.
+  const attendanceTanggalKerja = roster?.tanggalKerja ?? today
+
+  const [overtime, firstMasuk, firstPulang] = await Promise.all([
+    prisma.overtime.findFirst({
+      where: { employeeId, tanggalKerja: today },
+      select: { status: true },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.attendance.findFirst({
+      where: {
+        employeeId,
+        tanggalKerja: attendanceTanggalKerja,
+        eventType: "MASUK",
+        status: "VALID",
+      },
+      select: { recordedAt: true },
+      orderBy: { recordedAt: "asc" },
+    }),
+    prisma.attendance.findFirst({
+      where: {
+        employeeId,
+        tanggalKerja: attendanceTanggalKerja,
+        eventType: "PULANG",
+        status: "VALID",
+      },
+      select: { recordedAt: true },
+      orderBy: { recordedAt: "asc" },
+    }),
+  ])
+
+  const alreadyCheckedIn = firstMasuk !== null
+  const alreadyCheckedOut = firstPulang !== null
+  const checkedInAt = firstMasuk?.recordedAt.toISOString() ?? null
+  const checkedOutAt = firstPulang?.recordedAt.toISOString() ?? null
 
   const tanggalWib = today.toISOString().slice(0, 10)
 
@@ -96,6 +127,10 @@ export async function GET(req: NextRequest) {
       window: null,
       can_check_in: false,
       can_check_out: false,
+      already_checked_in: alreadyCheckedIn,
+      already_checked_out: alreadyCheckedOut,
+      checked_in_at: checkedInAt,
+      checked_out_at: checkedOutAt,
       overtime_status_today: overtime?.status ?? null,
     })
   }
@@ -133,6 +168,10 @@ export async function GET(req: NextRequest) {
     },
     can_check_in: canCheckIn,
     can_check_out: canCheckOut,
+    already_checked_in: alreadyCheckedIn,
+    already_checked_out: alreadyCheckedOut,
+    checked_in_at: checkedInAt,
+    checked_out_at: checkedOutAt,
     overtime_status_today: overtime?.status ?? null,
   })
 }

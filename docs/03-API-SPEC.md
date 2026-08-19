@@ -497,6 +497,10 @@ Response:
   } | null,
   "can_check_in": false,
   "can_check_out": false,
+  "already_checked_in": false,
+  "already_checked_out": false,
+  "checked_in_at": "ISO8601 UTC" | null,
+  "checked_out_at": "ISO8601 UTC" | null,
   "overtime_status_today": "DIAJUKAN|DISETUJUI_UNIT|SAH|DITOLAK|null"
 }
 ```
@@ -504,6 +508,29 @@ Kalau tidak ada roster hari ini (dan tidak ada shift kemarin yang
 `crossesMidnight` menutupi `now`), `roster` dan `window` = `null` dan
 `can_check_in`/`can_check_out` = `false`. Mobile app pakai flag ini untuk
 enable/disable tombol absen.
+
+Semantik field:
+- `can_check_in` / `can_check_out` — hanya mengacu pada rentang jam window
+  (apakah `now` ada dalam window absen). **Tidak** memperhitungkan apakah
+  pegawai sudah tap absen atau belum.
+- `already_checked_in` / `already_checked_out` — true kalau sudah ada
+  Attendance status `VALID` untuk `roster.tanggalKerja` (atau today WIB
+  kalau roster null) dengan `eventType` = `MASUK` / `PULANG`. Event lembur
+  (`LEMBUR_MASUK`/`LEMBUR_PULANG`) **tidak** dihitung — kalau butuh
+  dibedakan, ambil dari `/attendance/me`.
+- `checked_in_at` / `checked_out_at` — `recordedAt` dari absen pertama yang
+  cocok (ISO8601 UTC), null kalau belum absen. Mobile bisa tampilkan mis.
+  "Sudah absen · 07:03".
+
+Chip state di mobile (rekomendasi):
+- 🟢 `can_check_in && !already_checked_in` → "Bisa sekarang"
+- ✅ `already_checked_in` → "Sudah absen" (+ jam kalau ada)
+- ⚪ else → "Belum bisa"
+
+Backend TIDAK memblokir double tap di `POST /attendance` — belum ada kode
+error `ALREADY_CHECKED_IN`/`ALREADY_CHECKED_OUT`. Kalau nanti ada kebutuhan
+strict server-side, akan didiskusikan terpisah (perlu konfirmasi ke bagian
+kepegawaian soal skenario koreksi absen manual).
 
 #### `POST /api/v1/rosters`
 Tambah entri roster manual.
