@@ -9,18 +9,7 @@ interface Props {
   lockedUnitId?: string | null
 }
 
-interface AttendanceRow {
-  nip: string
-  nama: string
-  unit: string
-  tanggalKerja: string
-  shift: string | null
-  eventType: string | null
-  recordedAt: string | null
-  status: "hadir" | "alpha"
-  telat: boolean
-  flags: string[]
-}
+import { formatKeterangan, type AttendanceRow } from "@/lib/reports/attendance-types"
 
 const inputClass = "px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
 
@@ -155,6 +144,7 @@ export default function AttendanceReportsClient({ units, lockedUnitId }: Props) 
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide whitespace-nowrap">Tanggal</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide whitespace-nowrap">Shift</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide whitespace-nowrap">Jam Masuk</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide whitespace-nowrap">Jam Pulang</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide whitespace-nowrap">Status</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide whitespace-nowrap">Ket.</th>
                   </tr>
@@ -168,14 +158,37 @@ export default function AttendanceReportsClient({ units, lockedUnitId }: Props) 
                       <td className="px-4 py-2.5 text-gray-700 dark:text-slate-300 whitespace-nowrap">{dateFmt.format(new Date(row.tanggalKerja))}</td>
                       <td className="px-4 py-2.5 text-gray-500 dark:text-slate-400 whitespace-nowrap">{row.shift ?? "—"}</td>
                       <td className="px-4 py-2.5 text-gray-700 dark:text-slate-300 whitespace-nowrap">
-                        {row.recordedAt ? timeFmt.format(new Date(row.recordedAt)) : "—"}
+                        {row.jamMasuk ? timeFmt.format(new Date(row.jamMasuk)) : "—"}
+                      </td>
+                      <td className="px-4 py-2.5 text-gray-700 dark:text-slate-300 whitespace-nowrap">
+                        {row.jamPulang ? timeFmt.format(new Date(row.jamPulang)) : "—"}
                       </td>
                       <td className="px-4 py-2.5 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${row.status === "hadir" ? (row.telat ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300" : "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300") : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>
-                          {row.status === "hadir" ? (row.telat ? "Hadir Telat" : "Hadir") : "Alpha"}
-                        </span>
+                        {(() => {
+                          const cls =
+                            row.status === "hadir"
+                              ? row.telat
+                                ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
+                                : "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+                              : row.status === "alpha"
+                              ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                              : "bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-300"
+                          const label =
+                            row.status === "hadir"
+                              ? row.telat
+                                ? "Hadir Telat"
+                                : "Hadir"
+                              : row.status === "alpha"
+                              ? "Alpha"
+                              : "Belum Absen"
+                          return (
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
+                              {label}
+                            </span>
+                          )
+                        })()}
                       </td>
-                      <td className="px-4 py-2.5 text-xs text-gray-400 dark:text-slate-500">{row.flags.join(", ") || "—"}</td>
+                      <td className="px-4 py-2.5 text-xs text-gray-500 dark:text-slate-400">{formatKeterangan(row) || "—"}</td>
                     </tr>
                   ))}
                 </tbody>

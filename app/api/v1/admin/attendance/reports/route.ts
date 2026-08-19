@@ -68,15 +68,39 @@ export async function GET(req: NextRequest) {
     orderBy: { recordedAt: "asc" },
   })
 
-  const attMap = new Map<string, (typeof attendances)[0]>()
+  // Split per event_type — ambil tap MASUK pertama & PULANG pertama per (employee, tanggal).
+  // Flags/telat/beacon diambil dari tap MASUK (event yang paling representatif untuk status hadir).
+  interface AttSlot {
+    masukAt: Date | null
+    pulangAt: Date | null
+    telat: boolean
+    flags: string[]
+    beaconDetected: boolean | null
+  }
+  const attMap = new Map<string, AttSlot>()
   for (const a of attendances) {
     const key = `${a.employeeId}|${a.tanggalKerja.toISOString()}`
-    if (!attMap.has(key)) attMap.set(key, a)
+    const slot = attMap.get(key) ?? {
+      masukAt: null,
+      pulangAt: null,
+      telat: false,
+      flags: [],
+      beaconDetected: null,
+    }
+    if (a.eventType === "MASUK" && !slot.masukAt) {
+      slot.masukAt = a.recordedAt
+      slot.telat = a.telat
+      slot.flags = (a.flags as string[]) ?? []
+      slot.beaconDetected = a.beaconDetected
+    } else if (a.eventType === "PULANG" && !slot.pulangAt) {
+      slot.pulangAt = a.recordedAt
+    }
+    attMap.set(key, slot)
   }
 
   const rows: AttendanceRow[] = rosters.map((r) => {
     const key = `${r.employeeId}|${r.tanggalKerja.toISOString()}`
-    const att = attMap.get(key)
+    const slot = attMap.get(key)
     const isAlpha = !!r.alphaRecord
 
     return {
@@ -85,12 +109,12 @@ export async function GET(req: NextRequest) {
       unit: r.employee.unit?.name ?? "",
       tanggalKerja: r.tanggalKerja.toISOString().slice(0, 10),
       shift: r.shift?.nama ?? null,
-      eventType: att?.eventType ?? null,
-      recordedAt: att?.recordedAt?.toISOString() ?? null,
-      status: isAlpha ? "alpha" : "hadir",
-      telat: att?.telat ?? false,
-      flags: (att?.flags as string[]) ?? [],
-      beaconDetected: att?.beaconDetected ?? null,
+      jamMasuk: slot?.masukAt?.toISOString() ?? null,
+      jamPulang: slot?.pulangAt?.toISOString() ?? null,
+      status: slot?.masukAt ? "hadir" : isAlpha ? "alpha" : "belum",
+      telat: slot?.telat ?? false,
+      flags: slot?.flags ?? [],
+      beaconDetected: slot?.beaconDetected ?? null,
     }
   })
 

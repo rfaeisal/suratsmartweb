@@ -1,5 +1,5 @@
 import PDFDocument from "pdfkit"
-import type { AttendanceRow } from "./attendance-types"
+import { formatKeterangan, type AttendanceRow } from "./attendance-types"
 
 export async function buildAttendancePdf(rows: AttendanceRow[], title: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
@@ -18,16 +18,16 @@ export async function buildAttendancePdf(rows: AttendanceRow[], title: string): 
     doc.moveDown(0.3)
 
     const cols = [
-      { label: "NIP",       w: 90  },
-      { label: "Nama",      w: 110 },
-      { label: "Unit",      w: 80  },
-      { label: "Tgl Kerja", w: 60  },
-      { label: "Shift",     w: 55  },
-      { label: "Event",     w: 50  },
-      { label: "Jam Rekam", w: 80  },
-      { label: "Status",    w: 38  },
-      { label: "Telat",     w: 32  },
-      { label: "Flags",     w: 80  },
+      { label: "NIP",         w: 90  },
+      { label: "Nama",        w: 110 },
+      { label: "Unit",        w: 80  },
+      { label: "Tgl Kerja",   w: 60  },
+      { label: "Shift",       w: 55  },
+      { label: "Jam Masuk",   w: 55  },
+      { label: "Jam Pulang",  w: 55  },
+      { label: "Status",      w: 42  },
+      { label: "Telat",       w: 32  },
+      { label: "Keterangan",  w: 96  },
     ]
 
     const startX = doc.page.margins.left
@@ -62,8 +62,27 @@ export async function buildAttendancePdf(rows: AttendanceRow[], title: string): 
     }
     y += rowH
 
+    const timeFmt = (iso: string | null) =>
+      iso
+        ? new Date(iso).toLocaleTimeString("id-ID", {
+            timeZone: "Asia/Makassar",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          })
+        : "-"
+
     for (const r of rows) {
-      const bg = r.status === "alpha" ? "#FEE2E2" : r.telat ? "#FEF9C3" : undefined
+      const bg =
+        r.status === "alpha"
+          ? "#FEE2E2"
+          : r.status === "belum"
+          ? "#F3F4F6"
+          : r.telat
+          ? "#FEF9C3"
+          : undefined
+      const statusLabel =
+        r.status === "hadir" ? "Hadir" : r.status === "alpha" ? "Alpha" : "Belum"
       drawRow(
         [
           r.nip,
@@ -71,13 +90,11 @@ export async function buildAttendancePdf(rows: AttendanceRow[], title: string): 
           r.unit,
           r.tanggalKerja,
           r.shift ?? "-",
-          r.eventType ?? "-",
-          r.recordedAt
-            ? new Date(r.recordedAt).toLocaleString("id-ID", { timeZone: "Asia/Makassar" })
-            : "-",
-          r.status === "hadir" ? "Hadir" : "Alpha",
+          timeFmt(r.jamMasuk),
+          timeFmt(r.jamPulang),
+          statusLabel,
           r.telat ? "Ya" : "Tidak",
-          r.flags.join(", ") || "-",
+          formatKeterangan(r) || "-",
         ],
         bg,
       )

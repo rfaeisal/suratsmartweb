@@ -1,5 +1,5 @@
 import ExcelJS from "exceljs"
-import type { AttendanceRow } from "./attendance-types"
+import { formatKeterangan, type AttendanceRow } from "./attendance-types"
 
 export async function buildAttendanceExcel(rows: AttendanceRow[], title: string): Promise<Buffer> {
   const wb = new ExcelJS.Workbook()
@@ -14,11 +14,11 @@ export async function buildAttendanceExcel(rows: AttendanceRow[], title: string)
     { header: "Unit",          key: "unit",          width: 22 },
     { header: "Tanggal Kerja", key: "tanggalKerja",  width: 14 },
     { header: "Shift",         key: "shift",         width: 16 },
-    { header: "Tipe Event",    key: "eventType",     width: 14 },
-    { header: "Jam Rekam",     key: "recordedAt",    width: 20 },
+    { header: "Jam Masuk",     key: "jamMasuk",      width: 12 },
+    { header: "Jam Pulang",    key: "jamPulang",     width: 12 },
     { header: "Status",        key: "status",        width: 10 },
     { header: "Telat",         key: "telat",         width: 8  },
-    { header: "Flags",         key: "flags",         width: 20 },
+    { header: "Keterangan",    key: "keterangan",    width: 32 },
   ]
 
   const headerRow = ws.getRow(1)
@@ -27,6 +27,16 @@ export async function buildAttendanceExcel(rows: AttendanceRow[], title: string)
   headerRow.alignment = { vertical: "middle", horizontal: "center" }
   headerRow.height = 20
 
+  const timeFmt = (iso: string | null) =>
+    iso
+      ? new Date(iso).toLocaleTimeString("id-ID", {
+          timeZone: "Asia/Makassar",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        })
+      : "-"
+
   for (const r of rows) {
     const row = ws.addRow({
       nip:          r.nip,
@@ -34,17 +44,17 @@ export async function buildAttendanceExcel(rows: AttendanceRow[], title: string)
       unit:         r.unit,
       tanggalKerja: r.tanggalKerja,
       shift:        r.shift ?? "-",
-      eventType:    r.eventType ?? "-",
-      recordedAt:   r.recordedAt
-        ? new Date(r.recordedAt).toLocaleString("id-ID", { timeZone: "Asia/Makassar" })
-        : "-",
-      status:       r.status === "hadir" ? "Hadir" : "Alpha",
+      jamMasuk:     timeFmt(r.jamMasuk),
+      jamPulang:    timeFmt(r.jamPulang),
+      status:       r.status === "hadir" ? "Hadir" : r.status === "alpha" ? "Alpha" : "Belum",
       telat:        r.telat ? "Ya" : "Tidak",
-      flags:        r.flags.join(", ") || "-",
+      keterangan:   formatKeterangan(r) || "-",
     })
 
     if (r.status === "alpha") {
       row.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFEE2E2" } }
+    } else if (r.status === "belum") {
+      row.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF3F4F6" } }
     } else if (r.telat) {
       row.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFEF9C3" } }
     }
