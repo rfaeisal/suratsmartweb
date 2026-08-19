@@ -75,13 +75,25 @@ export default async function AuditLogsPage({ searchParams }: Props) {
     }),
   ])
 
-  // Resolve actor names
+  // Resolve actor names — actorId adalah AppUser.id (bukan Employee.id),
+  // jadi query lewat AppUser → include employee untuk ambil fullName + NIP.
   const actorIds = [...new Set(logs.map((l) => l.actorId).filter(Boolean))] as string[]
-  const actors = await prisma.employee.findMany({
+  const actors = await prisma.appUser.findMany({
     where: { id: { in: actorIds } },
-    select: { id: true, fullName: true },
+    select: {
+      id: true,
+      username: true,
+      employee: { select: { fullName: true, nip: true } },
+    },
   })
-  const actorMap = Object.fromEntries(actors.map((a) => [a.id, a.fullName]))
+  const actorMap = Object.fromEntries(
+    actors.map((a) => [
+      a.id,
+      a.employee?.fullName
+        ? `${a.employee.fullName}${a.employee.nip ? ` (${a.employee.nip})` : ""}`
+        : a.username ?? a.id,
+    ]),
+  )
 
   const totalPages = Math.ceil(total / limit)
 
