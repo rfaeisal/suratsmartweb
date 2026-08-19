@@ -1,0 +1,32 @@
+Halo tim mobile 👋
+
+Ada update backend yang perlu di-sync sebelum kita deploy production — soal
+absensi. Ringkas:
+
+• `POST /api/v1/attendance` (event `masuk`/`pulang`) sekarang bisa balikan
+  3 kode error baru: `NO_ROSTER`, `OUTSIDE_CHECK_IN_WINDOW`,
+  `OUTSIDE_CHECK_OUT_WINDOW`. Untuk 2 window error, `error.details` berisi
+  `window_start` & `window_end` (ISO8601 UTC) — tolong dipakai untuk kasih
+  pesan "Absen masuk hanya bisa dari jam X sampai Y".
+
+• Endpoint baru: `GET /api/v1/rosters/today`. Sebaiknya dipanggil di layar
+  home + on-focus + polling ~60 detik. Response punya `can_check_in` &
+  `can_check_out` yang sudah dihitung server — pakai ini buat
+  enable/disable tombol absen.
+
+• Absen lembur (`lembur_masuk`/`lembur_pulang`) dari sisi client TIDAK
+  berubah, tetap sukses. Server yang urus notif ke atasan kalau belum ada
+  Overtime SAH.
+
+• Default backend setelah deploy = STRICT: pegawai tanpa roster tidak bisa
+  tap; tap di luar window default (mulai 60 menit sebelum start s/d 15 menit
+  setelah start) juga ditolak. Perlu koordinasi timing supaya user build
+  lama nggak bingung dapat error tanpa pesan yang tepat.
+
+Detail lengkap + contoh response ada di:
+`cutismart-web/docs/notes-mobile/2026-08-19-window-absen.md`
+
+Dan `docs/03-API-SPEC.md` sudah diupdate juga.
+
+Silakan mention di sini kalau butuh field tambahan di `/rosters/today` atau
+ada corner case yang mau dikonfirmasi. 🙏

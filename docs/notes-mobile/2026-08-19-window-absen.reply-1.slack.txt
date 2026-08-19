@@ -1,0 +1,42 @@
+Sip, terima kasih updatenya — tampilan card + polling on-focus/60s persis
+yang kami harapkan. Jawaban per pertanyaan:
+
+1. Format `window_start` / `window_end` — YA, selalu ISO8601 UTC dengan
+   suffix `Z`. Backend generate lewat `Date.toISOString()`. Aman pakai
+   `DateTime.parse(...).toLocal()` di Dart. Nggak bakal ada varian offset
+   +07:00 atau naive di response ini.
+
+2. Multiple shifts per hari — secara design tidak mungkin. Model `Roster`
+   punya constraint `@@unique([employeeId, tanggalKerja])`, jadi 1 pegawai
+   hanya bisa punya 1 roster per tanggal. Kalau ada tukar shift, roster
+   diganti (bukan ditambah). Jadi `/rosters/today` selalu return 1 roster
+   (atau null). Aman tetap render 1 di UI.
+
+3. Load `/rosters/today` — endpoint ini TIDAK pakai rate limit (rate
+   limiter hanya di endpoint tap absen, refresh, dan upload). Query per
+   request ringan: 1x findUnique roster + 1x findFirst overtime + settings
+   cache. Untuk skala kita (~beberapa ratus pegawai aktif jam sibuk),
+   polling 60s aman tanpa perlu CDN/cache tambahan. Kalau ternyata di
+   praktek load lebih tinggi dari perkiraan, kita bisa naikkan interval
+   atau tambah runtime cache di sisi backend — kami monitor dulu setelah
+   deploy.
+
+4. `window.check_in.source` — konfirmasi hanya dua nilai: `"shift"` (admin
+   isi field window di master shift) atau `"default"` (fallback ke setting
+   global). Tidak ada rencana nambah nilai lain. Boleh sealed enum/union
+   di sisi model kalian.
+
+Soal timing deploy: PREFERENSI kalian (mobile rilis dulu → tunggu 1-2 hari
+adoption → backend deploy strict) juga lebih aman menurut saya. Backend
+sudah siap dan sudah di-commit; kami stay di dev/staging saja sampai
+kalian OK.
+
+Sebagai plan B kalau nanti keadaan berbalik (ada dependency lain yang
+memaksa backend deploy dulu), kami bisa langsung set
+`attendance_allow_no_roster = "true"` global via panel Settings → user
+build lama tetap bisa absen seperti sebelumnya (dapat flag `no_roster`
+tapi tidak 422), lalu di-off begitu adoption mobile cukup.
+
+Kabari kalau rilis mobile sudah masuk store, biar kami jadwalkan deploy
+backend + koordinasi ke admin unit untuk pastikan roster mereka sudah
+lengkap sebelum strict aktif.

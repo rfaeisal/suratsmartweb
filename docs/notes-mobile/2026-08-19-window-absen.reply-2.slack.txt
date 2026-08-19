@@ -1,0 +1,18 @@
+Sip, plan clear semua. Beberapa catatan penutup dari sisi kami:
+
+- Backend stay di dev/staging sampai kalian kabari mobile approved & mulai
+  rollout. Kami tidak deploy strict sampai ada aba-aba dari kalian.
+- Window default (60m sebelum start / 15m toleransi telat / 30m sebelum
+  end / 120m sesudah end) — kami TIDAK ubah tanpa kabar. Kalau ada request
+  penyesuaian dari admin kepegawaian sebelum strict aktif, kami sync di
+  thread ini dulu sebelum apply, biar pesan tim support tetap sinkron.
+- Sementara kalian testing di dev/staging: settingan window & flag override
+  per unit sudah bisa dicoba dari panel admin (`/admin/attendance/shifts`
+  untuk field per shift; `/admin/units/<id>` → Edit untuk flag
+  `allowAttendanceWithoutRoster`). Silakan ping kalau butuh test data
+  spesifik di staging.
+- Paralel dengan Play Store review, kami akan brief admin kepegawaian
+  untuk audit roster minggu depan supaya begitu strict aktif, semua unit
+  sudah bersih rosternya.
+
+Sampai ketemu di update rollout berikutnya. Semangat submit-nya 🙏
