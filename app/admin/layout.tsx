@@ -93,7 +93,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     {
       group: "Absensi",
       items: [
-        ...(isAdmin || isKepalaUnit || isAdminUnit ? [{ href: "/admin/attendance/reports",    label: "Rekap Absensi",  iconName: "attendance" }] : []),
+        ...(isAdmin || isKepalaUnit || isAdminUnit ? [{ href: "/admin/attendance/reports",        label: "Rekap Absensi",  iconName: "attendance" }] : []),
+        ...(isAdmin || isKepalaUnit || isAdminUnit ? [{ href: "/admin/attendance/monthly-recap",  label: "Rekap Bulanan",  iconName: "attendance" }] : []),
         ...(isAdmin || isKepalaUnit || isAdminUnit ? [{ href: "/admin/attendance/roster",     label: "Roster Pegawai", iconName: "roster",   badge: pendingRoster   || undefined }] : []),
         ...(isAdmin || isKepalaUnit               ? [{ href: "/admin/attendance/overtime",    label: "Lembur Pegawai", iconName: "overtime", badge: pendingOvertime || undefined }] : []),
         ...(isAdmin || isKepalaUnit               ? [{ href: "/admin/attendance/shift-swaps", label: "Tukar Shift",    iconName: "swap",     badge: pendingSwaps    || undefined }] : []),
