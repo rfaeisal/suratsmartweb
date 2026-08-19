@@ -62,15 +62,16 @@ export async function buildAttendancePdf(rows: AttendanceRow[], title: string): 
     }
     y += rowH
 
-    const timeFmt = (iso: string | null) =>
-      iso
-        ? new Date(iso).toLocaleTimeString("id-ID", {
-            timeZone: "Asia/Makassar",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-          })
-        : "-"
+    // Manual WITA (UTC+8) formatting — hindari `toLocaleTimeString` dengan
+    // timeZone yang bisa gagal di node alpine (small-icu build).
+    const WITA_OFFSET_MS = 8 * 60 * 60 * 1000
+    const timeFmt = (iso: string | null) => {
+      if (!iso) return "-"
+      const d = new Date(new Date(iso).getTime() + WITA_OFFSET_MS)
+      const hh = String(d.getUTCHours()).padStart(2, "0")
+      const mm = String(d.getUTCMinutes()).padStart(2, "0")
+      return `${hh}:${mm}`
+    }
 
     for (const r of rows) {
       const bg =
