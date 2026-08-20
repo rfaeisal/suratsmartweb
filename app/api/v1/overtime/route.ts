@@ -3,6 +3,7 @@ import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import { requireAuth, AuthError } from "@/lib/auth/require-auth"
 import { Errors } from "@/lib/errors"
+import { sendNotification } from "@/lib/notifications"
 
 const createSchema = z.object({
   tanggal_kerja: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -83,6 +84,32 @@ export async function POST(req: NextRequest) {
       workUnit: { select: { id: true, name: true } },
     },
   })
+
+  // Notif FCM ke Kepala Unit — non-blocking, kegagalan notif tidak
+  // boleh menggagalkan pengajuan.
+  try {
+    const kepalaUsers = await prisma.appUser.findMany({
+      where: { managedWorkUnitId: employee.unitId, roles: { has: "KEPALA_UNIT" } },
+      select: { id: true },
+    })
+    await Promise.all(
+      kepalaUsers.map((u) =>
+        sendNotification({
+          event: "OVERTIME_APPROVAL_REQUESTED",
+          targetUserId: u.id,
+          data: {
+            overtimeId: overtime.id,
+            employeeId: overtime.employee.id,
+            employeeName: overtime.employee.fullName,
+            unitName: overtime.workUnit.name,
+            tanggalKerja: overtime.tanggalKerja.toISOString().slice(0, 10),
+          },
+        }),
+      ),
+    )
+  } catch (err) {
+    console.error("[overtime] Gagal kirim notif approval:", err)
+  }
 
   return NextResponse.json(overtime, { status: 201 })
 }

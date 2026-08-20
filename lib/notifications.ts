@@ -20,6 +20,7 @@ export type NotifEvent =
   | "FACE_ENROLLMENT_APPROVED"
   | "FACE_ENROLLMENT_REJECTED"
   | "OVERTIME_TAP_WITHOUT_APPROVAL"
+  | "OVERTIME_APPROVAL_REQUESTED"
 
 interface NotifPayload {
   event: NotifEvent
@@ -173,6 +174,13 @@ function buildFcmData(event: NotifEvent, data: Record<string, string>): Record<s
         type: "OVERTIME_UNAPPROVED",
         title: "Pengajuan Lembur Baru (dari Tap Absen)",
         body: `${data.employeeName ?? "Pegawai"} tap absen lembur — pengajuan otomatis dibuat, silakan approve.`,
+      }
+    case "OVERTIME_APPROVAL_REQUESTED":
+      return {
+        ...data,
+        type: "OVERTIME_APPROVAL_NEEDED",
+        title: "Pengajuan Lembur Menunggu Persetujuan",
+        body: `${data.employeeName ?? "Pegawai"} mengajukan lembur untuk ${data.tanggalKerja ?? ""}`.trim(),
       }
   }
 }
