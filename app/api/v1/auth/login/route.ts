@@ -71,26 +71,22 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  // 4a. Device binding — 1 perangkat per akun (untuk absensi)
+  // 4a. Device binding — 1 perangkat per akun (untuk absensi).
+  // Kalau ada sesi ACTIVE di device BEDA → tolak (device conflict).
   if (await isDeviceBindingEnabled()) {
-    const activeSession = await prisma.userSession.findFirst({
-      where: { userId: appUser.id, status: "ACTIVE" },
-      select: { id: true, deviceId: true, deviceLabel: true },
+    const otherDeviceSession = await prisma.userSession.findFirst({
+      where: {
+        userId: appUser.id,
+        status: "ACTIVE",
+        deviceId: { not: deviceId },
+      },
+      select: { deviceLabel: true },
     })
-    if (activeSession) {
-      if (activeSession.deviceId === deviceId) {
-        // Re-login dari perangkat yang sama — revoke sesi lama, lanjut buat baru
-        await prisma.userSession.update({
-          where: { id: activeSession.id },
-          data: { status: "REVOKED", revokedAt: new Date(), revokedBy: "SELF" },
-        })
-      } else {
-        // Perangkat berbeda — tolak
-        return Errors.deviceConflict(activeSession.deviceLabel ?? undefined)
-      }
+    if (otherDeviceSession) {
+      return Errors.deviceConflict(otherDeviceSession.deviceLabel ?? undefined)
     }
   } else if (await isEnforceSingleSession()) {
-    // 4b. Fallback: blokir sesi ganda tanpa mempertimbangkan device
+    // 4b. Fallback: blokir sesi ganda tanpa mempertimbangkan device.
     const activeSession = await prisma.userSession.findFirst({
       where: { userId: appUser.id, status: "ACTIVE" },
     })
@@ -101,6 +97,15 @@ export async function POST(req: NextRequest) {
       )
     }
   }
+
+  // 4c. Revoke SEMUA sesi ACTIVE lama untuk user ini — self-healing supaya
+  // sesi tidak menumpuk. updateMany (bukan findFirst+update) supaya bereskan
+  // kasus di mana user existing sudah punya >1 sesi ACTIVE dari kondisi
+  // sebelum fix ini. Dijalankan terlepas dari setting di atas.
+  await prisma.userSession.updateMany({
+    where: { userId: appUser.id, status: "ACTIVE" },
+    data: { status: "REVOKED", revokedAt: new Date(), revokedBy: "SELF" },
+  })
 
   // 5. Buat sesi baru
   const refreshToken = generateRefreshToken()
