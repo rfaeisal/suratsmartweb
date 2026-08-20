@@ -26,11 +26,18 @@ const MONTH_LABELS = [
 
 type SortKey = "nama" | "hariKerja" | "hadir" | "telat" | "persentase"
 type SortDir = "asc" | "desc"
+type FilterMode = "monthly" | "range"
 
 export default function MonthlyRecapClient({ units, lockedUnitId }: Props) {
   const today = new Date()
+  const firstOfMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`
+  const todayStr = today.toISOString().slice(0, 10)
+
+  const [mode, setMode] = useState<FilterMode>("monthly")
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth() + 1)
+  const [from, setFrom] = useState(firstOfMonth)
+  const [to, setTo] = useState(todayStr)
   const [unitId, setUnitId] = useState(lockedUnitId ?? "")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -40,13 +47,21 @@ export default function MonthlyRecapClient({ units, lockedUnitId }: Props) {
   const [sortDir, setSortDir] = useState<SortDir>("asc")
 
   function buildUrl(format: string) {
-    const p = new URLSearchParams({
-      year: String(year),
-      month: String(month),
-      format,
-    })
+    const p = new URLSearchParams({ format })
+    if (mode === "monthly") {
+      p.set("year", String(year))
+      p.set("month", String(month))
+    } else {
+      p.set("from", from)
+      p.set("to", to)
+    }
     if (unitId) p.set("work_unit_id", unitId)
     return `/api/v1/admin/attendance/monthly-recap?${p}`
+  }
+
+  function fileSuffix(): string {
+    if (mode === "monthly") return `${year}-${String(month).padStart(2, "0")}`
+    return `${from}-${to}`
   }
 
   async function handlePreview() {
@@ -78,7 +93,7 @@ export default function MonthlyRecapClient({ units, lockedUnitId }: Props) {
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
-      a.download = `rekap-bulanan-${year}-${String(month).padStart(2, "0")}.${format}`
+      a.download = `rekap-bulanan-${fileSuffix()}.${format}`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -107,24 +122,38 @@ export default function MonthlyRecapClient({ units, lockedUnitId }: Props) {
   return (
     <div className="space-y-6">
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-4">Parameter Laporan</h3>
+        <div className="flex items-center gap-2 mb-4">
+          <button onClick={() => setMode("range")} className={`px-3 py-1 text-xs rounded-lg font-medium ${mode === "range" ? "bg-blue-600 text-white" : "border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-400"}`}>Rentang Tanggal</button>
+          <button onClick={() => setMode("monthly")} className={`px-3 py-1 text-xs rounded-lg font-medium ${mode === "monthly" ? "bg-blue-600 text-white" : "border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-400"}`}>Bulanan</button>
+        </div>
         <div className="flex flex-wrap items-end gap-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Bulan <span className="text-red-500">*</span></label>
-            <select value={month} onChange={(e) => setMonth(parseInt(e.target.value, 10))} className={inputClass}>
-              {MONTH_LABELS.map((m, i) => (
-                <option key={i} value={i + 1}>{m}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Tahun <span className="text-red-500">*</span></label>
-            <select value={year} onChange={(e) => setYear(parseInt(e.target.value, 10))} className={inputClass}>
-              {yearOptions.map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-          </div>
+          {mode === "monthly" ? (
+            <>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Bulan</label>
+                <select value={month} onChange={(e) => setMonth(parseInt(e.target.value, 10))} className={inputClass}>
+                  {MONTH_LABELS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Tahun</label>
+                <select value={year} onChange={(e) => setYear(parseInt(e.target.value, 10))} className={inputClass}>
+                  {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Dari</label>
+                <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Sampai</label>
+                <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={inputClass} />
+              </div>
+            </>
+          )}
           <div className="flex-1 min-w-48">
             <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Unit Kerja</label>
             {lockedUnitId ? (

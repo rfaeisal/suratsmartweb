@@ -7,12 +7,20 @@ import { buildMonthlyRecapExcel } from "@/lib/reports/monthly-recap-excel"
 import { buildMonthlyRecapPdf } from "@/lib/reports/monthly-recap-pdf"
 import type { MonthlyRecapRow, MonthlyRecapSummary } from "@/lib/reports/monthly-recap-types"
 
+// Menerima either (year+month) atau (from+to). Kalau from+to di-supply,
+// itu prioritas. Client bulanan tetap kirim year+month untuk backward compat +
+// title yang bagus; client rentang kirim from+to.
 const querySchema = z.object({
-  year: z.coerce.number().int().min(2000).max(2100),
-  month: z.coerce.number().int().min(1).max(12),
+  year: z.coerce.number().int().min(2000).max(2100).optional(),
+  month: z.coerce.number().int().min(1).max(12).optional(),
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   work_unit_id: z.string().optional(),
   format: z.enum(["json", "xlsx", "pdf"]).default("json"),
-})
+}).refine(
+  (v) => (v.year !== undefined && v.month !== undefined) || (v.from !== undefined && v.to !== undefined),
+  { message: "Wajib isi (year+month) atau (from+to)" },
+)
 
 const MONTH_ID = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -35,7 +43,7 @@ export async function GET(req: NextRequest) {
   const parsed = querySchema.safeParse(raw)
   if (!parsed.success) return Errors.validation(parsed.error.issues[0].message)
 
-  const { year, month, format } = parsed.data
+  const { year, month, from, to, format } = parsed.data
   let { work_unit_id } = parsed.data
 
   const isAdmin =
@@ -47,9 +55,17 @@ export async function GET(req: NextRequest) {
     work_unit_id = auth.managedWorkUnitId ?? "__none__"
   }
 
-  // Rentang bulan penuh — awal bulan sampai awal bulan berikutnya (exclusive).
-  const fromDate = new Date(Date.UTC(year, month - 1, 1))
-  const toDate = new Date(Date.UTC(year, month, 1))
+  // Prioritas: from/to > year/month
+  let fromDate: Date
+  let toDate: Date
+  if (from && to) {
+    fromDate = new Date(from + "T00:00:00.000Z")
+    toDate = new Date(to + "T23:59:59.999Z")
+  } else {
+    // Bulan penuh — awal bulan sampai awal bulan berikutnya (exclusive).
+    fromDate = new Date(Date.UTC(year!, month! - 1, 1))
+    toDate = new Date(Date.UTC(year!, month!, 1))
+  }
 
   const [rosters, attendances] = await Promise.all([
     prisma.roster.findMany({
@@ -130,14 +146,17 @@ export async function GET(req: NextRequest) {
         : 0,
   }
 
-  const title = `Rekap Absensi Bulanan — ${MONTH_ID[month - 1]} ${year}`
+  const title =
+    from && to
+      ? `Rekap Absensi ${from} s.d. ${to}`
+      : `Rekap Absensi Bulanan — ${MONTH_ID[month! - 1]} ${year}`
 
   if (format === "xlsx") {
     const buffer = await buildMonthlyRecapExcel(rows, summary, title)
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": `attachment; filename="rekap-bulanan-${year}-${String(month).padStart(2, "0")}.xlsx"`,
+        "Content-Disposition": `attachment; filename="rekap-bulanan-${from ?? `${year}-${String(month).padStart(2, "0")}`}${to ? `-${to}` : ""}.xlsx"`,
       },
     })
   }
@@ -147,7 +166,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="rekap-bulanan-${year}-${String(month).padStart(2, "0")}.pdf"`,
+        "Content-Disposition": `attachment; filename="rekap-bulanan-${from ?? `${year}-${String(month).padStart(2, "0")}`}${to ? `-${to}` : ""}.pdf"`,
       },
     })
   }

@@ -13,23 +13,41 @@ import { formatKeterangan, type AttendanceRow } from "@/lib/reports/attendance-t
 
 const inputClass = "px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
 
+const MONTHS = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"]
+type FilterMode = "range" | "monthly"
+
 export default function AttendanceReportsClient({ units, lockedUnitId }: Props) {
   const today = new Date()
   const firstOfMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`
   const todayStr = today.toISOString().slice(0, 10)
 
+  const [mode, setMode] = useState<FilterMode>("range")
   const [from, setFrom] = useState(firstOfMonth)
   const [to, setTo] = useState(todayStr)
+  const [year, setYear] = useState(today.getFullYear())
+  const [month, setMonth] = useState(today.getMonth() + 1)
   const [unitId, setUnitId] = useState(lockedUnitId ?? "")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [rows, setRows] = useState<AttendanceRow[] | null>(null)
 
+  function currentRange(): { from: string; to: string } {
+    if (mode === "range") return { from, to }
+    const first = `${year}-${String(month).padStart(2, "0")}-01`
+    const lastDay = new Date(year, month, 0).getDate()
+    const last = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`
+    return { from: first, to: last }
+  }
+
   function buildUrl(format: string) {
-    const p = new URLSearchParams({ from, to, format })
+    const { from: f, to: t } = currentRange()
+    const p = new URLSearchParams({ from: f, to: t, format })
     if (unitId) p.set("work_unit_id", unitId)
     return `/api/v1/admin/attendance/reports?${p}`
   }
+
+  const yearOptions: number[] = []
+  for (let y = today.getFullYear() - 3; y <= today.getFullYear() + 1; y++) yearOptions.push(y)
 
   async function handleDownload(format: "xlsx" | "pdf") {
     setError("")
@@ -74,16 +92,38 @@ export default function AttendanceReportsClient({ units, lockedUnitId }: Props) 
   return (
     <div className="space-y-6">
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-4">Parameter Laporan</h3>
+        <div className="flex items-center gap-2 mb-4">
+          <button onClick={() => setMode("range")} className={`px-3 py-1 text-xs rounded-lg font-medium ${mode === "range" ? "bg-blue-600 text-white" : "border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-400"}`}>Rentang Tanggal</button>
+          <button onClick={() => setMode("monthly")} className={`px-3 py-1 text-xs rounded-lg font-medium ${mode === "monthly" ? "bg-blue-600 text-white" : "border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-400"}`}>Bulanan</button>
+        </div>
         <div className="flex flex-wrap items-end gap-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Dari Tanggal <span className="text-red-500">*</span></label>
-            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={inputClass} />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Sampai Tanggal <span className="text-red-500">*</span></label>
-            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={inputClass} />
-          </div>
+          {mode === "range" ? (
+            <>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Dari</label>
+                <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Sampai</label>
+                <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={inputClass} />
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Bulan</label>
+                <select value={month} onChange={(e) => setMonth(parseInt(e.target.value, 10))} className={inputClass}>
+                  {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Tahun</label>
+                <select value={year} onChange={(e) => setYear(parseInt(e.target.value, 10))} className={inputClass}>
+                  {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+            </>
+          )}
           <div className="flex-1 min-w-48">
             <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">Unit Kerja</label>
             {lockedUnitId ? (
