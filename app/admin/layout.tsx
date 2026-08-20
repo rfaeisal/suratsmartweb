@@ -97,6 +97,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         ...(isAdmin || isKepalaUnit || isAdminUnit ? [{ href: "/admin/attendance/monthly-recap",  label: "Rekap Bulanan",  iconName: "attendance" }] : []),
         ...(isAdmin || isKepalaUnit || isAdminUnit ? [{ href: "/admin/attendance/roster",     label: "Roster Pegawai", iconName: "roster",   badge: pendingRoster   || undefined }] : []),
         ...(isAdmin || isKepalaUnit               ? [{ href: "/admin/attendance/overtime",    label: "Lembur Pegawai", iconName: "overtime", badge: pendingOvertime || undefined }] : []),
+        ...(isAdmin || isKepalaUnit || isAdminUnit ? [{ href: "/admin/attendance/overtime-reports/detail",  label: "Laporan Lembur (Detail)",   iconName: "overtime" }] : []),
+        ...(isAdmin || isKepalaUnit || isAdminUnit ? [{ href: "/admin/attendance/overtime-reports/summary", label: "Laporan Lembur (Ringkas)",  iconName: "overtime" }] : []),
         ...(isAdmin || isKepalaUnit               ? [{ href: "/admin/attendance/shift-swaps", label: "Tukar Shift",    iconName: "swap",     badge: pendingSwaps    || undefined }] : []),
         ...(isAdmin ? [{ href: "/admin/attendance/face-enrollment", label: "Enrollment Wajah",      iconName: "employees" }] : []),
         ...(isAdmin ? [{ href: "/admin/attendance/manual-recovery", label: "Manual Recovery Absen", iconName: "attendance" }] : []),
