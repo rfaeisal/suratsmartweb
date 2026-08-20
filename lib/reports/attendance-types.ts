@@ -21,6 +21,8 @@ export interface AttendanceRow {
 const FLAG_LABELS: Record<string, string> = {
   no_roster: "Tanpa jadwal",
   overtime_unapproved: "Lembur belum disetujui",
+  overtime_auto_created: "Pengajuan lembur auto-generate",
+  overtime_pending: "Lembur menunggu approval",
 }
 
 export function formatKeterangan(row: AttendanceRow): string {

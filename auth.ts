@@ -118,8 +118,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
     session({ session, token }) {
       if (!token || !token.id) {
-        // Absolute expiry sudah trigger — jangan populate session.
-        return session
+        // Absolute expiry sudah trigger — kosongkan user supaya check
+        // `if (!session?.user)` di layout admin/pegawai redirect ke /login.
+        // Return session tanpa user (cast karena TypeScript strict soal ini).
+        return { ...session, user: undefined as unknown as typeof session.user }
       }
       session.user.id = token.id as string
       session.user.roles = (token.roles as AppRole[]) ?? (token.role ? [token.role as AppRole] : ["PEGAWAI"])

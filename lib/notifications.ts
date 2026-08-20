@@ -171,8 +171,8 @@ function buildFcmData(event: NotifEvent, data: Record<string, string>): Record<s
       return {
         ...data,
         type: "OVERTIME_UNAPPROVED",
-        title: "Absen Lembur Tanpa Persetujuan",
-        body: `${data.employeeName ?? "Pegawai"} tap absen lembur tanpa pengajuan yang disetujui. Perlu validasi.`,
+        title: "Pengajuan Lembur Baru (dari Tap Absen)",
+        body: `${data.employeeName ?? "Pegawai"} tap absen lembur — pengajuan otomatis dibuat, silakan approve.`,
       }
   }
 }

@@ -322,17 +322,45 @@ export async function POST(req: NextRequest) {
   }
 
   // === LEMBUR ===
-  // Tidak wajib roster & tidak divalidasi window. Kalau tidak ada Overtime SAH
-  // pada tanggal ini, tetap catat + flag `overtime_unapproved` + notif ke Kepala Unit.
-  let overtimeUnapproved = false
+  // Tidak wajib roster & tidak divalidasi window.
+  // - Kalau belum ada pengajuan Overtime di tanggal itu → AUTO-CREATE
+  //   pengajuan status DIAJUKAN + flag `overtime_auto_created` + notif
+  //   ke Kepala Unit supaya tinggal approve dari halaman overtime.
+  // - Kalau ada tapi belum SAH → cukup flag `overtime_pending` (tidak
+  //   perlu notif ulang, proses approval sedang berjalan).
+  // - Kalau SAH → clean tanpa flag.
+  let overtimeAutoCreated = false
   if (isOvertime) {
     const overtime = await prisma.overtime.findFirst({
-      where: { employeeId, tanggalKerja, status: "SAH" },
-      select: { id: true },
+      where: { employeeId, tanggalKerja },
+      select: { id: true, status: true },
+      orderBy: { createdAt: "desc" },
     })
+
     if (!overtime) {
-      overtimeUnapproved = true
-      flags.push("overtime_unapproved")
+      const overtimeUnitId = employeeInfo?.unit?.id
+      if (overtimeUnitId) {
+        try {
+          await prisma.overtime.create({
+            data: {
+              employeeId,
+              workUnitId: overtimeUnitId,
+              tanggalKerja,
+              status: "DIAJUKAN",
+              note: "Auto-generated dari tap absen lembur",
+            },
+          })
+          overtimeAutoCreated = true
+          flags.push("overtime_auto_created")
+        } catch (err) {
+          console.error("[attendance] Gagal auto-create overtime:", err)
+          flags.push("overtime_unapproved")
+        }
+      } else {
+        flags.push("overtime_unapproved")
+      }
+    } else if (overtime.status !== "SAH") {
+      flags.push("overtime_pending")
     }
   }
 
@@ -382,9 +410,10 @@ export async function POST(req: NextRequest) {
     metadata: { eventType: event_type, employeeId },
   })
 
-  // Notif Kepala Unit kalau lembur tanpa pengajuan yang disetujui.
+  // Notif Kepala Unit kalau tap lembur baru auto-create pengajuan Overtime
+  // (kalau sudah ada pending, skip supaya tidak spam ulang).
   // Non-blocking — kegagalan notif tidak boleh menggagalkan absen.
-  if (overtimeUnapproved) {
+  if (overtimeAutoCreated) {
     const notifUnitId = attendance.workUnitId ?? employeeInfo?.unit?.id
     if (notifUnitId) {
       try {
